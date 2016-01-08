@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -49,6 +48,8 @@ func (h *GreenHandler) HandleEvent(e gwu.Event) {
 
 var greenHandler_ = GreenHandler(0)
 var greenHandler = &greenHandler_
+
+const appName = "jazigo"
 
 func buildPrivateWins(s gwu.Session) {
 	// Create and build a window
@@ -216,7 +217,9 @@ func buildPrivateWins(s gwu.Session) {
 }
 
 func buildLoginWin(s gwu.Session) {
-	win := gwu.NewWindow("login", "Login Window")
+	windowName := fmt.Sprintf("%s login window", appName)
+
+	win := gwu.NewWindow("login", windowName)
 	win.Style().SetFullSize()
 	win.SetAlign(gwu.HACenter, gwu.VAMiddle)
 
@@ -224,7 +227,7 @@ func buildLoginWin(s gwu.Session) {
 	p.SetHAlign(gwu.HACenter)
 	p.SetCellPadding(2)
 
-	l := gwu.NewLabel("Test GUI Login Window")
+	l := gwu.NewLabel(windowName)
 	l.Style().SetFontWeight(gwu.FontWeightBold).SetFontSize("150%")
 	p.Add(l)
 	l = gwu.NewLabel("Login")
@@ -305,17 +308,21 @@ func (h SessHandler) Removed(s gwu.Session) {
 }
 
 func main() {
-	// Create GUI server
-	server := gwu.NewServer("guitest", "0.0.0.0:3434")
-	//folder := "./tls/"
-	//server := gwu.NewServerTLS("guitest", "0.0.0.0:3434", folder+"cert.pem", folder+"key.pem")
-	server.SetText("Test GUI Application")
 
-	server.AddSessCreatorName("login", "Login Window")
+	appAddr := "0.0.0.0:8080"
+	serverName := fmt.Sprintf("%s application", appName)
+
+	// Create GUI server
+	server := gwu.NewServer(appName, appAddr)
+	//folder := "./tls/"
+	//server := gwu.NewServerTLS(appName, appAddr, folder+"cert.pem", folder+"key.pem")
+	server.SetText(serverName)
+
+	server.AddSessCreatorName("login", fmt.Sprintf("%s home window", appName))
 	server.AddSHandler(SessHandler{})
 
-	win := gwu.NewWindow("home", "Home Window")
-	l := gwu.NewLabel("Home, sweet home of " + server.Text())
+	win := gwu.NewWindow("home", fmt.Sprintf("%s home window", appName))
+	l := gwu.NewLabel(fmt.Sprintf("%s home", server.Text()))
 	l.Style().SetFontWeight(gwu.FontWeightBold).SetFontSize("130%")
 	win.Add(l)
 	win.Add(gwu.NewLabel("Click on the button to login:"))
@@ -331,7 +338,7 @@ func main() {
 
 	// Start GUI server
 	if err := server.Start(); err != nil {
-		fmt.Println("Error: Cound not start GUI server:", err)
+		fmt.Println("jazigo main: Cound not start GUI server:", err)
 		return
 	}
 }
