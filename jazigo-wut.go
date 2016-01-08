@@ -274,24 +274,28 @@ func buildLoginWin(s gwu.Session) {
 	win.Add(p)
 	win.SetFocusedCompId(tb.Id())
 
-	p = gwu.NewPanel()
-	p.SetLayout(gwu.LayoutHorizontal)
-	p.SetCellPadding(2)
-	p.Add(gwu.NewLabel("Here's an ON/OFF switch which enables/disables the other one:"))
-	sw := gwu.NewSwitchButton()
-	sw.SetOnOff("ENB", "DISB")
-	sw.SetState(true)
-	p.Add(sw)
-	p.Add(gwu.NewLabel("And the other one:"))
-	sw2 := gwu.NewSwitchButton()
-	sw2.SetEnabled(true)
-	sw2.Style().SetWidthPx(100)
-	p.Add(sw2)
-	sw.AddEHandlerFunc(func(e gwu.Event) {
-		sw2.SetEnabled(sw.State())
-		e.MarkDirty(sw2)
-	}, gwu.ETypeClick)
-	win.Add(p)
+	/*
+		// ON/OFF switch
+
+		p = gwu.NewPanel()
+		p.SetLayout(gwu.LayoutHorizontal)
+		p.SetCellPadding(2)
+		p.Add(gwu.NewLabel("Here's an ON/OFF switch which enables/disables the other one:"))
+		sw := gwu.NewSwitchButton()
+		sw.SetOnOff("ENB", "DISB")
+		sw.SetState(true)
+		p.Add(sw)
+		p.Add(gwu.NewLabel("And the other one:"))
+		sw2 := gwu.NewSwitchButton()
+		sw2.SetEnabled(true)
+		sw2.Style().SetWidthPx(100)
+		p.Add(sw2)
+		sw.AddEHandlerFunc(func(e gwu.Event) {
+			sw2.SetEnabled(sw.State())
+			e.MarkDirty(sw2)
+		}, gwu.ETypeClick)
+		win.Add(p)
+	*/
 
 	s.AddWin(win)
 }
@@ -318,7 +322,7 @@ func main() {
 	//server := gwu.NewServerTLS(appName, appAddr, folder+"cert.pem", folder+"key.pem")
 	server.SetText(serverName)
 
-	server.AddSessCreatorName("login", fmt.Sprintf("%s home window", appName))
+	server.AddSessCreatorName("login", fmt.Sprintf("%s login window", appName))
 	server.AddSHandler(SessHandler{})
 
 	win := gwu.NewWindow("home", fmt.Sprintf("%s home window", appName))
