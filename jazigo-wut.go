@@ -53,7 +53,8 @@ const appName = "jazigo"
 
 func buildPrivateWins(s gwu.Session) {
 	// Create and build a window
-	win := gwu.NewWindow("main", "Main Window")
+	winName := fmt.Sprintf("%s main window", appName)
+	win := gwu.NewWindow("main", winName)
 	win.Style().SetFullWidth()
 	win.SetCellPadding(2)
 
@@ -206,14 +207,17 @@ func buildPrivateWins(s gwu.Session) {
 	win.Add(tabPanel)
 	s.AddWin(win)
 
-	win2 := gwu.NewWindow("main2", "Main2 Window")
-	win2.Add(gwu.NewLabel("This is just a test 2nd window."))
-	back := gwu.NewButton("Back")
-	back.AddEHandlerFunc(func(e gwu.Event) {
-		e.ReloadWin(win.Name())
-	}, gwu.ETypeClick)
-	win2.Add(back)
-	s.AddWin(win2)
+	/*
+		// Add second window
+		win2 := gwu.NewWindow("main2", "Main2 Window")
+		win2.Add(gwu.NewLabel("This is just a test 2nd window."))
+		back := gwu.NewButton("Back")
+		back.AddEHandlerFunc(func(e gwu.Event) {
+			e.ReloadWin(win.Name())
+		}, gwu.ETypeClick)
+		win2.Add(back)
+		s.AddWin(win2)
+	*/
 }
 
 func buildLoginWin(s gwu.Session) {
@@ -325,6 +329,7 @@ func main() {
 	server.AddSessCreatorName("login", fmt.Sprintf("%s login window", appName))
 	server.AddSHandler(SessHandler{})
 
+	// Add home window
 	win := gwu.NewWindow("home", fmt.Sprintf("%s home window", appName))
 	l := gwu.NewLabel(fmt.Sprintf("%s home", server.Text()))
 	l.Style().SetFontWeight(gwu.FontWeightBold).SetFontSize("130%")
@@ -335,7 +340,6 @@ func main() {
 		e.ReloadWin("login")
 	}, gwu.ETypeClick)
 	win.Add(b)
-
 	server.AddWin(win)
 
 	server.SetLogger(log.New(os.Stdout, "", log.LstdFlags))
