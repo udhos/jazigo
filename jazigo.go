@@ -12,15 +12,17 @@ import (
 type SessHandler struct{}
 
 func (h SessHandler) Created(s gwu.Session) {
-	fmt.Println("SESSION created:", s.Id())
+	logger.Println("SESSION created:", s.Id())
 	//buildLoginWin(s)
 }
 
 func (h SessHandler) Removed(s gwu.Session) {
-	fmt.Println("SESSION removed:", s.Id())
+	logger.Println("SESSION removed:", s.Id())
 }
 
 const appName = "jazigo"
+
+var logger = log.New(os.Stdout, "", log.LstdFlags)
 
 func main() {
 
@@ -38,11 +40,11 @@ func main() {
 
 	buildHomeWin(server)
 
-	server.SetLogger(log.New(os.Stdout, "", log.LstdFlags))
+	server.SetLogger(logger)
 
 	// Start GUI server
 	if err := server.Start(); err != nil {
-		fmt.Println("jazigo main: Cound not start GUI server:", err)
+		logger.Println("jazigo main: Cound not start GUI server:", err)
 		return
 	}
 }
