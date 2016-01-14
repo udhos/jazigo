@@ -9,16 +9,18 @@ import (
 	//"strconv"
 )
 
+/*
 type SessHandler struct{}
 
 func (h SessHandler) Created(s gwu.Session) {
 	logger.Println("SESSION created:", s.Id())
-	buildLoginWin(s)
+	//buildLoginWin(s)
 }
 
 func (h SessHandler) Removed(s gwu.Session) {
 	logger.Println("SESSION removed:", s.Id())
 }
+*/
 
 const appName = "jazigo"
 
@@ -35,10 +37,13 @@ func main() {
 	//server := gwu.NewServerTLS(appName, appAddr, folder+"cert.pem", folder+"key.pem")
 	server.SetText(serverName)
 
-	server.AddSessCreatorName("login", fmt.Sprintf("%s login window", appName))
-	server.AddSHandler(SessHandler{})
+	/*
+		server.AddSessCreatorName("login", fmt.Sprintf("%s login window", appName))
+		server.AddSHandler(SessHandler{})
+	*/
 
 	buildHomeWin(server)
+	buildLoginWin(server)
 
 	server.SetLogger(logger)
 
@@ -52,6 +57,7 @@ func main() {
 func buildHomeWin(s gwu.Session) {
 	// Add home window
 	win := gwu.NewWindow("home", fmt.Sprintf("%s home window", appName))
+
 	l := gwu.NewLabel(fmt.Sprintf("%s home", appName))
 	l.Style().SetFontWeight(gwu.FontWeightBold).SetFontSize("130%")
 	win.Add(l)
@@ -61,6 +67,7 @@ func buildHomeWin(s gwu.Session) {
 		e.ReloadWin("login")
 	}, gwu.ETypeClick)
 	win.Add(b)
+
 	s.AddWin(win)
 }
 
@@ -105,8 +112,10 @@ func buildLoginWin(s gwu.Session) {
 	b := gwu.NewButton("OK")
 	b.AddEHandlerFunc(func(e gwu.Event) {
 		if tb.Text() == "admin" && pb.Text() == "a" {
-			e.Session().RemoveWin(win) // Login win is removed, password will not be retrievable from the browser
-			buildPrivateWins(e.Session())
+			//e.Session().RemoveWin(win) // Login win is removed, password will not be retrievable from the browser
+			//buildPrivateWins(e.Session())
+			// FIXME: Should clear username/password fields?
+			buildPrivateWins(e.NewSession())
 			e.ReloadWin("main")
 		} else {
 			e.SetFocusedComp(tb)
@@ -129,6 +138,7 @@ func buildPrivateWins(s gwu.Session) {
 	// Create and build a window
 	winName := fmt.Sprintf("%s main window", appName)
 	win := gwu.NewWindow("main", winName)
+
 	win.Style().SetFullWidth()
 	win.SetCellPadding(2)
 
