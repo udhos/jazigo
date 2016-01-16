@@ -84,15 +84,23 @@ func buildLoginWin(s gwu.Session) {
 	table.EnsureSize(2, 2)
 	table.Add(gwu.NewLabel("Username:"), 0, 0)
 	tb := gwu.NewTextBox("")
+
 	tb.Style().SetWidthPx(160)
 	table.Add(tb, 0, 1)
 	table.Add(gwu.NewLabel("Password:"), 1, 0)
 	pb := gwu.NewPasswBox("")
+
 	pb.Style().SetWidthPx(160)
 	table.Add(pb, 1, 1)
 	p.Add(table)
 	b := gwu.NewButton("OK")
-	b.AddEHandlerFunc(func(e gwu.Event) {
+
+	p.Add(b)
+	l = gwu.NewLabel("")
+	p.Add(l)
+	p.CellFmt(l).Style().SetHeightPx(200)
+
+	loginHandler := func(e gwu.Event) {
 		user := tb.Text()
 		if loginAuth(user, pb.Text()) {
 			//e.Session().RemoveWin(win) // Login win is removed, password will not be retrievable from the browser
@@ -107,11 +115,18 @@ func buildLoginWin(s gwu.Session) {
 			errL.SetText("Invalid user name or password!")
 			e.MarkDirty(errL)
 		}
-	}, gwu.ETypeClick)
-	p.Add(b)
-	l = gwu.NewLabel("")
-	p.Add(l)
-	p.CellFmt(l).Style().SetHeightPx(200)
+	}
+
+	enterHandler := func(e gwu.Event) {
+		if e.Type() == gwu.ETypeKeyPress && e.KeyCode() == gwu.KeyEnter {
+			// enter key was pressed
+			loginHandler(e)
+		}
+	}
+
+	tb.AddEHandlerFunc(enterHandler, gwu.ETypeKeyPress)
+	pb.AddEHandlerFunc(enterHandler, gwu.ETypeKeyPress)
+	b.AddEHandlerFunc(loginHandler, gwu.ETypeClick)
 
 	win.Add(p)
 	win.SetFocusedCompId(tb.Id())
