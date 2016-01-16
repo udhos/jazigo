@@ -9,19 +9,6 @@ import (
 	//"strconv"
 )
 
-/*
-type SessHandler struct{}
-
-func (h SessHandler) Created(s gwu.Session) {
-	logger.Println("SESSION created:", s.Id())
-	//buildLoginWin(s)
-}
-
-func (h SessHandler) Removed(s gwu.Session) {
-	logger.Println("SESSION removed:", s.Id())
-}
-*/
-
 const appName = "jazigo"
 
 var logger = log.New(os.Stdout, "", log.LstdFlags)
@@ -36,11 +23,6 @@ func main() {
 	//folder := "./tls/"
 	//server := gwu.NewServerTLS(appName, appAddr, folder+"cert.pem", folder+"key.pem")
 	server.SetText(serverName)
-
-	/*
-		server.AddSessCreatorName("login", fmt.Sprintf("%s login window", appName))
-		server.AddSHandler(SessHandler{})
-	*/
 
 	buildHomeWin(server)
 	buildLoginWin(server)
@@ -111,11 +93,14 @@ func buildLoginWin(s gwu.Session) {
 	p.Add(table)
 	b := gwu.NewButton("OK")
 	b.AddEHandlerFunc(func(e gwu.Event) {
-		if tb.Text() == "admin" && pb.Text() == "a" {
+		user := tb.Text()
+		if loginAuth(user, pb.Text()) {
 			//e.Session().RemoveWin(win) // Login win is removed, password will not be retrievable from the browser
 			//buildPrivateWins(e.Session())
 			// FIXME: Should clear username/password fields?
-			buildPrivateWins(e.NewSession())
+			newSession := e.NewSession()
+			newSession.SetAttr("username", user)
+			buildPrivateWins(newSession)
 			e.ReloadWin("main")
 		} else {
 			e.SetFocusedComp(tb)
@@ -134,9 +119,17 @@ func buildLoginWin(s gwu.Session) {
 	s.AddWin(win)
 }
 
+func loginAuth(user, pass string) bool {
+	return user == "admin" && pass == "a"
+}
+
 func buildPrivateWins(s gwu.Session) {
 	// Create and build a window
-	winName := fmt.Sprintf("%s main window", appName)
+
+	user := s.Attr("username").(string)
+	addr := "A.A.A.A"
+
+	winName := fmt.Sprintf("%s main window - user=%s - address=%s", appName, user, addr)
 	win := gwu.NewWindow("main", winName)
 
 	win.Style().SetFullWidth()
