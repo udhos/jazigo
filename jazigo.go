@@ -142,7 +142,7 @@ func buildPrivateWins(s gwu.Session) {
 	// Create and build a window
 
 	user := s.Attr("username").(string)
-	addr := "A.A.A.A"
+	addr := s.RemoteAddr()
 
 	winName := fmt.Sprintf("%s main window - user=%s - address=%s", appName, user, addr)
 	win := gwu.NewWindow("main", winName)
@@ -152,6 +152,13 @@ func buildPrivateWins(s gwu.Session) {
 
 	title := gwu.NewLabel(winName)
 	win.Add(title)
+
+	win.Add(gwu.NewLabel("click on this window to see updates"))
+
+	win.AddEHandlerFunc(func(e gwu.Event) {
+		win.Add(gwu.NewLabel(fmt.Sprintf("click - addr=%v", s.RemoteAddr())))
+		e.MarkDirty(win)
+	}, gwu.ETypeClick)
 
 	s.AddWin(win)
 }
