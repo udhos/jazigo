@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/udhos/gowut/gwu"
+	//"github.com/udhos/gowut/gwu"
+	"github.com/icza/gowut/gwu"
 	"log"
 	//"math/rand"
 	"os"
@@ -108,7 +109,14 @@ func buildLoginWin(s gwu.Session) {
 			// FIXME: Should clear username/password fields?
 			newSession := e.NewSession()
 			newSession.SetAttr("username", user)
-			buildPrivateWins(newSession)
+
+			remoteAddr := "(remoteAddr?)"
+			if hrr, ok := e.(gwu.HasRequestResponse); ok {
+				req := hrr.Request()
+				remoteAddr = req.RemoteAddr
+			}
+
+			buildPrivateWins(newSession, remoteAddr)
 			e.ReloadWin("main")
 		} else {
 			e.SetFocusedComp(tb)
@@ -138,13 +146,12 @@ func loginAuth(user, pass string) bool {
 	return user == "admin" && pass == "a"
 }
 
-func buildPrivateWins(s gwu.Session) {
+func buildPrivateWins(s gwu.Session, remoteAddr string) {
 	// Create and build a window
 
 	user := s.Attr("username").(string)
-	addr := s.RemoteAddr()
 
-	winName := fmt.Sprintf("%s main window - user=%s - address=%s", appName, user, addr)
+	winName := fmt.Sprintf("%s main window - user=%s - address=%s", appName, user, remoteAddr)
 	win := gwu.NewWindow("main", winName)
 
 	win.Style().SetFullWidth()
@@ -156,7 +163,13 @@ func buildPrivateWins(s gwu.Session) {
 	win.Add(gwu.NewLabel("click on this window to see updates"))
 
 	win.AddEHandlerFunc(func(e gwu.Event) {
-		win.Add(gwu.NewLabel(fmt.Sprintf("click - addr=%v", s.RemoteAddr())))
+
+		if hrr, ok := e.(gwu.HasRequestResponse); ok {
+			req := hrr.Request()
+			remoteAddr = req.RemoteAddr
+		}
+
+		win.Add(gwu.NewLabel(fmt.Sprintf("click - addr=%v", remoteAddr)))
 		e.MarkDirty(win)
 	}, gwu.ETypeClick)
 
