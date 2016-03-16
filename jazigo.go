@@ -14,6 +14,9 @@ const appName = "jazigo"
 
 var logger = log.New(os.Stdout, "", log.LstdFlags)
 
+const hardUser = "a"
+const hardPass = "a"
+
 func main() {
 
 	appAddr := "0.0.0.0:8080"
@@ -75,7 +78,7 @@ func buildLoginWin(s gwu.Session) {
 	l.Style().SetFontWeight(gwu.FontWeightBold).SetFontSize("130%")
 	p.Add(l)
 	p.CellFmt(l).Style().SetBorder2(1, gwu.BrdStyleDashed, gwu.ClrNavy)
-	l = gwu.NewLabel("user/pass: admin/a")
+	l = gwu.NewLabel(fmt.Sprintf("user/pass: %s/%s", hardUser, hardPass))
 	l.Style().SetFontSize("80%").SetFontStyle(gwu.FontStyleItalic)
 	p.Add(l)
 
@@ -105,8 +108,14 @@ func buildLoginWin(s gwu.Session) {
 	p.CellFmt(l).Style().SetHeightPx(200)
 
 	loginHandler := func(e gwu.Event) {
+
 		user := tb.Text()
-		if loginAuth(user, pb.Text()) {
+		pass := pb.Text()
+		auth := loginAuth(user, pass)
+
+		logger.Printf("debug login user=[%s] pass=[%s] result=[%v]", user, pass, auth)
+
+		if auth {
 
 			// FIXME: Should clear username/password fields?
 
@@ -146,7 +155,7 @@ func buildLoginWin(s gwu.Session) {
 }
 
 func loginAuth(user, pass string) bool {
-	return user == "admin" && pass == "a"
+	return user == hardUser && pass == hardPass
 }
 
 func buildPrivateWins(s gwu.Session, remoteAddr string) {
