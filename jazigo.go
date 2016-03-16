@@ -38,10 +38,12 @@ func main() {
 }
 
 func buildHomeWin(s gwu.Session) {
-	// Add home window
-	win := gwu.NewWindow("home", fmt.Sprintf("%s home window", appName))
 
-	l := gwu.NewLabel(fmt.Sprintf("%s home", appName))
+	winName := fmt.Sprintf("%s home", appName)
+	win := gwu.NewWindow("home", winName)
+
+	l := gwu.NewLabel(fmt.Sprintf("%s home", winName))
+
 	l.Style().SetFontWeight(gwu.FontWeightBold).SetFontSize("130%")
 	win.Add(l)
 	win.Add(gwu.NewLabel("Click on the button to login:"))
@@ -55,9 +57,10 @@ func buildHomeWin(s gwu.Session) {
 }
 
 func buildLoginWin(s gwu.Session) {
-	windowName := fmt.Sprintf("%s login window", appName)
 
-	win := gwu.NewWindow("login", windowName)
+	winName := fmt.Sprintf("%s login", appName)
+	win := gwu.NewWindow("login", winName)
+
 	win.Style().SetFullSize()
 	win.SetAlign(gwu.HACenter, gwu.VAMiddle)
 
@@ -65,7 +68,7 @@ func buildLoginWin(s gwu.Session) {
 	p.SetHAlign(gwu.HACenter)
 	p.SetCellPadding(2)
 
-	l := gwu.NewLabel(windowName)
+	l := gwu.NewLabel(winName)
 	l.Style().SetFontWeight(gwu.FontWeightBold).SetFontSize("150%")
 	p.Add(l)
 	l = gwu.NewLabel("Login")
@@ -104,9 +107,9 @@ func buildLoginWin(s gwu.Session) {
 	loginHandler := func(e gwu.Event) {
 		user := tb.Text()
 		if loginAuth(user, pb.Text()) {
-			//e.Session().RemoveWin(win) // Login win is removed, password will not be retrievable from the browser
-			//buildPrivateWins(e.Session())
+
 			// FIXME: Should clear username/password fields?
+
 			newSession := e.NewSession()
 			newSession.SetAttr("username", user)
 
@@ -117,7 +120,7 @@ func buildLoginWin(s gwu.Session) {
 			}
 
 			buildPrivateWins(newSession, remoteAddr)
-			e.ReloadWin("main")
+			e.ReloadWin("admin")
 		} else {
 			e.SetFocusedComp(tb)
 			errL.SetText("Invalid user name or password!")
@@ -147,17 +150,43 @@ func loginAuth(user, pass string) bool {
 }
 
 func buildPrivateWins(s gwu.Session, remoteAddr string) {
-	// Create and build a window
-
 	user := s.Attr("username").(string)
 
-	winName := fmt.Sprintf("%s main window - user=%s - address=%s", appName, user, remoteAddr)
-	win := gwu.NewWindow("main", winName)
+	buildLogoutWin(s, user, remoteAddr)
+	buildAdminWin(s, user, remoteAddr)
+}
 
+func buildLogoutWin(s gwu.Session, user, remoteAddr string) {
+	winName := fmt.Sprintf("%s logout", appName)
+	winHeader := fmt.Sprintf("%s - user=%s - address=%s", winName, user, remoteAddr)
+
+	win := gwu.NewWindow("logout", winName)
 	win.Style().SetFullWidth()
 	win.SetCellPadding(2)
 
-	title := gwu.NewLabel(winName)
+	title := gwu.NewLabel(winHeader)
+	win.Add(title)
+
+	p := gwu.NewPanel()
+	p.SetCellPadding(2)
+
+	logoutButton := gwu.NewButton("Logout")
+
+	p.Add(logoutButton)
+
+	win.Add(p)
+	s.AddWin(win)
+}
+
+func buildAdminWin(s gwu.Session, user, remoteAddr string) {
+	winName := fmt.Sprintf("%s admin", appName)
+	winHeader := fmt.Sprintf("%s - user=%s - address=%s", winName, user, remoteAddr)
+
+	win := gwu.NewWindow("admin", winName)
+	win.Style().SetFullWidth()
+	win.SetCellPadding(2)
+
+	title := gwu.NewLabel(winHeader)
 	win.Add(title)
 
 	win.Add(gwu.NewLabel("click on this window to see updates"))
