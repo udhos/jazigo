@@ -91,11 +91,13 @@ func buildLoginWin(s gwu.Session) {
 	table.EnsureSize(2, 2)
 	table.Add(gwu.NewLabel("Username:"), 0, 0)
 	tb := gwu.NewTextBox("")
+	tb.AddSyncOnETypes(gwu.ETypeKeyUp) // synchronize values during editing (while you type in characters)
 
 	tb.Style().SetWidthPx(160)
 	table.Add(tb, 0, 1)
 	table.Add(gwu.NewLabel("Password:"), 1, 0)
 	pb := gwu.NewPasswBox("")
+	pb.AddSyncOnETypes(gwu.ETypeKeyUp) // synchronize values during editing (while you type in characters)
 
 	pb.Style().SetWidthPx(160)
 	table.Add(pb, 1, 1)
