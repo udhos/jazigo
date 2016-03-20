@@ -115,11 +115,17 @@ func buildLoginWin(s gwu.Session) {
 		pass := pb.Text()
 		auth := loginAuth(user, pass)
 
-		logger.Printf("debug login user=[%s] pass=[%s] result=[%v]", user, pass, auth)
+		//logger.Printf("debug login user=[%s] pass=[%s] result=[%v]", user, pass, auth)
 
 		if auth {
 
-			// FIXME: Should clear username/password fields?
+			// Clear username/password fields
+			tb.SetText("")
+			pb.SetText("")
+
+			// Clear error message
+			errL.SetText("")
+			e.MarkDirty(errL)
 
 			newSession := e.NewSession()
 			newSession.SetAttr("username", user)
@@ -133,7 +139,7 @@ func buildLoginWin(s gwu.Session) {
 			buildPrivateWins(newSession, remoteAddr)
 			e.ReloadWin("admin")
 		} else {
-			e.SetFocusedComp(tb)
+			//e.SetFocusedComp(tb)
 			errL.SetText("Invalid user name or password!")
 			e.MarkDirty(errL)
 		}
