@@ -17,7 +17,21 @@ var logger = log.New(os.Stdout, "", log.LstdFlags)
 const hardUser = "a"
 const hardPass = "a"
 
+type app struct {
+	models  map[string]*model  // label => model
+	devices map[string]*device // id => device
+}
+
 func main() {
+
+	jaz := &app{
+		models:  map[string]*model{},
+		devices: map[string]*device{},
+	}
+
+	registerModelCiscoIOS(jaz.models)
+
+	createDevice(jaz, "cisco-ios", "lab1", "localhost:2001", "telnet,ssh")
 
 	appAddr := "0.0.0.0:8080"
 	serverName := fmt.Sprintf("%s application", appName)
