@@ -31,7 +31,8 @@ func main() {
 
 	registerModelCiscoIOS(jaz.models)
 
-	createDevice(jaz, "cisco-ios", "lab1", "localhost:2001", "telnet,ssh")
+	createDevice(jaz, "cisco-ios", "lab1", "localhost:2001", "telnet,ssh", "lab", "pass", "en")
+	createDevice(jaz, "cisco-ios", "lab2", "localhost:2002", "telnet,ssh", "lab", "pass", "en")
 
 	appAddr := "0.0.0.0:8080"
 	serverName := fmt.Sprintf("%s application", appName)
