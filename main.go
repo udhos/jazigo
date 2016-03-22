@@ -20,6 +20,88 @@ const hardPass = "a"
 type app struct {
 	models  map[string]*model  // label => model
 	devices map[string]*device // id => device
+
+	apHome    gwu.Panel
+	apAdmin   gwu.Panel
+	apLogout  gwu.Panel
+	winHome   gwu.Window
+	winAdmin  gwu.Window
+	winLogout gwu.Window
+}
+
+func newAccPanel(user string) gwu.Panel {
+	ap := gwu.NewPanel()
+	if user == "" {
+		// guest user
+
+		// create login button
+		b := gwu.NewButton("Login")
+		b.AddEHandlerFunc(func(e gwu.Event) {
+			e.ReloadWin("login")
+		}, gwu.ETypeClick)
+		ap.Add(b)
+
+	} else {
+
+		// logged user
+		l := gwu.NewLabel(fmt.Sprintf("username=[%s]", user))
+		ap.Add(l)
+	}
+	return ap
+}
+
+func accountPanelUpdate(jaz *app, user string) {
+
+	if jaz.winHome != nil {
+		if jaz.apHome != nil {
+			home := jaz.winHome.ById(jaz.apHome.Id())
+			jaz.winHome.Remove(home)
+		}
+		jaz.apHome = newAccPanel(user)
+		if !jaz.winHome.Insert(jaz.apHome, 0) {
+			log.Printf("home win insert accPanel failed")
+		}
+	}
+
+	if jaz.winAdmin != nil {
+		if jaz.apAdmin != nil {
+			admin := jaz.winAdmin.ById(jaz.apAdmin.Id())
+			jaz.winAdmin.Remove(admin)
+		}
+		jaz.apAdmin = newAccPanel(user)
+		if !jaz.winAdmin.Insert(jaz.apAdmin, 0) {
+			log.Printf("admin win insert accPanel failed")
+		}
+		log.Printf("XXX admin updated")
+	}
+
+	if jaz.winLogout != nil {
+		if jaz.apLogout != nil {
+			logout := jaz.winLogout.ById(jaz.apLogout.Id())
+			jaz.winLogout.Remove(logout)
+		}
+		jaz.apLogout = newAccPanel(user)
+		if !jaz.winLogout.Insert(jaz.apLogout, 0) {
+			log.Printf("logout win insert accPanel failed")
+		}
+	}
+
+}
+
+func accountPanelUpdateEvent(jaz *app, user string, e gwu.Event) {
+	accountPanelUpdate(jaz, user)
+
+	if jaz.winHome != nil {
+		e.MarkDirty(jaz.winHome)
+	}
+
+	if jaz.winAdmin != nil {
+		e.MarkDirty(jaz.winAdmin)
+	}
+
+	if jaz.winLogout != nil {
+		e.MarkDirty(jaz.winLogout)
+	}
 }
 
 func main() {
@@ -43,8 +125,14 @@ func main() {
 	//server := gwu.NewServerTLS(appName, appAddr, folder+"cert.pem", folder+"key.pem")
 	server.SetText(serverName)
 
-	buildHomeWin(server)
-	buildLoginWin(server)
+	// create account panel
+	jaz.apHome = newAccPanel("")
+	jaz.apAdmin = newAccPanel("")
+	jaz.apLogout = newAccPanel("")
+	accountPanelUpdate(jaz, "")
+
+	buildHomeWin(jaz, server)
+	buildLoginWin(jaz, server)
 
 	server.SetLogger(logger)
 
@@ -55,26 +143,32 @@ func main() {
 	}
 }
 
-func buildHomeWin(s gwu.Session) {
+func buildHomeWin(jaz *app, s gwu.Session) {
 
 	winName := fmt.Sprintf("%s home", appName)
 	win := gwu.NewWindow("home", winName)
 
-	l := gwu.NewLabel(fmt.Sprintf("%s home", winName))
+	win.Add(jaz.apHome)
 
+	l := gwu.NewLabel(winName)
 	l.Style().SetFontWeight(gwu.FontWeightBold).SetFontSize("130%")
 	win.Add(l)
-	win.Add(gwu.NewLabel("Click on the button to login:"))
-	b := gwu.NewButton("Login")
-	b.AddEHandlerFunc(func(e gwu.Event) {
-		e.ReloadWin("login")
-	}, gwu.ETypeClick)
-	win.Add(b)
+
+	/*
+		win.Add(gwu.NewLabel("Click on the button to login:"))
+		b := gwu.NewButton("Login")
+		b.AddEHandlerFunc(func(e gwu.Event) {
+			e.ReloadWin("login")
+		}, gwu.ETypeClick)
+		win.Add(b)
+	*/
 
 	s.AddWin(win)
+
+	jaz.winHome = win
 }
 
-func buildLoginWin(s gwu.Session) {
+func buildLoginWin(jaz *app, s gwu.Session) {
 
 	winName := fmt.Sprintf("%s login", appName)
 	win := gwu.NewWindow("login", winName)
@@ -151,7 +245,10 @@ func buildLoginWin(s gwu.Session) {
 				remoteAddr = req.RemoteAddr
 			}
 
-			buildPrivateWins(newSession, remoteAddr)
+			buildPrivateWins(jaz, newSession, remoteAddr)
+
+			accountPanelUpdateEvent(jaz, user, e)
+
 			e.ReloadWin("admin")
 		} else {
 			//e.SetFocusedComp(tb)
@@ -181,20 +278,22 @@ func loginAuth(user, pass string) bool {
 	return user == hardUser && pass == hardPass
 }
 
-func buildPrivateWins(s gwu.Session, remoteAddr string) {
+func buildPrivateWins(jaz *app, s gwu.Session, remoteAddr string) {
 	user := s.Attr("username").(string)
 
-	buildLogoutWin(s, user, remoteAddr)
-	buildAdminWin(s, user, remoteAddr)
+	buildLogoutWin(jaz, s, user, remoteAddr)
+	buildAdminWin(jaz, s, user, remoteAddr)
 }
 
-func buildLogoutWin(s gwu.Session, user, remoteAddr string) {
+func buildLogoutWin(jaz *app, s gwu.Session, user, remoteAddr string) {
 	winName := fmt.Sprintf("%s logout", appName)
 	winHeader := fmt.Sprintf("%s - user=%s - address=%s", winName, user, remoteAddr)
 
 	win := gwu.NewWindow("logout", winName)
 	win.Style().SetFullWidth()
 	win.SetCellPadding(2)
+
+	win.Add(jaz.apLogout)
 
 	title := gwu.NewLabel(winHeader)
 	win.Add(title)
@@ -208,15 +307,19 @@ func buildLogoutWin(s gwu.Session, user, remoteAddr string) {
 
 	win.Add(p)
 	s.AddWin(win)
+
+	jaz.winLogout = win
 }
 
-func buildAdminWin(s gwu.Session, user, remoteAddr string) {
+func buildAdminWin(jaz *app, s gwu.Session, user, remoteAddr string) {
 	winName := fmt.Sprintf("%s admin", appName)
 	winHeader := fmt.Sprintf("%s - user=%s - address=%s", winName, user, remoteAddr)
 
 	win := gwu.NewWindow("admin", winName)
 	win.Style().SetFullWidth()
 	win.SetCellPadding(2)
+
+	win.Add(jaz.apAdmin)
 
 	title := gwu.NewLabel(winHeader)
 	win.Add(title)
@@ -235,4 +338,6 @@ func buildAdminWin(s gwu.Session, user, remoteAddr string) {
 	}, gwu.ETypeClick)
 
 	s.AddWin(win)
+
+	jaz.winAdmin = win
 }
