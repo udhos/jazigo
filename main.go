@@ -8,6 +8,7 @@ import (
 	//"math/rand"
 	"os"
 	//"strconv"
+	"path/filepath"
 )
 
 var logger = log.New(os.Stdout, "", log.LstdFlags)
@@ -22,6 +23,8 @@ type app struct {
 	winHome   gwu.Window
 	winAdmin  gwu.Window
 	winLogout gwu.Window
+
+	cssPath string
 }
 
 func main() {
@@ -44,6 +47,19 @@ func main() {
 	//folder := "./tls/"
 	//server := gwu.NewServerTLS(appName, appAddr, folder+"cert.pem", folder+"key.pem")
 	server.SetText(serverName)
+
+	gopath := os.Getenv("GOPATH")
+	pkgPath := filepath.Join("src", "github.com", "udhos", "jazigo") // from package github.com/udhos/jazigo
+	staticDir := filepath.Join(gopath, pkgPath, "www")
+	staticPath := "static"
+	staticPathFull := fmt.Sprintf("/%s/%s", appName, staticPath)
+
+	log.Printf("static dir: path=[%s] mapped to dir=[%s]", staticPathFull, staticDir)
+
+	jaz.cssPath = fmt.Sprintf("%s/jazigo.css", staticPathFull)
+	log.Printf("css path: %s", jaz.cssPath)
+
+	server.AddStaticDir(staticPath, staticDir)
 
 	// create account panel
 	jaz.apHome = newAccPanel("")

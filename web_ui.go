@@ -17,6 +17,7 @@ const hardPass = "a"
 
 func newAccPanel(user string) gwu.Panel {
 	ap := gwu.NewPanel()
+	ap.Style().AddClass("account_panel")
 	if user == "" {
 		// guest user
 
@@ -58,7 +59,6 @@ func accountPanelUpdate(jaz *app, user string) {
 		if !jaz.winAdmin.Insert(jaz.apAdmin, 0) {
 			log.Printf("admin win insert accPanel failed")
 		}
-		log.Printf("XXX admin updated")
 	}
 
 	if jaz.winLogout != nil {
@@ -90,10 +90,18 @@ func accountPanelUpdateEvent(jaz *app, user string, e gwu.Event) {
 	}
 }
 
+func newWin(jaz *app, path, name string) gwu.Window {
+	win := gwu.NewWindow(path, name)
+	cssLink := fmt.Sprintf(`<link rel="stylesheet" type="text/css" href="%s">`, jaz.cssPath)
+	win.AddHeadHtml(cssLink)
+	log.Printf("window=[%s] attached CSS=[%s]", path, cssLink)
+	return win
+}
+
 func buildHomeWin(jaz *app, s gwu.Session) {
 
 	winName := fmt.Sprintf("%s home", appName)
-	win := gwu.NewWindow("home", winName)
+	win := newWin(jaz, "home", winName)
 
 	win.Add(jaz.apHome)
 
@@ -118,7 +126,7 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 func buildLoginWin(jaz *app, s gwu.Session) {
 
 	winName := fmt.Sprintf("%s login", appName)
-	win := gwu.NewWindow("login", winName)
+	win := newWin(jaz, "login", winName)
 
 	win.Style().SetFullSize()
 	win.SetAlign(gwu.HACenter, gwu.VAMiddle)
@@ -236,7 +244,8 @@ func buildLogoutWin(jaz *app, s gwu.Session, user, remoteAddr string) {
 	winName := fmt.Sprintf("%s logout", appName)
 	winHeader := fmt.Sprintf("%s - user=%s - address=%s", winName, user, remoteAddr)
 
-	win := gwu.NewWindow("logout", winName)
+	win := newWin(jaz, "logout", winName)
+
 	win.Style().SetFullWidth()
 	win.SetCellPadding(2)
 
@@ -262,7 +271,8 @@ func buildAdminWin(jaz *app, s gwu.Session, user, remoteAddr string) {
 	winName := fmt.Sprintf("%s admin", appName)
 	winHeader := fmt.Sprintf("%s - user=%s - address=%s", winName, user, remoteAddr)
 
-	win := gwu.NewWindow("admin", winName)
+	win := newWin(jaz, "admin", winName)
+
 	win.Style().SetFullWidth()
 	win.SetCellPadding(2)
 
