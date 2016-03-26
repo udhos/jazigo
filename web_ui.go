@@ -4,7 +4,7 @@ import (
 	"fmt"
 	//"github.com/udhos/gowut/gwu"
 	"github.com/icza/gowut/gwu"
-	"log"
+	//"log"
 	//"math/rand"
 	//"os"
 	//"strconv"
@@ -46,7 +46,7 @@ func accountPanelUpdate(jaz *app, user string) {
 		}
 		jaz.apHome = newAccPanel(user)
 		if !jaz.winHome.Insert(jaz.apHome, 0) {
-			log.Printf("home win insert accPanel failed")
+			logger.Printf("home win insert accPanel failed")
 		}
 	}
 
@@ -57,7 +57,7 @@ func accountPanelUpdate(jaz *app, user string) {
 		}
 		jaz.apAdmin = newAccPanel(user)
 		if !jaz.winAdmin.Insert(jaz.apAdmin, 0) {
-			log.Printf("admin win insert accPanel failed")
+			logger.Printf("admin win insert accPanel failed")
 		}
 	}
 
@@ -68,7 +68,7 @@ func accountPanelUpdate(jaz *app, user string) {
 		}
 		jaz.apLogout = newAccPanel(user)
 		if !jaz.winLogout.Insert(jaz.apLogout, 0) {
-			log.Printf("logout win insert accPanel failed")
+			logger.Printf("logout win insert accPanel failed")
 		}
 	}
 
@@ -94,7 +94,7 @@ func newWin(jaz *app, path, name string) gwu.Window {
 	win := gwu.NewWindow(path, name)
 	cssLink := fmt.Sprintf(`<link rel="stylesheet" type="text/css" href="%s">`, jaz.cssPath)
 	win.AddHeadHtml(cssLink)
-	log.Printf("window=[%s] attached CSS=[%s]", path, cssLink)
+	logger.Printf("window=[%s] attached CSS=[%s]", path, cssLink)
 	return win
 }
 

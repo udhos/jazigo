@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+//"log"
 )
 
 type model struct {
@@ -50,15 +50,15 @@ func registerModelCiscoIOS(models map[string]*model) {
 
 	models[modelName] = m
 
-	log.Printf("registerModelCiscoIOS: FIXME WRITEME program chat sequence")
+	logger.Printf("registerModelCiscoIOS: FIXME WRITEME program chat sequence")
 }
 
 func createDevice(jaz *app, modelName, id, hostPort, transports, user, pass, enable string) {
-	log.Printf("createDevice: %s %s %s %s", modelName, id, hostPort, transports)
+	logger.Printf("createDevice: %s %s %s %s", modelName, id, hostPort, transports)
 
 	mod, ok := jaz.models[modelName]
 	if !ok {
-		log.Printf("createDevice: could not find model '%s'", modelName)
+		logger.Printf("createDevice: could not find model '%s'", modelName)
 	}
 
 	dev := &device{devModel: mod, id: id, hostPort: hostPort, transports: transports, loginUser: user, loginPassword: pass, enablePassword: enable}

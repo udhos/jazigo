@@ -54,10 +54,10 @@ func main() {
 	staticPath := "static"
 	staticPathFull := fmt.Sprintf("/%s/%s", appName, staticPath)
 
-	log.Printf("static dir: path=[%s] mapped to dir=[%s]", staticPathFull, staticDir)
+	logger.Printf("static dir: path=[%s] mapped to dir=[%s]", staticPathFull, staticDir)
 
 	jaz.cssPath = fmt.Sprintf("%s/jazigo.css", staticPathFull)
-	log.Printf("css path: %s", jaz.cssPath)
+	logger.Printf("css path: %s", jaz.cssPath)
 
 	server.AddStaticDir(staticPath, staticDir)
 
