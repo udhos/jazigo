@@ -9,6 +9,7 @@ import (
 	"os"
 	//"strconv"
 	"path/filepath"
+	"time"
 )
 
 var logger = log.New(os.Stdout, "", log.LstdFlags)
@@ -36,8 +37,12 @@ func main() {
 
 	registerModelCiscoIOS(jaz.models)
 
-	createDevice(jaz, "cisco-ios", "lab1", "localhost:2001", "tcp,ssh", "lab", "pass", "en")
-	createDevice(jaz, "cisco-ios", "lab2", "localhost:2002", "tcp,ssh", "lab", "pass", "en")
+	createDevice(jaz, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en")
+	createDevice(jaz, "cisco-ios", "lab2", "localhost:2002", "ssh", "lab", "pass", "en")
+	createDevice(jaz, "cisco-ios", "lab3", "localhost:2003", "telnet,ssh", "lab", "pass", "en")
+	createDevice(jaz, "cisco-ios", "lab4", "localhost:2004", "ssh,telnet", "lab", "pass", "en")
+	createDevice(jaz, "cisco-ios", "lab5", "localhost", "telnet", "lab", "pass", "en")
+	createDevice(jaz, "cisco-ios", "lab6", "localhost", "ssh", "rat", "lab", "en")
 
 	appAddr := "0.0.0.0:8080"
 	serverName := fmt.Sprintf("%s application", appName)
@@ -72,9 +77,54 @@ func main() {
 
 	server.SetLogger(logger)
 
+	go scanDevices(jaz) // FIXME one-shot scan
+
 	// Start GUI server
 	if err := server.Start(); err != nil {
 		logger.Println("jazigo main: Cound not start GUI server:", err)
 		return
 	}
+}
+
+type fetchResult struct {
+	model       string
+	devId       string
+	devHostPort string
+	msg         string // result error message
+	code        int    // result error code
+}
+
+func scanDevices(jaz *app) {
+
+	logger.Printf("scanDevices: starting")
+
+	begin := time.Now()
+
+	resultCh := make(chan fetchResult)
+
+	baseDelay := 500 * time.Millisecond
+	logger.Printf("scanDevices: non-hammering delay between captures: %d ms", baseDelay/time.Millisecond)
+
+	wait := 0
+	currDelay := time.Duration(0)
+
+	for _, dev := range jaz.devices {
+		go dev.fetch(resultCh, currDelay)
+		currDelay += baseDelay
+		wait++
+	}
+
+	for wait > 0 {
+		r := <-resultCh
+		wait--
+		logger.Printf("device result: %s %s %s msg=[%s] code=%d remain=%d", r.model, r.devId, r.devHostPort, r.msg, r.code, wait)
+	}
+
+	end := time.Now()
+	elapsed := end.Sub(begin)
+	deviceCount := len(jaz.devices)
+	average := elapsed / time.Duration(deviceCount)
+
+	logger.Printf("scanDevices: finished elapsed=%s devices=%d average=%s", elapsed.String(), deviceCount, average.String())
+
 }

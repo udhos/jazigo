@@ -1,7 +1,8 @@
 package main
 
 import (
-//"log"
+	"fmt"
+	"time"
 )
 
 type model struct {
@@ -10,6 +11,7 @@ type model struct {
 }
 
 type attributes struct {
+	loginChat                   bool     // expect login chat
 	enableCommand               string   // enable
 	usernamePromptPattern       string   // Username:
 	passwordPromptPattern       string   // Password:
@@ -33,11 +35,56 @@ type device struct {
 	attr attributes
 }
 
+const (
+	FETCH_ERR_NONE   = 0
+	FETCH_ERR_TRANSP = 1
+	FETCH_ERR_LOGIN  = 2
+	FETCH_ERR_CHAT   = 3
+	FETCH_ERR_OTHER  = 4
+)
+
+func (d *device) fetch(resultCh chan fetchResult, delay time.Duration) {
+	modelName := d.devModel.name
+	logger.Printf("fetch: %s %s %s %s delay=%dms", modelName, d.id, d.hostPort, d.transports, delay/time.Millisecond)
+
+	if delay > 0 {
+		time.Sleep(delay)
+	}
+
+	session, logged, err := openTransport(modelName, d.id, d.hostPort, d.transports, d.loginUser, d.loginPassword)
+	if err != nil {
+		resultCh <- fetchResult{model: modelName, devId: d.id, devHostPort: d.hostPort, msg: fmt.Sprintf("fetch transport: %v", err), code: FETCH_ERR_TRANSP}
+		return
+	}
+
+	logger.Printf("fetch: %s %s %s - transport open session=%v logged=%v", modelName, d.id, d.hostPort, session, logged)
+
+	capture := dialog{}
+
+	if d.attr.loginChat && !logged {
+		err1 := d.login(session, &capture)
+		if err1 != nil {
+			resultCh <- fetchResult{model: modelName, devId: d.id, devHostPort: d.hostPort, msg: fmt.Sprintf("fetch login: %v", err1), code: FETCH_ERR_LOGIN}
+			return
+		}
+	}
+
+	resultCh <- fetchResult{model: modelName, devId: d.id, devHostPort: d.hostPort, msg: "fetch: FIXME WRITEME", code: FETCH_ERR_OTHER}
+}
+
+func (d *device) login(t transp, capture *dialog) error {
+	return fmt.Errorf("login: FIXME WRITEME")
+}
+
+type dialog struct {
+}
+
 func registerModelCiscoIOS(models map[string]*model) {
 	modelName := "cisco-ios"
 	m := &model{name: modelName}
 
 	m.defaultAttr = attributes{
+		loginChat:                   true,
 		enableCommand:               "enable",
 		usernamePromptPattern:       "Username: ",
 		passwordPromptPattern:       "Password: ",
