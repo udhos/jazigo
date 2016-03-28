@@ -90,8 +90,9 @@ type fetchResult struct {
 	model       string
 	devId       string
 	devHostPort string
-	msg         string // result error message
-	code        int    // result error code
+	msg         string    // result error message
+	code        int       // result error code
+	begin       time.Time // begin timestamp
 }
 
 func scanDevices(jaz *app) {
@@ -109,15 +110,25 @@ func scanDevices(jaz *app) {
 	currDelay := time.Duration(0)
 
 	for _, dev := range jaz.devices {
-		go dev.fetch(resultCh, currDelay)
+		go dev.fetch(resultCh, currDelay) // per-device goroutine
 		currDelay += baseDelay
 		wait++
 	}
 
+	elapMax := 0 * time.Second
+	elapMin := 24 * time.Hour
+
 	for wait > 0 {
 		r := <-resultCh
 		wait--
-		logger.Printf("device result: %s %s %s msg=[%s] code=%d remain=%d", r.model, r.devId, r.devHostPort, r.msg, r.code, wait)
+		elap := time.Now().Sub(r.begin)
+		logger.Printf("device result: %s %s %s msg=[%s] code=%d remain=%d elap=%s", r.model, r.devId, r.devHostPort, r.msg, r.code, wait, elap)
+		if elap < elapMin {
+			elapMin = elap
+		}
+		if elap > elapMax {
+			elapMax = elap
+		}
 	}
 
 	end := time.Now()
@@ -125,6 +136,5 @@ func scanDevices(jaz *app) {
 	deviceCount := len(jaz.devices)
 	average := elapsed / time.Duration(deviceCount)
 
-	logger.Printf("scanDevices: finished elapsed=%s devices=%d average=%s", elapsed.String(), deviceCount, average.String())
-
+	logger.Printf("scanDevices: finished elapsed=%s devices=%d average=%s min=%s max=%s", elapsed, deviceCount, average, elapMin, elapMax)
 }
