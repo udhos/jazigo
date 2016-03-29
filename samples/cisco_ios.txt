@@ -1,0 +1,13 @@
+User Access Verification
+
+Username: lab
+Password:
+
+cisco7609#
+cisco7609#enab
+cisco7609#
+cisco7609#term len 0
+cisco7609#
+cisco7609#sh run | i eraseme
+cisco7609#
+cisco7609#

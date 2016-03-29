@@ -46,7 +46,7 @@ func accountPanelUpdate(jaz *app, user string) {
 		}
 		jaz.apHome = newAccPanel(user)
 		if !jaz.winHome.Insert(jaz.apHome, 0) {
-			logger.Printf("home win insert accPanel failed")
+			jaz.logf("home win insert accPanel failed")
 		}
 	}
 
@@ -57,7 +57,7 @@ func accountPanelUpdate(jaz *app, user string) {
 		}
 		jaz.apAdmin = newAccPanel(user)
 		if !jaz.winAdmin.Insert(jaz.apAdmin, 0) {
-			logger.Printf("admin win insert accPanel failed")
+			jaz.logf("admin win insert accPanel failed")
 		}
 	}
 
@@ -68,7 +68,7 @@ func accountPanelUpdate(jaz *app, user string) {
 		}
 		jaz.apLogout = newAccPanel(user)
 		if !jaz.winLogout.Insert(jaz.apLogout, 0) {
-			logger.Printf("logout win insert accPanel failed")
+			jaz.logf("logout win insert accPanel failed")
 		}
 	}
 
@@ -94,7 +94,7 @@ func newWin(jaz *app, path, name string) gwu.Window {
 	win := gwu.NewWindow(path, name)
 	cssLink := fmt.Sprintf(`<link rel="stylesheet" type="text/css" href="%s">`, jaz.cssPath)
 	win.AddHeadHtml(cssLink)
-	logger.Printf("window=[%s] attached CSS=[%s]", path, cssLink)
+	jaz.logf("window=[%s] attached CSS=[%s]", path, cssLink)
 	return win
 }
 
@@ -179,7 +179,7 @@ func buildLoginWin(jaz *app, s gwu.Session) {
 		pass := pb.Text()
 		auth := loginAuth(user, pass)
 
-		//logger.Printf("debug login user=[%s] pass=[%s] result=[%v]", user, pass, auth)
+		//jaz.logf("debug login user=[%s] pass=[%s] result=[%v]", user, pass, auth)
 
 		if auth {
 

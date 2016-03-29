@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-var logger = log.New(os.Stdout, "", log.LstdFlags)
-
 type app struct {
 	models  map[string]*model  // label => model
 	devices map[string]*device // id => device
@@ -26,16 +24,35 @@ type app struct {
 	winLogout gwu.Window
 
 	cssPath string
+
+	logger hasPrintf
+}
+
+type hasPrintf interface {
+	Printf(fmt string, v ...interface{})
+}
+
+func (a *app) logf(fmt string, v ...interface{}) {
+	a.logger.Printf(fmt, v...)
+}
+
+func newApp(logger hasPrintf) *app {
+	app := &app{
+		models:  map[string]*model{},
+		devices: map[string]*device{},
+		logger:  logger,
+	}
+
+	registerModelCiscoIOS(app.logger, app.models)
+
+	return app
 }
 
 func main() {
 
-	jaz := &app{
-		models:  map[string]*model{},
-		devices: map[string]*device{},
-	}
+	logger := log.New(os.Stdout, "", log.LstdFlags)
 
-	registerModelCiscoIOS(jaz.models)
+	jaz := newApp(logger)
 
 	createDevice(jaz, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en")
 	createDevice(jaz, "cisco-ios", "lab2", "localhost:2002", "ssh", "lab", "pass", "en")
@@ -59,10 +76,10 @@ func main() {
 	staticPath := "static"
 	staticPathFull := fmt.Sprintf("/%s/%s", appName, staticPath)
 
-	logger.Printf("static dir: path=[%s] mapped to dir=[%s]", staticPathFull, staticDir)
+	jaz.logf("static dir: path=[%s] mapped to dir=[%s]", staticPathFull, staticDir)
 
 	jaz.cssPath = fmt.Sprintf("%s/jazigo.css", staticPathFull)
-	logger.Printf("css path: %s", jaz.cssPath)
+	jaz.logf("css path: %s", jaz.cssPath)
 
 	server.AddStaticDir(staticPath, staticDir)
 
@@ -81,7 +98,7 @@ func main() {
 
 	// Start GUI server
 	if err := server.Start(); err != nil {
-		logger.Println("jazigo main: Cound not start GUI server:", err)
+		jaz.logf("jazigo main: Cound not start GUI server: %s", err)
 		return
 	}
 }
@@ -97,20 +114,20 @@ type fetchResult struct {
 
 func scanDevices(jaz *app) {
 
-	logger.Printf("scanDevices: starting")
+	jaz.logf("scanDevices: starting")
 
 	begin := time.Now()
 
 	resultCh := make(chan fetchResult)
 
 	baseDelay := 500 * time.Millisecond
-	logger.Printf("scanDevices: non-hammering delay between captures: %d ms", baseDelay/time.Millisecond)
+	jaz.logf("scanDevices: non-hammering delay between captures: %d ms", baseDelay/time.Millisecond)
 
 	wait := 0
 	currDelay := time.Duration(0)
 
 	for _, dev := range jaz.devices {
-		go dev.fetch(resultCh, currDelay) // per-device goroutine
+		go dev.fetch(jaz.logger, resultCh, currDelay) // per-device goroutine
 		currDelay += baseDelay
 		wait++
 	}
@@ -122,7 +139,7 @@ func scanDevices(jaz *app) {
 		r := <-resultCh
 		wait--
 		elap := time.Now().Sub(r.begin)
-		logger.Printf("device result: %s %s %s msg=[%s] code=%d remain=%d elap=%s", r.model, r.devId, r.devHostPort, r.msg, r.code, wait, elap)
+		jaz.logf("device result: %s %s %s msg=[%s] code=%d remain=%d elap=%s", r.model, r.devId, r.devHostPort, r.msg, r.code, wait, elap)
 		if elap < elapMin {
 			elapMin = elap
 		}
@@ -136,5 +153,5 @@ func scanDevices(jaz *app) {
 	deviceCount := len(jaz.devices)
 	average := elapsed / time.Duration(deviceCount)
 
-	logger.Printf("scanDevices: finished elapsed=%s devices=%d average=%s min=%s max=%s", elapsed, deviceCount, average, elapMin, elapMax)
+	jaz.logf("scanDevices: finished elapsed=%s devices=%d average=%s min=%s max=%s", elapsed, deviceCount, average, elapMin, elapMax)
 }

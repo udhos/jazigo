@@ -51,7 +51,7 @@ type dialog struct {
 }
 
 // fetch runs in a per-device goroutine
-func (d *device) fetch(resultCh chan fetchResult, delay time.Duration) {
+func (d *device) fetch(logger hasPrintf, resultCh chan fetchResult, delay time.Duration) {
 	modelName := d.devModel.name
 	logger.Printf("fetch: %s %s %s %s delay=%dms", modelName, d.id, d.hostPort, d.transports, delay/time.Millisecond)
 
@@ -61,7 +61,7 @@ func (d *device) fetch(resultCh chan fetchResult, delay time.Duration) {
 
 	begin := time.Now()
 
-	session, logged, err := openTransport(modelName, d.id, d.hostPort, d.transports, d.loginUser, d.loginPassword)
+	session, logged, err := openTransport(logger, modelName, d.id, d.hostPort, d.transports, d.loginUser, d.loginPassword)
 	if err != nil {
 		resultCh <- fetchResult{model: modelName, devId: d.id, devHostPort: d.hostPort, msg: fmt.Sprintf("fetch transport: %v", err), code: FETCH_ERR_TRANSP, begin: begin}
 		return
@@ -72,7 +72,7 @@ func (d *device) fetch(resultCh chan fetchResult, delay time.Duration) {
 	capture := dialog{}
 
 	if d.attr.needLoginChat && !logged {
-		err1 := d.login(session, &capture)
+		err1 := d.login(logger, session, &capture)
 		if err1 != nil {
 			resultCh <- fetchResult{model: modelName, devId: d.id, devHostPort: d.hostPort, msg: fmt.Sprintf("fetch login: %v", err1), code: FETCH_ERR_LOGIN, begin: begin}
 			return
@@ -88,71 +88,84 @@ type hasTimeout interface {
 
 // readTimeout: per-read timeout (protection against inactivity)
 // matchTimeout: full match timeout (protection against slow sender -- think 1 byte per second)
-func (d *device) match(t transp, capture *dialog, readTimeout, matchTimeout time.Duration, exp *regexp.Regexp) error {
+func (d *device) match(logger hasPrintf, t transp, capture *dialog, readTimeout, matchTimeout time.Duration, patterns []string) (int, error) {
 
-	buf := make([]byte, 1000)
+	const badIndex = -1
+
+	expList := make([]*regexp.Regexp, len(patterns))
+	for i, p := range patterns {
+		exp, badExp := regexp.Compile(p)
+		if badExp != nil {
+			return badIndex, fmt.Errorf("match: bad pattern '%s': %v", p, badExp)
+		}
+		expList[i] = exp
+	}
 
 	begin := time.Now()
+
+	buf := make([]byte, 1000)
 
 	for {
 		now := time.Now()
 		if now.Sub(begin) > matchTimeout {
-			return fmt.Errorf("match: timed out: %s", matchTimeout)
+			return badIndex, fmt.Errorf("match: timed out: %s", matchTimeout)
 		}
 
 		deadline := now.Add(readTimeout)
 		if err := t.SetDeadline(deadline); err != nil {
-			return fmt.Errorf("match: could not set read timeout: %v", err)
+			return badIndex, fmt.Errorf("match: could not set read timeout: %v", err)
 		}
 
 		n, err1 := t.Read(buf)
 		if err1 != nil {
 			if te, ok := err1.(hasTimeout); ok {
 				if te.Timeout() {
-					return fmt.Errorf("match: read timed out (%s): %v", readTimeout, err1)
+					return badIndex, fmt.Errorf("match: read timed out (%s): %v", readTimeout, err1)
 				}
 			}
 			if err1 == io.EOF {
-				return fmt.Errorf("match: eof: %v", err1)
+				return badIndex, fmt.Errorf("match: eof: %v", err1)
 			}
-			return fmt.Errorf("match: unexpected error: %v", err1)
+			return badIndex, fmt.Errorf("match: unexpected error: %v", err1)
 		}
 		if n < 1 {
-			fmt.Errorf("match: unexpected empty read")
+			return badIndex, fmt.Errorf("match: unexpected empty read")
 		}
 
 		capture.buf = append(capture.buf, buf[:n]...)
 
 		logger.Printf("match: debug: read=%d newsize=%d", n, len(capture.buf))
 
-		match := exp.Match(capture.buf)
-		if match {
-			return nil
+		for i, exp := range expList {
+			match := exp.Match(capture.buf)
+			if match {
+				return i, nil
+			}
 		}
 	}
 }
 
-func (d *device) login(t transp, capture *dialog) error {
-
-	userExp, badUserExp := regexp.Compile(d.attr.usernamePromptPattern)
-	if badUserExp != nil {
-		return fmt.Errorf("login: bad username regexp '%s': %v", d.attr.usernamePromptPattern, badUserExp)
-	}
+func (d *device) login(logger hasPrintf, t transp, capture *dialog) error {
 
 	readTimeout := 10 * time.Second  // protection against inactivity
 	matchTimeout := 20 * time.Second // protection against slow sender
 
-	err := d.match(t, capture, readTimeout, matchTimeout, userExp)
+	m, err := d.match(logger, t, capture, readTimeout, matchTimeout, []string{d.attr.usernamePromptPattern, d.attr.passwordPromptPattern})
 	if err != nil {
 		return fmt.Errorf("login: could not find username prompt: %v", err)
 	}
 
-	logger.Printf("login: found username prompt")
+	switch m {
+	case 0:
+		logger.Printf("login: found username prompt")
+	case 1:
+		logger.Printf("login: found password prompt")
+	}
 
 	return fmt.Errorf("login: FIXME WRITEME")
 }
 
-func registerModelCiscoIOS(models map[string]*model) {
+func registerModelCiscoIOS(logger hasPrintf, models map[string]*model) {
 	modelName := "cisco-ios"
 	m := &model{name: modelName}
 
@@ -175,11 +188,11 @@ func registerModelCiscoIOS(models map[string]*model) {
 }
 
 func createDevice(jaz *app, modelName, id, hostPort, transports, user, pass, enable string) {
-	logger.Printf("createDevice: %s %s %s %s", modelName, id, hostPort, transports)
+	jaz.logf("createDevice: %s %s %s %s", modelName, id, hostPort, transports)
 
 	mod, ok := jaz.models[modelName]
 	if !ok {
-		logger.Printf("createDevice: could not find model '%s'", modelName)
+		jaz.logf("createDevice: could not find model '%s'", modelName)
 	}
 
 	dev := &device{devModel: mod, id: id, hostPort: hostPort, transports: transports, loginUser: user, loginPassword: pass, enablePassword: enable}

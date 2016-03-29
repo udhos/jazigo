@@ -35,7 +35,7 @@ func (s *transpSSH) Close() error {
 	return fmt.Errorf("Close: FIXME WRITEME")
 }
 
-func openTransport(modelName, devId, hostPort, transports, user, pass string) (transp, bool, error) {
+func openTransport(logger hasPrintf, modelName, devId, hostPort, transports, user, pass string) (transp, bool, error) {
 	tList := strings.Split(transports, ",")
 	if len(tList) < 1 {
 		return nil, false, fmt.Errorf("openTransport: missing transports: [%s]", transports)
