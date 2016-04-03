@@ -230,7 +230,7 @@ func registerModelCiscoIOS(logger hasPrintf, models map[string]*Model) {
 	logger.Printf("registerModelCiscoIOS: FIXME WRITEME program chat sequence")
 }
 
-func ScanDevices(tab DeviceTable, logger hasPrintf) {
+func ScanDevices(tab DeviceTable, logger hasPrintf, maxConcurrency int, deviceDelay time.Duration) {
 
 	devices := tab.ListDevices()
 	deviceCount := len(devices)
@@ -245,26 +245,37 @@ func ScanDevices(tab DeviceTable, logger hasPrintf) {
 
 	resultCh := make(chan FetchResult)
 
-	baseDelay := 500 * time.Millisecond
-	logger.Printf("scanDevices: non-hammering delay between captures: %d ms", baseDelay/time.Millisecond)
+	logger.Printf("scanDevices: non-hammering delay between captures: %d ms", deviceDelay/time.Millisecond)
 
-	wait := 0
 	currDelay := time.Duration(0)
-
-	for _, d := range devices {
-		go d.Fetch(logger, resultCh, currDelay) // per-device goroutine
-		currDelay += baseDelay
-		wait++
-	}
-
 	elapMax := 0 * time.Second
 	elapMin := 24 * time.Hour
+	wait := 0
+	nextDevice := 0
 
-	for wait > 0 {
+	for nextDevice < deviceCount || wait > 0 {
+
+		// launch additional devices
+		for nextDevice < deviceCount {
+			// there are devices to process
+
+			if maxConcurrency > 0 && wait >= maxConcurrency {
+				break // max concurrent limit reached
+			}
+
+			// launch one additional per-device goroutine
+			d := devices[nextDevice]
+			go d.Fetch(logger, resultCh, currDelay) // per-device goroutine
+			currDelay += deviceDelay
+			nextDevice++
+			wait++
+		}
+
+		// wait for one device to finish
 		r := <-resultCh
 		wait--
 		elap := time.Since(r.Begin)
-		logger.Printf("device result: %s %s %s msg=[%s] code=%d remain=%d elap=%s", r.Model, r.DevId, r.DevHostPort, r.Msg, r.Code, wait, elap)
+		logger.Printf("device result: %s %s %s msg=[%s] code=%d wait=%d remain=%d elap=%s", r.Model, r.DevId, r.DevHostPort, r.Msg, r.Code, wait, deviceCount-nextDevice, elap)
 		if elap < elapMin {
 			elapMin = elap
 		}
@@ -273,8 +284,7 @@ func ScanDevices(tab DeviceTable, logger hasPrintf) {
 		}
 	}
 
-	end := time.Now()
-	elapsed := end.Sub(begin)
+	elapsed := time.Since(begin)
 	average := elapsed / time.Duration(deviceCount)
 
 	logger.Printf("scanDevices: finished elapsed=%s devices=%d average=%s min=%s max=%s", elapsed, deviceCount, average, elapMin, elapMax)

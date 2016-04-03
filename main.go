@@ -10,7 +10,7 @@ import (
 	//"strconv"
 	"flag"
 	"path/filepath"
-	//"time"
+	"time"
 
 	"github.com/udhos/jazigo/conf"
 	"github.com/udhos/jazigo/dev"
@@ -139,7 +139,8 @@ func main() {
 
 	server.SetLogger(logger)
 
-	go dev.ScanDevices(jaz, logger) // FIXME one-shot scan
+	logger.Printf("FIXME: calling one-shot ScanDevices")
+	go dev.ScanDevices(jaz, logger, 3, 500*time.Millisecond) // FIXME one-shot scan
 
 	// Start GUI server
 	if err := server.Start(); err != nil {
@@ -147,49 +148,3 @@ func main() {
 		return
 	}
 }
-
-/*
-func scanDevices(jaz *app) {
-
-	jaz.logf("scanDevices: starting")
-
-	begin := time.Now()
-
-	resultCh := make(chan dev.FetchResult)
-
-	baseDelay := 500 * time.Millisecond
-	jaz.logf("scanDevices: non-hammering delay between captures: %d ms", baseDelay/time.Millisecond)
-
-	wait := 0
-	currDelay := time.Duration(0)
-
-	for _, dev := range jaz.devices {
-		go dev.Fetch(jaz.logger, resultCh, currDelay) // per-device goroutine
-		currDelay += baseDelay
-		wait++
-	}
-
-	elapMax := 0 * time.Second
-	elapMin := 24 * time.Hour
-
-	for wait > 0 {
-		r := <-resultCh
-		wait--
-		elap := time.Since(r.Begin)
-		jaz.logf("device result: %s %s %s msg=[%s] code=%d remain=%d elap=%s", r.Model, r.DevId, r.DevHostPort, r.Msg, r.Code, wait, elap)
-		if elap < elapMin {
-			elapMin = elap
-		}
-		if elap > elapMax {
-			elapMax = elap
-		}
-	}
-
-	end := time.Now()
-	elapsed := end.Sub(begin)
-	deviceCount := len(jaz.devices)
-	average := elapsed / time.Duration(deviceCount)
-
-	jaz.logf("scanDevices: finished elapsed=%s devices=%d average=%s min=%s max=%s", elapsed, deviceCount, average, elapMin, elapMax)
-}
-*/
