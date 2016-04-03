@@ -8,13 +8,23 @@ import (
 	//"math/rand"
 	"os"
 	//"strconv"
+	"flag"
 	"path/filepath"
-	"time"
+	//"time"
+
+	"github.com/udhos/jazigo/conf"
+	"github.com/udhos/jazigo/dev"
 )
 
+const appName = "jazigo"
+const appVersion = "0.0"
+
 type app struct {
-	models  map[string]*model  // label => model
-	devices map[string]*device // id => device
+	configPathPrefix string
+	maxConfigFiles   int
+
+	models  map[string]*dev.Model  // label => model
+	devices map[string]*dev.Device // id => device
 
 	apHome    gwu.Panel
 	apAdmin   gwu.Panel
@@ -28,6 +38,27 @@ type app struct {
 	logger hasPrintf
 }
 
+func (a *app) GetModel(modelName string) (*dev.Model, error) {
+	if m, ok := a.models[modelName]; ok {
+		return m, nil
+	}
+	return nil, fmt.Errorf("GetModel: not found")
+}
+
+func (a *app) SetDevice(id string, d *dev.Device) {
+	a.devices[id] = d
+}
+
+func (a *app) ListDevices() []*dev.Device {
+	devices := make([]*dev.Device, len(a.devices))
+	i := 0
+	for _, d := range a.devices {
+		devices[i] = d
+		i++
+	}
+	return devices
+}
+
 type hasPrintf interface {
 	Printf(fmt string, v ...interface{})
 }
@@ -38,12 +69,14 @@ func (a *app) logf(fmt string, v ...interface{}) {
 
 func newApp(logger hasPrintf) *app {
 	app := &app{
-		models:  map[string]*model{},
-		devices: map[string]*device{},
+		models:  map[string]*dev.Model{},
+		devices: map[string]*dev.Device{},
 		logger:  logger,
 	}
 
-	registerModelCiscoIOS(app.logger, app.models)
+	app.logf("%s %s starting", appName, appVersion)
+
+	dev.RegisterModels(app.logger, app.models)
 
 	return app
 }
@@ -54,12 +87,24 @@ func main() {
 
 	jaz := newApp(logger)
 
-	createDevice(jaz, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en")
-	createDevice(jaz, "cisco-ios", "lab2", "localhost:2002", "ssh", "lab", "pass", "en")
-	createDevice(jaz, "cisco-ios", "lab3", "localhost:2003", "telnet,ssh", "lab", "pass", "en")
-	createDevice(jaz, "cisco-ios", "lab4", "localhost:2004", "ssh,telnet", "lab", "pass", "en")
-	createDevice(jaz, "cisco-ios", "lab5", "localhost", "telnet", "lab", "pass", "en")
-	createDevice(jaz, "cisco-ios", "lab6", "localhost", "ssh", "rat", "lab", "en")
+	flag.StringVar(&jaz.configPathPrefix, "configPathPrefix", "/etc/jazigo/jazigo.conf.", "configuration path prefix")
+	flag.IntVar(&jaz.maxConfigFiles, "maxConfigFiles", 10, "limit number of configuration files (negative value means unlimited)")
+	flag.Parse()
+	jaz.logf("config path prefix: %s", jaz.configPathPrefix)
+
+	lastConfig, configErr := conf.FindLastConfig(jaz.configPathPrefix, logger)
+	if configErr != nil {
+		jaz.logf("error reading config: '%s': %v", jaz.configPathPrefix, configErr)
+	} else {
+		jaz.logf("last config: %s", lastConfig)
+	}
+
+	dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en")
+	dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab2", "localhost:2002", "ssh", "lab", "pass", "en")
+	dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab3", "localhost:2003", "telnet,ssh", "lab", "pass", "en")
+	dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab4", "localhost:2004", "ssh,telnet", "lab", "pass", "en")
+	dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab5", "localhost", "telnet", "lab", "pass", "en")
+	dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab6", "localhost", "ssh", "rat", "lab", "en")
 
 	appAddr := "0.0.0.0:8080"
 	serverName := fmt.Sprintf("%s application", appName)
@@ -94,7 +139,7 @@ func main() {
 
 	server.SetLogger(logger)
 
-	go scanDevices(jaz) // FIXME one-shot scan
+	go dev.ScanDevices(jaz, logger) // FIXME one-shot scan
 
 	// Start GUI server
 	if err := server.Start(); err != nil {
@@ -103,22 +148,14 @@ func main() {
 	}
 }
 
-type fetchResult struct {
-	model       string
-	devId       string
-	devHostPort string
-	msg         string    // result error message
-	code        int       // result error code
-	begin       time.Time // begin timestamp
-}
-
+/*
 func scanDevices(jaz *app) {
 
 	jaz.logf("scanDevices: starting")
 
 	begin := time.Now()
 
-	resultCh := make(chan fetchResult)
+	resultCh := make(chan dev.FetchResult)
 
 	baseDelay := 500 * time.Millisecond
 	jaz.logf("scanDevices: non-hammering delay between captures: %d ms", baseDelay/time.Millisecond)
@@ -127,7 +164,7 @@ func scanDevices(jaz *app) {
 	currDelay := time.Duration(0)
 
 	for _, dev := range jaz.devices {
-		go dev.fetch(jaz.logger, resultCh, currDelay) // per-device goroutine
+		go dev.Fetch(jaz.logger, resultCh, currDelay) // per-device goroutine
 		currDelay += baseDelay
 		wait++
 	}
@@ -138,8 +175,8 @@ func scanDevices(jaz *app) {
 	for wait > 0 {
 		r := <-resultCh
 		wait--
-		elap := time.Now().Sub(r.begin)
-		jaz.logf("device result: %s %s %s msg=[%s] code=%d remain=%d elap=%s", r.model, r.devId, r.devHostPort, r.msg, r.code, wait, elap)
+		elap := time.Since(r.Begin)
+		jaz.logf("device result: %s %s %s msg=[%s] code=%d remain=%d elap=%s", r.Model, r.DevId, r.DevHostPort, r.Msg, r.Code, wait, elap)
 		if elap < elapMin {
 			elapMin = elap
 		}
@@ -155,3 +192,4 @@ func scanDevices(jaz *app) {
 
 	jaz.logf("scanDevices: finished elapsed=%s devices=%d average=%s min=%s max=%s", elapsed, deviceCount, average, elapMin, elapMax)
 }
+*/

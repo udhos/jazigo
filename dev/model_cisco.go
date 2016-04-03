@@ -1,4 +1,4 @@
-package main
+package dev
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type model struct {
+type Model struct {
 	name        string
 	defaultAttr attributes
 }
@@ -25,8 +25,8 @@ type attributes struct {
 	disablePagerCommand         string   // term len 0
 }
 
-type device struct {
-	devModel   *model
+type Device struct {
+	devModel   *Model
 	id         string
 	hostPort   string
 	transports string
@@ -38,6 +38,32 @@ type device struct {
 	attr attributes
 }
 
+type DeviceTable interface {
+	ListDevices() []*Device
+	GetModel(modelName string) (*Model, error)
+	SetDevice(id string, d *Device)
+}
+
+func CreateDevice(tab DeviceTable, logger hasPrintf, modelName, id, hostPort, transports, user, pass, enable string) {
+	logger.Printf("CreateDevice: %s %s %s %s", modelName, id, hostPort, transports)
+
+	mod, err := tab.GetModel(modelName)
+	if err != nil {
+		logger.Printf("CreateDevice: could not find model '%s': %v", modelName, err)
+		return
+	}
+
+	d := NewDevice(mod, id, hostPort, transports, user, pass, enable)
+
+	tab.SetDevice(id, d)
+}
+
+func NewDevice(mod *Model, id, hostPort, transports, loginUser, loginPassword, enablePassword string) *Device {
+	d := &Device{devModel: mod, id: id, hostPort: hostPort, transports: transports, loginUser: loginUser, loginPassword: loginPassword, enablePassword: enablePassword}
+	d.attr = mod.defaultAttr
+	return d
+}
+
 const (
 	FETCH_ERR_NONE   = 0
 	FETCH_ERR_TRANSP = 1
@@ -46,12 +72,25 @@ const (
 	FETCH_ERR_OTHER  = 4
 )
 
+type FetchResult struct {
+	Model       string
+	DevId       string
+	DevHostPort string
+	Msg         string    // result error message
+	Code        int       // result error code
+	Begin       time.Time // begin timestamp
+}
+
+type hasPrintf interface {
+	Printf(fmt string, v ...interface{})
+}
+
 type dialog struct {
 	buf []byte
 }
 
 // fetch runs in a per-device goroutine
-func (d *device) fetch(logger hasPrintf, resultCh chan fetchResult, delay time.Duration) {
+func (d *Device) Fetch(logger hasPrintf, resultCh chan FetchResult, delay time.Duration) {
 	modelName := d.devModel.name
 	logger.Printf("fetch: %s %s %s %s delay=%dms", modelName, d.id, d.hostPort, d.transports, delay/time.Millisecond)
 
@@ -63,7 +102,7 @@ func (d *device) fetch(logger hasPrintf, resultCh chan fetchResult, delay time.D
 
 	session, logged, err := openTransport(logger, modelName, d.id, d.hostPort, d.transports, d.loginUser, d.loginPassword)
 	if err != nil {
-		resultCh <- fetchResult{model: modelName, devId: d.id, devHostPort: d.hostPort, msg: fmt.Sprintf("fetch transport: %v", err), code: FETCH_ERR_TRANSP, begin: begin}
+		resultCh <- FetchResult{Model: modelName, DevId: d.id, DevHostPort: d.hostPort, Msg: fmt.Sprintf("fetch transport: %v", err), Code: FETCH_ERR_TRANSP, Begin: begin}
 		return
 	}
 
@@ -74,12 +113,12 @@ func (d *device) fetch(logger hasPrintf, resultCh chan fetchResult, delay time.D
 	if d.attr.needLoginChat && !logged {
 		err1 := d.login(logger, session, &capture)
 		if err1 != nil {
-			resultCh <- fetchResult{model: modelName, devId: d.id, devHostPort: d.hostPort, msg: fmt.Sprintf("fetch login: %v", err1), code: FETCH_ERR_LOGIN, begin: begin}
+			resultCh <- FetchResult{Model: modelName, DevId: d.id, DevHostPort: d.hostPort, Msg: fmt.Sprintf("fetch login: %v", err1), Code: FETCH_ERR_LOGIN, Begin: begin}
 			return
 		}
 	}
 
-	resultCh <- fetchResult{model: modelName, devId: d.id, devHostPort: d.hostPort, msg: "fetch: FIXME WRITEME", code: FETCH_ERR_OTHER, begin: begin}
+	resultCh <- FetchResult{Model: modelName, DevId: d.id, DevHostPort: d.hostPort, Msg: "fetch: FIXME WRITEME", Code: FETCH_ERR_OTHER, Begin: begin}
 }
 
 type hasTimeout interface {
@@ -88,7 +127,7 @@ type hasTimeout interface {
 
 // readTimeout: per-read timeout (protection against inactivity)
 // matchTimeout: full match timeout (protection against slow sender -- think 1 byte per second)
-func (d *device) match(logger hasPrintf, t transp, capture *dialog, readTimeout, matchTimeout time.Duration, patterns []string) (int, error) {
+func (d *Device) match(logger hasPrintf, t transp, capture *dialog, readTimeout, matchTimeout time.Duration, patterns []string) (int, error) {
 
 	const badIndex = -1
 
@@ -145,7 +184,7 @@ func (d *device) match(logger hasPrintf, t transp, capture *dialog, readTimeout,
 	}
 }
 
-func (d *device) login(logger hasPrintf, t transp, capture *dialog) error {
+func (d *Device) login(logger hasPrintf, t transp, capture *dialog) error {
 
 	readTimeout := 10 * time.Second  // protection against inactivity
 	matchTimeout := 20 * time.Second // protection against slow sender
@@ -165,9 +204,13 @@ func (d *device) login(logger hasPrintf, t transp, capture *dialog) error {
 	return fmt.Errorf("login: FIXME WRITEME")
 }
 
-func registerModelCiscoIOS(logger hasPrintf, models map[string]*model) {
+func RegisterModels(logger hasPrintf, models map[string]*Model) {
+	registerModelCiscoIOS(logger, models)
+}
+
+func registerModelCiscoIOS(logger hasPrintf, models map[string]*Model) {
 	modelName := "cisco-ios"
-	m := &model{name: modelName}
+	m := &Model{name: modelName}
 
 	m.defaultAttr = attributes{
 		needLoginChat:               true,
@@ -187,17 +230,52 @@ func registerModelCiscoIOS(logger hasPrintf, models map[string]*model) {
 	logger.Printf("registerModelCiscoIOS: FIXME WRITEME program chat sequence")
 }
 
-func createDevice(jaz *app, modelName, id, hostPort, transports, user, pass, enable string) {
-	jaz.logf("createDevice: %s %s %s %s", modelName, id, hostPort, transports)
+func ScanDevices(tab DeviceTable, logger hasPrintf) {
 
-	mod, ok := jaz.models[modelName]
-	if !ok {
-		jaz.logf("createDevice: could not find model '%s'", modelName)
+	devices := tab.ListDevices()
+	deviceCount := len(devices)
+
+	logger.Printf("ScanDevices: starting devices=%d", deviceCount)
+	if deviceCount < 1 {
+		logger.Printf("ScanDevices: aborting")
+		return
 	}
 
-	dev := &device{devModel: mod, id: id, hostPort: hostPort, transports: transports, loginUser: user, loginPassword: pass, enablePassword: enable}
+	begin := time.Now()
 
-	dev.attr = mod.defaultAttr
+	resultCh := make(chan FetchResult)
 
-	jaz.devices[id] = dev
+	baseDelay := 500 * time.Millisecond
+	logger.Printf("scanDevices: non-hammering delay between captures: %d ms", baseDelay/time.Millisecond)
+
+	wait := 0
+	currDelay := time.Duration(0)
+
+	for _, d := range devices {
+		go d.Fetch(logger, resultCh, currDelay) // per-device goroutine
+		currDelay += baseDelay
+		wait++
+	}
+
+	elapMax := 0 * time.Second
+	elapMin := 24 * time.Hour
+
+	for wait > 0 {
+		r := <-resultCh
+		wait--
+		elap := time.Since(r.Begin)
+		logger.Printf("device result: %s %s %s msg=[%s] code=%d remain=%d elap=%s", r.Model, r.DevId, r.DevHostPort, r.Msg, r.Code, wait, elap)
+		if elap < elapMin {
+			elapMin = elap
+		}
+		if elap > elapMax {
+			elapMax = elap
+		}
+	}
+
+	end := time.Now()
+	elapsed := end.Sub(begin)
+	average := elapsed / time.Duration(deviceCount)
+
+	logger.Printf("scanDevices: finished elapsed=%s devices=%d average=%s min=%s max=%s", elapsed, deviceCount, average, elapMin, elapMax)
 }

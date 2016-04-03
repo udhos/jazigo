@@ -10,14 +10,15 @@ import (
 	//"strconv"
 )
 
-const appName = "jazigo"
-
 const hardUser = "a"
 const hardPass = "a"
 
 func newAccPanel(user string) gwu.Panel {
-	ap := gwu.NewPanel()
+	ap := gwu.NewHorizontalPanel()
 	ap.Style().AddClass("account_panel")
+
+	ap.Add(gwu.NewLabel(fmt.Sprintf("%s %s", appName, appVersion)))
+
 	if user == "" {
 		// guest user
 
