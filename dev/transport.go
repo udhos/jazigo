@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"golang.org/x/crypto/ssh"
+	"io"
 	"net"
 	"strings"
 	"time"
@@ -17,25 +18,31 @@ type transp interface {
 }
 
 type transpSSH struct {
-	conn    net.Conn
-	session *ssh.Session
-	buf     bytes.Buffer
+	conn     net.Conn
+	session  *ssh.Session
+	out      bytes.Buffer
+	err      bytes.Buffer
+	writeErr error
 }
 
 func (s *transpSSH) Read(b []byte) (int, error) {
-	n := copy(b, s.buf.Bytes())
-	return n, nil
-
+	n := copy(b, s.out.Bytes())
+	return n, io.EOF
 }
 
 func (s *transpSSH) Write(b []byte) (int, error) {
 
-	s.session.Stdout = &s.buf
-
 	str := string(b)
 
 	if err := s.session.Run(str); err != nil {
-		return -1, fmt.Errorf("ssh.Write: %v", err)
+
+		switch err.(type) {
+		//case *ssh.ExitMissingError:
+		//	s.writeErr = io.EOF
+		default:
+			return -1, fmt.Errorf("session.Run: %v out=[%s] err=[%s]", err, s.out.String(), s.err.String())
+		}
+
 	}
 
 	return len(str), nil
@@ -54,10 +61,10 @@ func (s *transpSSH) Close() error {
 	return nil
 }
 
-func openTransport(logger hasPrintf, modelName, devId, hostPort, transports, user, pass string) (transp, bool, error) {
+func openTransport(logger hasPrintf, modelName, devId, hostPort, transports, user, pass string) (transp, string, bool, error) {
 	tList := strings.Split(transports, ",")
 	if len(tList) < 1 {
-		return nil, false, fmt.Errorf("openTransport: missing transports: [%s]", transports)
+		return nil, transports, false, fmt.Errorf("openTransport: missing transports: [%s]", transports)
 	}
 
 	timeout := 10 * time.Second
@@ -70,7 +77,7 @@ func openTransport(logger hasPrintf, modelName, devId, hostPort, transports, use
 			s, err := openSSH(modelName, devId, hp, timeout, user, pass)
 			if err == nil {
 				// ssh connected
-				return s, true, nil
+				return s, t, true, nil
 			}
 			logger.Printf("openTransport: %v", err)
 		default:
@@ -79,13 +86,13 @@ func openTransport(logger hasPrintf, modelName, devId, hostPort, transports, use
 			s, err := openTelnet(modelName, devId, hp, timeout)
 			if err == nil {
 				// tcp connected
-				return s, false, nil
+				return s, t, false, nil
 			}
 			logger.Printf("openTransport: %v", err)
 		}
 	}
 
-	return nil, false, fmt.Errorf("openTransport: %s %s %s %s - unable to open transport", modelName, devId, hostPort, transports)
+	return nil, transports, false, fmt.Errorf("openTransport: %s %s %s %s - unable to open transport", modelName, devId, hostPort, transports)
 }
 
 func forceHostPort(hostPort, defaultPort string) string {
@@ -98,9 +105,9 @@ func forceHostPort(hostPort, defaultPort string) string {
 
 func openSSH(modelName, devId, hostPort string, timeout time.Duration, user, pass string) (transp, error) {
 
-	conn, err := net.DialTimeout("tcp", hostPort, timeout)
-	if err != nil {
-		return nil, fmt.Errorf("openSSH: Dial: %s %s %s - %v", modelName, devId, hostPort, err)
+	conn, dialErr := net.DialTimeout("tcp", hostPort, timeout)
+	if dialErr != nil {
+		return nil, fmt.Errorf("openSSH: Dial: %s %s %s - %v", modelName, devId, hostPort, dialErr)
 	}
 
 	config := &ssh.ClientConfig{
@@ -111,19 +118,28 @@ func openSSH(modelName, devId, hostPort string, timeout time.Duration, user, pas
 		Timeout: timeout,
 	}
 
-	c, chans, reqs, err := ssh.NewClientConn(conn, hostPort, config)
-	if err != nil {
-		return nil, fmt.Errorf("openSSH: NewClientConn: %s %s %s - %v", modelName, devId, hostPort, err)
+	c, chans, reqs, connErr := ssh.NewClientConn(conn, hostPort, config)
+	if connErr != nil {
+		return nil, fmt.Errorf("openSSH: NewClientConn: %s %s %s - %v", modelName, devId, hostPort, connErr)
 	}
 
 	cli := ssh.NewClient(c, chans, reqs)
 
-	ses, err := cli.NewSession()
-	if err != nil {
-		return nil, fmt.Errorf("openSSH: NewSession: %s %s %s - %v", modelName, devId, hostPort, err)
+	ses, sessionErr := cli.NewSession()
+	if sessionErr != nil {
+		return nil, fmt.Errorf("openSSH: NewSession: %s %s %s - %v", modelName, devId, hostPort, sessionErr)
+	}
+
+	modes := ssh.TerminalModes{}
+
+	if ptyErr := ses.RequestPty("xterm", 80, 40, modes); ptyErr != nil {
+		return nil, fmt.Errorf("openSSH: Pty: %s %s %s - %v", modelName, devId, hostPort, ptyErr)
 	}
 
 	s := &transpSSH{conn: conn, session: ses}
+
+	ses.Stdout = &s.out
+	ses.Stderr = &s.err
 
 	return s, nil
 }

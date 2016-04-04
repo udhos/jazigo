@@ -4,22 +4,22 @@ import (
 	"time"
 )
 
-func registerModelCiscoIOS(logger hasPrintf, models map[string]*Model) {
-	modelName := "cisco-ios"
+func registerModelJunOS(logger hasPrintf, models map[string]*Model) {
+	modelName := "junos"
 	m := &Model{name: modelName}
 
 	m.defaultAttr = attributes{
 		needLoginChat:               true,
-		needEnabledMode:             true,
+		needEnabledMode:             false,
 		needPagingOff:               true,
-		enableCommand:               "enable",
-		usernamePromptPattern:       `Username:\s*$`,
+		enableCommand:               "",
+		usernamePromptPattern:       `login:\s*$`,
 		passwordPromptPattern:       `Password:\s*$`,
-		enablePasswordPromptPattern: `Password:\s*$`,
+		enablePasswordPromptPattern: "",
 		disabledPromptPattern:       `\S+>\s*$`,
-		enabledPromptPattern:        `\S+#\s*$`,
-		commandList:                 []string{"show clock det", "show ver", "show run"},
-		disablePagerCommand:         "term len 0",
+		enabledPromptPattern:        `\S+>\s*$`,
+		commandList:                 []string{"show configuration | display set"},
+		disablePagerCommand:         "set cli screen-length 0",
 		readTimeout:                 10 * time.Second,
 		matchTimeout:                20 * time.Second,
 		sendTimeout:                 5 * time.Second,
