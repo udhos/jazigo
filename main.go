@@ -50,13 +50,7 @@ func (a *app) SetDevice(id string, d *dev.Device) {
 }
 
 func (a *app) ListDevices() []*dev.Device {
-	devices := make([]*dev.Device, len(a.devices))
-	i := 0
-	for _, d := range a.devices {
-		devices[i] = d
-		i++
-	}
-	return devices
+	return dev.DeviceMapToSlice(a.devices)
 }
 
 type hasPrintf interface {
@@ -100,10 +94,10 @@ func main() {
 	}
 
 	dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en")
-	dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab2", "localhost:2002", "ssh", "lab", "pass", "en")
-	dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab3", "localhost:2003", "telnet,ssh", "lab", "pass", "en")
-	dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab4", "localhost:2004", "ssh,telnet", "lab", "pass", "en")
-	dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab5", "localhost", "telnet", "lab", "pass", "en")
+	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab2", "localhost:2002", "ssh", "lab", "pass", "en")
+	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab3", "localhost:2003", "telnet,ssh", "lab", "pass", "en")
+	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab4", "localhost:2004", "ssh,telnet", "lab", "pass", "en")
+	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab5", "localhost", "telnet", "lab", "pass", "en")
 	dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab6", "localhost", "ssh", "rat", "lab", "en")
 
 	appAddr := "0.0.0.0:8080"
@@ -140,7 +134,7 @@ func main() {
 	server.SetLogger(logger)
 
 	logger.Printf("FIXME: calling one-shot ScanDevices")
-	go dev.ScanDevices(jaz, logger, 3, 500*time.Millisecond) // FIXME one-shot scan
+	go dev.ScanDevices(jaz, logger, 3, 50*time.Millisecond, 500*time.Millisecond) // FIXME one-shot scan
 
 	// Start GUI server
 	if err := server.Start(); err != nil {

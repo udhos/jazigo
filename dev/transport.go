@@ -1,6 +1,7 @@
 package dev
 
 import (
+	"bytes"
 	"fmt"
 	"golang.org/x/crypto/ssh"
 	"net"
@@ -16,23 +17,41 @@ type transp interface {
 }
 
 type transpSSH struct {
+	conn    net.Conn
 	session *ssh.Session
+	buf     bytes.Buffer
 }
 
-func (s *transpSSH) Read(b []byte) (n int, err error) {
-	return 0, fmt.Errorf("Read: FIXME WRITEME")
+func (s *transpSSH) Read(b []byte) (int, error) {
+	n := copy(b, s.buf.Bytes())
+	return n, nil
+
 }
 
-func (s *transpSSH) Write(b []byte) (n int, err error) {
-	return 0, fmt.Errorf("Write: FIXME WRITEME")
+func (s *transpSSH) Write(b []byte) (int, error) {
+
+	s.session.Stdout = &s.buf
+
+	str := string(b)
+
+	if err := s.session.Run(str); err != nil {
+		return -1, fmt.Errorf("ssh.Write: %v", err)
+	}
+
+	return len(str), nil
 }
 
 func (s *transpSSH) SetDeadline(t time.Time) error {
-	return fmt.Errorf("SetDeadline: FIXME WRITEME")
+	return s.conn.SetDeadline(t)
 }
 
 func (s *transpSSH) Close() error {
-	return fmt.Errorf("Close: FIXME WRITEME")
+	err1 := s.session.Close()
+	err2 := s.conn.Close()
+	if err1 != nil || err2 != nil {
+		return fmt.Errorf("close error: session=[%v] conn=[%v]", err1, err2)
+	}
+	return nil
 }
 
 func openTransport(logger hasPrintf, modelName, devId, hostPort, transports, user, pass string) (transp, bool, error) {
@@ -79,6 +98,11 @@ func forceHostPort(hostPort, defaultPort string) string {
 
 func openSSH(modelName, devId, hostPort string, timeout time.Duration, user, pass string) (transp, error) {
 
+	conn, err := net.DialTimeout("tcp", hostPort, timeout)
+	if err != nil {
+		return nil, fmt.Errorf("openSSH: Dial: %s %s %s - %v", modelName, devId, hostPort, err)
+	}
+
 	config := &ssh.ClientConfig{
 		User: user,
 		Auth: []ssh.AuthMethod{
@@ -86,17 +110,20 @@ func openSSH(modelName, devId, hostPort string, timeout time.Duration, user, pas
 		},
 		Timeout: timeout,
 	}
-	client, err := ssh.Dial("tcp", hostPort, config)
+
+	c, chans, reqs, err := ssh.NewClientConn(conn, hostPort, config)
 	if err != nil {
-		return nil, fmt.Errorf("openSSH: dial %s %s %s - %v", modelName, devId, hostPort, err)
+		return nil, fmt.Errorf("openSSH: NewClientConn: %s %s %s - %v", modelName, devId, hostPort, err)
 	}
 
-	ses, err := client.NewSession()
+	cli := ssh.NewClient(c, chans, reqs)
+
+	ses, err := cli.NewSession()
 	if err != nil {
-		return nil, fmt.Errorf("openSSH: session %s %s %s - %v", modelName, devId, hostPort, err)
+		return nil, fmt.Errorf("openSSH: NewSession: %s %s %s - %v", modelName, devId, hostPort, err)
 	}
 
-	s := &transpSSH{session: ses}
+	s := &transpSSH{conn: conn, session: ses}
 
 	return s, nil
 }
