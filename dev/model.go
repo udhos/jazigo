@@ -69,6 +69,7 @@ func RegisterModels(logger hasPrintf, models map[string]*Model) {
 	registerModelCiscoIOS(logger, models)
 	registerModelLinux(logger, models)
 	registerModelJunOS(logger, models)
+	registerModelHTTP(logger, models)
 }
 
 func CreateDevice(tab DeviceTable, logger hasPrintf, modelName, id, hostPort, transports, user, pass, enable string) {
@@ -191,13 +192,18 @@ func (d *Device) match(logger hasPrintf, t transp, capture *dialog, patterns []s
 	const badIndex = -1
 	var matchBuf []byte
 
-	expList := make([]*regexp.Regexp, len(patterns))
-	for i, p := range patterns {
-		exp, badExp := regexp.Compile(p)
-		if badExp != nil {
-			return badIndex, matchBuf, fmt.Errorf("match: bad pattern '%s': %v", p, badExp)
+	var expList []*regexp.Regexp
+
+	// patterns[0] == "" --> look for EOF
+	if patterns[0] != "" {
+		expList = make([]*regexp.Regexp, len(patterns))
+		for i, p := range patterns {
+			exp, badExp := regexp.Compile(p)
+			if badExp != nil {
+				return badIndex, matchBuf, fmt.Errorf("match: bad pattern '%s': %v", p, badExp)
+			}
+			expList[i] = exp
 		}
-		expList[i] = exp
 	}
 
 	begin := time.Now()
@@ -243,14 +249,16 @@ func (d *Device) match(logger hasPrintf, t transp, capture *dialog, patterns []s
 
 		//logger.Printf("match: debug: lastLine[%s]", lastLine)
 
-		for i, exp := range expList {
-			if exp.Match(lastLine) {
-				return i, matchBuf, nil // pattern found
+		if expList != nil {
+			for i, exp := range expList {
+				if exp.Match(lastLine) {
+					return i, matchBuf, nil // pattern found
+				}
 			}
 		}
 
 		if eof {
-			return badIndex, matchBuf, fmt.Errorf("match: EOF")
+			return badIndex, matchBuf, io.EOF
 		}
 	}
 }
@@ -305,9 +313,17 @@ func (d *Device) sendCommands(logger hasPrintf, t transp, capture *dialog) error
 			return fmt.Errorf("sendCommands: could not send command [%d] '%s': %v", i, c, err)
 		}
 
-		_, matchBuf, matchErr := d.match(logger, t, capture, []string{d.attr.enabledPromptPattern})
+		pattern := d.attr.enabledPromptPattern
 
-		if matchErr != nil {
+		_, matchBuf, matchErr := d.match(logger, t, capture, []string{pattern})
+		switch matchErr {
+		case nil: // ok
+		case io.EOF:
+			if pattern != "" {
+				return fmt.Errorf("sendCommands: EOF could not match command prompt: %v buf=[%s]", matchErr, matchBuf)
+			}
+			logger.Printf("sendCommands: found wanted EOF")
+		default:
 			return fmt.Errorf("sendCommands: could not match command prompt: %v buf=[%s]", matchErr, matchBuf)
 		}
 
