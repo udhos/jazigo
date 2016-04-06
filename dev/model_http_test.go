@@ -29,7 +29,7 @@ func TestHTTP1(t *testing.T) {
 		devices: map[string]*Device{},
 	}
 	RegisterModels(logger, app.models)
-	CreateDevice(app, logger, "junos", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
+	CreateDevice(app, logger, "http", "lab1", "localhost"+addr, "", "", "", "")
 	ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond)
 
 	s.close()
@@ -52,7 +52,11 @@ func spawnServerHTTP(t *testing.T, addr string) (*testServer, error) {
 
 	s := &testServer{listener: ln, done: make(chan int)}
 
-	go http.Serve(ln, nil)
+	go func() {
+		err := http.Serve(ln, nil)
+		t.Logf("spawnServerHTTP: http.Serve: exited: %v", err)
+		close(s.done)
+	}()
 
 	return s, nil
 }
