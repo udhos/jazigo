@@ -101,6 +101,7 @@ func main() {
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab6", "localhost", "ssh", "rat", "lab", "en")
 	dev.CreateDevice(jaz, jaz.logger, "linux", "lab7", "localhost", "ssh", "rat", "lab", "lab")
 	dev.CreateDevice(jaz, jaz.logger, "junos", "lab8", "localhost:2008", "telnet", "rat", "lab", "lab")
+	dev.CreateDevice(jaz, jaz.logger, "http", "lab9", "localhost:2009", "telnet", "rat", "lab", "lab")
 
 	appAddr := "0.0.0.0:8080"
 	serverName := fmt.Sprintf("%s application", appName)

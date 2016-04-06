@@ -236,7 +236,7 @@ func (d *Device) match(logger hasPrintf, t transp, capture *dialog, patterns []s
 				return badIndex, matchBuf, fmt.Errorf("match: unexpected error: %v", readErr)
 			}
 		}
-		if n < 1 {
+		if n < 1 && !eof {
 			return badIndex, matchBuf, fmt.Errorf("match: unexpected empty read")
 		}
 
