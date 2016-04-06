@@ -1,0 +1,8 @@
+hostname (ttyp0)
+
+login: lab
+Password:
+
+--- JUNOS 11.2R1.2 built 2011-06-22 02:55:58 UTC
+{master:0}
+lab@hostname>
