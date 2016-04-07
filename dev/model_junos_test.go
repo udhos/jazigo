@@ -27,7 +27,10 @@ func TestJuniperJunOS1(t *testing.T) {
 	}
 	RegisterModels(logger, app.models)
 	CreateDevice(app, logger, "junos", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
-	ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond)
+	good, bad := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond)
+	if good != 1 || bad != 0 {
+		t.Errorf("good=%d bad=%d", good, bad)
+	}
 
 	s.close()
 

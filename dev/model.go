@@ -422,7 +422,7 @@ func round(val float64) int {
 	return int(val + 0.5)
 }
 
-func ScanDevices(tab DeviceTable, logger hasPrintf, maxConcurrency int, delayMin, delayMax time.Duration) {
+func ScanDevices(tab DeviceTable, logger hasPrintf, maxConcurrency int, delayMin, delayMax time.Duration) (int, int) {
 
 	devices := tab.ListDevices()
 	deviceCount := len(devices)
@@ -430,7 +430,7 @@ func ScanDevices(tab DeviceTable, logger hasPrintf, maxConcurrency int, delayMin
 	logger.Printf("ScanDevices: starting devices=%d maxConcurrency=%d", deviceCount, maxConcurrency)
 	if deviceCount < 1 {
 		logger.Printf("ScanDevices: aborting")
-		return
+		return 0, 0
 	}
 
 	begin := time.Now()
@@ -488,4 +488,6 @@ func ScanDevices(tab DeviceTable, logger hasPrintf, maxConcurrency int, delayMin
 	average := elapsed / time.Duration(deviceCount)
 
 	logger.Printf("ScanDevices: finished elapsed=%s devices=%d success=%d average=%s min=%s max=%s", elapsed, deviceCount, success, average, elapMin, elapMax)
+
+	return success, deviceCount - success
 }
