@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"regexp"
 	"time"
+
+	"github.com/udhos/jazigo/conf"
 )
 
 type Model struct {
@@ -53,6 +57,14 @@ type DeviceTable interface {
 	ListDevices() []*Device
 	GetModel(modelName string) (*Model, error)
 	SetDevice(id string, d *Device) error
+}
+
+func tempRepo() string {
+	path := "/tmp/tmp-jazigo-repo"
+	if err := os.MkdirAll(path, 0700); err != nil {
+		panic(fmt.Sprintf("tempRepo: %v", err))
+	}
+	return path
 }
 
 func DeviceMapToSlice(m map[string]*Device) []*Device {
@@ -128,7 +140,7 @@ func (d *dialog) record(buf []byte) {
 }
 
 // fetch runs in a per-device goroutine
-func (d *Device) Fetch(logger hasPrintf, resultCh chan FetchResult, delay time.Duration) {
+func (d *Device) Fetch(logger hasPrintf, resultCh chan FetchResult, delay time.Duration, repository string, maxFiles int) {
 	modelName := d.devModel.name
 	logger.Printf("fetch: %s %s %s %s delay=%dms", modelName, d.id, d.hostPort, d.transports, delay/time.Millisecond)
 
@@ -185,7 +197,7 @@ func (d *Device) Fetch(logger hasPrintf, resultCh chan FetchResult, delay time.D
 		return
 	}
 
-	if saveErr := d.saveCommit(logger, &capture); saveErr != nil {
+	if saveErr := d.saveCommit(logger, &capture, repository, maxFiles); saveErr != nil {
 		resultCh <- FetchResult{Model: modelName, DevId: d.id, DevHostPort: d.hostPort, Transport: transport, Msg: fmt.Sprintf("save commit: %v", saveErr), Code: FETCH_ERR_SAVE, Begin: begin}
 		return
 	}
@@ -197,8 +209,31 @@ func (d *Device) saveRollback(logger hasPrintf, capture *dialog) {
 	capture.save = nil
 }
 
-func (d *Device) saveCommit(logger hasPrintf, capture *dialog) error {
-	logger.Printf("Device.saveCommit: FIXME WRITEME save full command result")
+func (d *Device) saveCommit(logger hasPrintf, capture *dialog, repository string, maxFiles int) error {
+
+	devPathPrefix := filepath.Join(repository, d.id) + "."
+
+	// writeFunc: copy command outputs into file
+	writeFunc := func(w conf.HasWrite) error {
+		for _, b := range capture.save {
+			n, writeErr := w.Write(b)
+			if writeErr != nil {
+				return fmt.Errorf("saveCommit: writeFunc: error: %v", writeErr)
+			}
+			if n != len(b) {
+				return fmt.Errorf("saveCommit: writeFunc: partial: wrote=%d size=%d", n, len(b))
+			}
+		}
+		return nil
+	}
+
+	path, writeErr := conf.SaveNewConfig(devPathPrefix, maxFiles, logger, writeFunc)
+	if writeErr != nil {
+		return fmt.Errorf("saveCommit: error: %v", writeErr)
+	}
+
+	logger.Printf("saveCommit: dev '%s' saved to '%s'", d.id, path)
+
 	return nil
 }
 
@@ -355,7 +390,6 @@ func (d *Device) sendCommands(logger hasPrintf, t transp, capture *dialog) error
 }
 
 func (d *Device) save(logger hasPrintf, capture *dialog, command string, buf []byte) error {
-	//logger.Printf("Device.save: FIXME WRITEME save this: '%s' -> [%s]", command, string(buf))
 	capture.save = append(capture.save, []byte(command), buf)
 	return nil
 }
@@ -449,7 +483,7 @@ func round(val float64) int {
 	return int(val + 0.5)
 }
 
-func ScanDevices(tab DeviceTable, logger hasPrintf, maxConcurrency int, delayMin, delayMax time.Duration) (int, int) {
+func ScanDevices(tab DeviceTable, logger hasPrintf, maxConcurrency int, delayMin, delayMax time.Duration, repository string, maxFiles int) (int, int) {
 
 	devices := tab.ListDevices()
 	deviceCount := len(devices)
@@ -490,7 +524,7 @@ func ScanDevices(tab DeviceTable, logger hasPrintf, maxConcurrency int, delayMin
 			if delayMax > 0 {
 				delay = time.Duration(round(r*float64(delayMax-delayMin))) + delayMin
 			}
-			go d.Fetch(logger, resultCh, delay) // per-device goroutine
+			go d.Fetch(logger, resultCh, delay, repository, maxFiles) // per-device goroutine
 			nextDevice++
 			wait++
 		}

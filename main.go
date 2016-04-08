@@ -145,7 +145,7 @@ func main() {
 	server.SetLogger(logger)
 
 	logger.Printf("FIXME: calling one-shot ScanDevices")
-	go dev.ScanDevices(jaz, logger, 3, 50*time.Millisecond, 500*time.Millisecond) // FIXME one-shot scan
+	go dev.ScanDevices(jaz, logger, 3, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles) // FIXME one-shot scan
 
 	// Start GUI server
 	if err := server.Start(); err != nil {

@@ -105,7 +105,11 @@ func ListConfig(configPathPrefix string, reverse bool, logger hasPrintf) (string
 	return dirname, matches, nil
 }
 
-func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf) (string, error) {
+type HasWrite interface {
+	Write(p []byte) (int, error)
+}
+
+func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writeFunc func(HasWrite) error) (string, error) {
 
 	lastConfig, err1 := FindLastConfig(configPathPrefix, logger)
 	if err1 != nil {
@@ -134,13 +138,9 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf) (str
 
 	w := bufio.NewWriter(f)
 
-	/*
-		cw := configLineWriter{w}
-
-		if err := WriteConfig(root, &cw); err != nil {
-			return "", fmt.Errorf("SaveNewConfig: error writing file: [%s]: %v", newFilepath, err)
-		}
-	*/
+	if err := writeFunc(w); err != nil {
+		return "", fmt.Errorf("SaveNewConfig: writeFunc error: [%s]: %v", newFilepath, err)
+	}
 
 	if err := w.Flush(); err != nil {
 		return "", fmt.Errorf("SaveNewConfig: error flushing file: [%s]: %v", newFilepath, err)

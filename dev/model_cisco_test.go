@@ -76,7 +76,7 @@ func TestCiscoIOS1(t *testing.T) {
 	}
 	RegisterModels(logger, app.models)
 	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
-	good, bad := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond)
+	good, bad := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, tempRepo(), 10)
 	if good != 1 || bad != 0 {
 		t.Errorf("good=%d bad=%d", good, bad)
 	}
@@ -107,7 +107,7 @@ func TestCiscoIOS2(t *testing.T) {
 	}
 	RegisterModels(logger, app.models)
 	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
-	good, bad := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond)
+	good, bad := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, tempRepo(), 10)
 	if good != 1 || bad != 0 {
 		t.Errorf("good=%d bad=%d", good, bad)
 	}
@@ -137,7 +137,7 @@ func TestCiscoIOS3(t *testing.T) {
 	}
 	RegisterModels(logger, app.models)
 	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
-	good, bad := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond)
+	good, bad := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, tempRepo(), 10)
 	if good != 0 || bad != 1 {
 		t.Errorf("good=%d bad=%d", good, bad)
 	}
@@ -168,7 +168,7 @@ func TestCiscoIOS4(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		CreateDevice(app, logger, "cisco-ios", fmt.Sprintf("lab%02d", i), "localhost"+addr, "telnet", "lab", "pass", "en")
 	}
-	good, bad := ScanDevices(app, logger, 100, 0*time.Millisecond, 0*time.Millisecond)
+	good, bad := ScanDevices(app, logger, 100, 0*time.Millisecond, 0*time.Millisecond, tempRepo(), 10)
 	if good != 1000 || bad != 0 {
 		t.Errorf("good=%d bad=%d", good, bad)
 	}
