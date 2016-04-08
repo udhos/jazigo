@@ -9,15 +9,18 @@ import (
 	"time"
 )
 
+type optionsJunos struct {
+	breakConn bool
+}
+
 func TestJuniperJunOS1(t *testing.T) {
 
 	// launch bogus test server
 	addr := ":2001"
-	s, listenErr := spawnServerJuniperJunOS(t, addr)
+	s, listenErr := spawnServerJuniperJunOS(t, addr, optionsJunos{})
 	if listenErr != nil {
 		t.Errorf("could not spawn bogus JunOS server: %v", listenErr)
 	}
-	t.Logf("TestJuniperJunOS1: server running on %s", addr)
 
 	// run client test
 	logger := &testLogger{t}
@@ -41,7 +44,34 @@ func TestJuniperJunOS1(t *testing.T) {
 	<-s.done // wait termination of accept loop goroutine
 }
 
-func spawnServerJuniperJunOS(t *testing.T, addr string) (*testServer, error) {
+func TestJuniperJunOS2(t *testing.T) {
+
+	// launch bogus test server
+	addr := ":2002"
+	s, listenErr := spawnServerJuniperJunOS(t, addr, optionsJunos{breakConn: true})
+	if listenErr != nil {
+		t.Errorf("could not spawn bogus JunOS server: %v", listenErr)
+	}
+
+	// run client test
+	logger := &testLogger{t}
+	app := &bogusApp{
+		models:  map[string]*Model{},
+		devices: map[string]*Device{},
+	}
+	RegisterModels(logger, app.models)
+	CreateDevice(app, logger, "junos", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
+	good, bad := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond)
+	if good != 0 || bad != 1 {
+		t.Errorf("good=%d bad=%d", good, bad)
+	}
+
+	s.close()
+
+	<-s.done // wait termination of accept loop goroutine
+}
+
+func spawnServerJuniperJunOS(t *testing.T, addr string, options optionsJunos) (*testServer, error) {
 
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -50,25 +80,25 @@ func spawnServerJuniperJunOS(t *testing.T, addr string) (*testServer, error) {
 
 	s := &testServer{listener: ln, done: make(chan int)}
 
-	go acceptLoopJuniperJunOS(t, s, handleConnectionJuniperJunOS)
+	go acceptLoopJuniperJunOS(t, s, handleConnectionJuniperJunOS, options)
 
 	return s, nil
 }
 
-func acceptLoopJuniperJunOS(t *testing.T, s *testServer, handler func(*testing.T, net.Conn)) {
+func acceptLoopJuniperJunOS(t *testing.T, s *testServer, handler func(*testing.T, net.Conn, optionsJunos), options optionsJunos) {
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
 			t.Logf("acceptLoopJuniperJunOS: accept failure, exiting: %v", err)
 			break
 		}
-		go handler(t, conn)
+		go handler(t, conn, options)
 	}
 
 	close(s.done)
 }
 
-func handleConnectionJuniperJunOS(t *testing.T, c net.Conn) {
+func handleConnectionJuniperJunOS(t *testing.T, c net.Conn, options optionsJunos) {
 	defer c.Close()
 
 	buf := make([]byte, 1000)
@@ -128,6 +158,10 @@ LOOP:
 			break LOOP
 		case strings.HasPrefix(str, "set cli"):
 		case strings.HasPrefix(str, "show conf"):
+			if options.breakConn {
+				return // break connection (defer/close)
+			}
+
 			if _, err := c.Write([]byte("\nshow running-configuration")); err != nil {
 				t.Logf("handleConnectionJuniperJunOS: send sh run error: %v", err)
 				return
