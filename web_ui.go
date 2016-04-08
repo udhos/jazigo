@@ -10,9 +10,6 @@ import (
 	//"strconv"
 )
 
-const hardUser = "a"
-const hardPass = "a"
-
 func newAccPanel(user string) gwu.Panel {
 	ap := gwu.NewHorizontalPanel()
 	ap.Style().AddClass("account_panel")
@@ -143,7 +140,7 @@ func buildLoginWin(jaz *app, s gwu.Session) {
 	l.Style().SetFontWeight(gwu.FontWeightBold).SetFontSize("130%")
 	p.Add(l)
 	p.CellFmt(l).Style().SetBorder2(1, gwu.BrdStyleDashed, gwu.ClrNavy)
-	l = gwu.NewLabel(fmt.Sprintf("user/pass: %s/%s", hardUser, hardPass))
+	l = gwu.NewLabel("FIXME: username must be equal to password")
 	l.Style().SetFontSize("80%").SetFontStyle(gwu.FontStyleItalic)
 	p.Add(l)
 
@@ -231,7 +228,7 @@ func buildLoginWin(jaz *app, s gwu.Session) {
 }
 
 func loginAuth(user, pass string) bool {
-	return user == hardUser && pass == hardPass
+	return user == pass // loginAuth: FIXME WRITEME
 }
 
 func buildPrivateWins(jaz *app, s gwu.Session, remoteAddr string) {
