@@ -8,21 +8,21 @@ Quick Start
 
 1. Setup GOPATH as usual
 
-For example, under linux:
-export GOPATH=~/go
-mkdir $GOPATH
+    For example, under linux:
+    export GOPATH=~/go
+    mkdir $GOPATH
 
 2. Get source code
 
-go get github.com/udhos/jazigo
+    go get github.com/udhos/jazigo
 
 3. Compile and install
 
-go install github.com/udhos/jazigo
+    go install github.com/udhos/jazigo
 
 4. Run jazigo
 
-$GOPATH/bin/jazigo
+    $GOPATH/bin/jazigo
 
 5. Look at the web interface
 
