@@ -101,6 +101,7 @@ const (
 	FETCH_ERR_ENABLE   = 3
 	FETCH_ERR_PAGER    = 4
 	FETCH_ERR_COMMANDS = 5
+	FETCH_ERR_SAVE     = 6
 )
 
 type FetchResult struct {
@@ -178,11 +179,26 @@ func (d *Device) Fetch(logger hasPrintf, resultCh chan FetchResult, delay time.D
 	}
 
 	if cmdErr := d.sendCommands(logger, session, &capture); cmdErr != nil {
+		d.saveRollback(logger, &capture)
 		resultCh <- FetchResult{Model: modelName, DevId: d.id, DevHostPort: d.hostPort, Transport: transport, Msg: fmt.Sprintf("commands: %v", cmdErr), Code: FETCH_ERR_COMMANDS, Begin: begin}
 		return
 	}
 
+	if saveErr := d.saveCommit(logger, &capture); saveErr != nil {
+		resultCh <- FetchResult{Model: modelName, DevId: d.id, DevHostPort: d.hostPort, Transport: transport, Msg: fmt.Sprintf("save commit: %v", saveErr), Code: FETCH_ERR_SAVE, Begin: begin}
+		return
+	}
+
 	resultCh <- FetchResult{Model: modelName, DevId: d.id, DevHostPort: d.hostPort, Transport: transport, Code: FETCH_ERR_NONE, Begin: begin}
+}
+
+func (d *Device) saveRollback(logger hasPrintf, capture *dialog) {
+	logger.Printf("Device.saveRollback: FIXME WRITEME discard full command result")
+}
+
+func (d *Device) saveCommit(logger hasPrintf, capture *dialog) error {
+	logger.Printf("Device.saveCommit: FIXME WRITEME save full command result")
+	return nil
 }
 
 type hasTimeout interface {
@@ -329,9 +345,16 @@ func (d *Device) sendCommands(logger hasPrintf, t transp, capture *dialog) error
 			return fmt.Errorf("sendCommands: could not match command prompt: %v buf=[%s]", matchErr, matchBuf)
 		}
 
-		logger.Printf("sendCommands: FIXME WRITEME save this: '%s' -> [%s]", c, string(matchBuf))
+		if saveErr := d.save(logger, capture, c, matchBuf); saveErr != nil {
+			return fmt.Errorf("sendCommands: could not save command '%s' result: %v", c, saveErr)
+		}
 	}
 
+	return nil
+}
+
+func (d *Device) save(logger hasPrintf, capture *dialog, command string, buf []byte) error {
+	logger.Printf("Device.save: FIXME WRITEME save this: '%s' -> [%s]", command, string(buf))
 	return nil
 }
 
