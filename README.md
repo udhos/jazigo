@@ -11,8 +11,7 @@ Quick Start
 For example, under Linux:
 
     export GOPATH=~/go
-        mkdir $GOPATH
-
+    mkdir $GOPATH
 
 2. Get source code
 
