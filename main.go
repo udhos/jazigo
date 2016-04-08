@@ -45,8 +45,12 @@ func (a *app) GetModel(modelName string) (*dev.Model, error) {
 	return nil, fmt.Errorf("GetModel: not found")
 }
 
-func (a *app) SetDevice(id string, d *dev.Device) {
+func (a *app) SetDevice(id string, d *dev.Device) error {
+	if _, found := a.devices[id]; found {
+		return fmt.Errorf("app.SetDevice: found")
+	}
 	a.devices[id] = d
+	return nil
 }
 
 func (a *app) ListDevices() []*dev.Device {
@@ -94,6 +98,7 @@ func main() {
 	}
 
 	dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en")
+	dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en") // ugh
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab2", "localhost:2002", "ssh", "lab", "pass", "en")
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab3", "localhost:2003", "telnet,ssh", "lab", "pass", "en")
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab4", "localhost:2004", "ssh,telnet", "lab", "pass", "en")

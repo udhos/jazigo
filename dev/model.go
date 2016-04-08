@@ -52,7 +52,7 @@ type Device struct {
 type DeviceTable interface {
 	ListDevices() []*Device
 	GetModel(modelName string) (*Model, error)
-	SetDevice(id string, d *Device)
+	SetDevice(id string, d *Device) error
 }
 
 func DeviceMapToSlice(m map[string]*Device) []*Device {
@@ -75,15 +75,17 @@ func RegisterModels(logger hasPrintf, models map[string]*Model) {
 func CreateDevice(tab DeviceTable, logger hasPrintf, modelName, id, hostPort, transports, user, pass, enable string) {
 	logger.Printf("CreateDevice: %s %s %s %s", modelName, id, hostPort, transports)
 
-	mod, err := tab.GetModel(modelName)
-	if err != nil {
-		logger.Printf("CreateDevice: could not find model '%s': %v", modelName, err)
+	mod, getErr := tab.GetModel(modelName)
+	if getErr != nil {
+		logger.Printf("CreateDevice: could not find model '%s': %v", modelName, getErr)
 		return
 	}
 
 	d := NewDevice(mod, id, hostPort, transports, user, pass, enable)
 
-	tab.SetDevice(id, d)
+	if newDevErr := tab.SetDevice(id, d); newDevErr != nil {
+		logger.Printf("CreateDevice: could not add device '%s': %v", id, newDevErr)
+	}
 }
 
 func NewDevice(mod *Model, id, hostPort, transports, loginUser, loginPassword, enablePassword string) *Device {

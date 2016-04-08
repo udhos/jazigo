@@ -46,8 +46,12 @@ func (a *bogusApp) GetModel(modelName string) (*Model, error) {
 	return nil, fmt.Errorf("bogusApp.GetModel: not found")
 }
 
-func (a *bogusApp) SetDevice(id string, d *Device) {
+func (a *bogusApp) SetDevice(id string, d *Device) error {
+	if _, found := a.devices[id]; found {
+		return fmt.Errorf("bogusApp.SetDevice: found")
+	}
 	a.devices[id] = d
+	return nil
 }
 
 func (a *bogusApp) ListDevices() []*Device {
