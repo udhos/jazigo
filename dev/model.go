@@ -119,7 +119,8 @@ type hasPrintf interface {
 }
 
 type dialog struct {
-	buf []byte
+	buf  []byte
+	save [][]byte
 }
 
 func (d *dialog) record(buf []byte) {
@@ -193,7 +194,7 @@ func (d *Device) Fetch(logger hasPrintf, resultCh chan FetchResult, delay time.D
 }
 
 func (d *Device) saveRollback(logger hasPrintf, capture *dialog) {
-	logger.Printf("Device.saveRollback: FIXME WRITEME discard full command result")
+	capture.save = nil
 }
 
 func (d *Device) saveCommit(logger hasPrintf, capture *dialog) error {
@@ -354,7 +355,8 @@ func (d *Device) sendCommands(logger hasPrintf, t transp, capture *dialog) error
 }
 
 func (d *Device) save(logger hasPrintf, capture *dialog, command string, buf []byte) error {
-	logger.Printf("Device.save: FIXME WRITEME save this: '%s' -> [%s]", command, string(buf))
+	//logger.Printf("Device.save: FIXME WRITEME save this: '%s' -> [%s]", command, string(buf))
+	capture.save = append(capture.save, []byte(command), buf)
 	return nil
 }
 

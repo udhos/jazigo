@@ -22,6 +22,7 @@ const appVersion = "0.0"
 type app struct {
 	configPathPrefix string
 	maxConfigFiles   int
+	repositoryPath   string
 
 	models  map[string]*dev.Model  // label => model
 	devices map[string]*dev.Device // id => device
@@ -86,9 +87,11 @@ func main() {
 	jaz := newApp(logger)
 
 	flag.StringVar(&jaz.configPathPrefix, "configPathPrefix", "/etc/jazigo/jazigo.conf.", "configuration path prefix")
+	flag.StringVar(&jaz.repositoryPath, "repositoryPath", "/var/jazigo", "repository path")
 	flag.IntVar(&jaz.maxConfigFiles, "maxConfigFiles", 10, "limit number of configuration files (negative value means unlimited)")
 	flag.Parse()
 	jaz.logf("config path prefix: %s", jaz.configPathPrefix)
+	jaz.logf("repository path: %s", jaz.repositoryPath)
 
 	lastConfig, configErr := conf.FindLastConfig(jaz.configPathPrefix, logger)
 	if configErr != nil {
