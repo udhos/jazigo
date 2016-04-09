@@ -27,13 +27,14 @@ Example:
 
     # These env vars are not meaningful to jazigo.
     # They're just handy pointers used in step 5 below.
-    export APP_ETC=/etc/jazigo  ;# app config
-    export APP_REPO=/var/jazigo ;# backup repository
+    export APP_ETC=/etc/jazigo            ;# app config dir
+    export APP_CONF=$APP_ETC/jazigo.conf. ;# last dot is required
+    export APP_REPO=/var/jazigo           ;# backup repository
     mkdir $APP_ETC $APP_REPO
 
 5\. Run jazigo
 
-`$GOPATH/bin/jazigo -configPathPrefix $APP_ETC -repositoryPath $APP_REPO`
+`$GOPATH/bin/jazigo -configPathPrefix $APP_CONF -repositoryPath $APP_REPO`
 
 6\. Look at the web interface
 
