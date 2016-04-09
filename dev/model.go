@@ -211,7 +211,13 @@ func (d *Device) saveRollback(logger hasPrintf, capture *dialog) {
 
 func (d *Device) saveCommit(logger hasPrintf, capture *dialog, repository string, maxFiles int) error {
 
-	devPathPrefix := filepath.Join(repository, d.id) + "."
+	devDir := filepath.Join(repository, d.id)
+
+	if mkdirErr := os.MkdirAll(devDir, 0700); mkdirErr != nil {
+		return fmt.Errorf("saveCommit: mkdir: error: %v", mkdirErr)
+	}
+
+	devPathPrefix := filepath.Join(devDir, d.id) + "."
 
 	// writeFunc: copy command outputs into file
 	writeFunc := func(w conf.HasWrite) error {
@@ -532,9 +538,14 @@ func ScanDevices(tab DeviceTable, logger hasPrintf, maxConcurrency int, delayMin
 		// wait for one device to finish
 		r := <-resultCh
 		wait--
-		elap := time.Since(r.Begin)
+		end := time.Now()
+		elap := end.Sub(r.Begin)
 		logger.Printf("device result: %s %s %s %s msg=[%s] code=%d wait=%d remain=%d elap=%s", r.Model, r.DevId, r.DevHostPort, r.Transport, r.Msg, r.Code, wait, deviceCount-nextDevice, elap)
-		if r.Code == FETCH_ERR_NONE {
+
+		good := r.Code == FETCH_ERR_NONE
+		updateDeviceStatus(tab, r.DevId, good, end, logger)
+
+		if good {
 			success++
 		}
 		if elap < elapMin {
@@ -551,4 +562,8 @@ func ScanDevices(tab DeviceTable, logger hasPrintf, maxConcurrency int, delayMin
 	logger.Printf("ScanDevices: finished elapsed=%s devices=%d success=%d average=%s min=%s max=%s", elapsed, deviceCount, success, average, elapMin, elapMax)
 
 	return success, deviceCount - success
+}
+
+func updateDeviceStatus(tab DeviceTable, devId string, good bool, last time.Time, logger hasPrintf) {
+	logger.Printf("updateDeviceStatus: %s %v %v FIXME WRITEME", devId, good, last)
 }

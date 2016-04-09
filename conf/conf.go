@@ -52,36 +52,67 @@ func ExtractCommitIdFromFilename(filename string) (int, error) {
 
 func FindLastConfig(configPathPrefix string, logger hasPrintf) (string, error) {
 
-	dirname, matches, err := ListConfig(configPathPrefix, false, logger)
+	dirname, matches, err := ListConfig(configPathPrefix, logger)
 	if err != nil {
 		return "", err
 	}
 
-	m := len(matches)
+	size := len(matches)
 
-	logger.Printf("FindLastConfig: found %d matching files: %v", m, matches)
+	logger.Printf("FindLastConfig: found %d matching files: %v", size, matches)
 
-	if m < 1 {
+	if size < 1 {
 		return "", fmt.Errorf("FindLastConfig: no config file found for prefix: %s", configPathPrefix)
 	}
 
-	lastConfig := filepath.Join(dirname, matches[m-1])
+	maxId := -1
+	last := ""
+	for _, m := range matches {
+		id, idErr := ExtractCommitIdFromFilename(m)
+		if idErr != nil {
+			return "", fmt.Errorf("FindLastConfig: bad commit id: %s: %v", m, idErr)
+		}
+		if id >= maxId {
+			maxId = id
+			last = m
+		}
+	}
 
-	return lastConfig, nil
+	lastPath := filepath.Join(dirname, last)
+
+	logger.Printf("FindLastConfig: found: %s", lastPath)
+
+	return lastPath, nil
 }
 
-func ListConfig(configPathPrefix string, reverse bool, logger hasPrintf) (string, []string, error) {
+func ListConfigSorted(configPathPrefix string, reverse bool, logger hasPrintf) (string, []string, error) {
+
+	dirname, matches, err := ListConfig(configPathPrefix, logger)
+	if err != nil {
+		return dirname, matches, err
+	}
+
+	if reverse {
+		sort.Sort(sort.Reverse(sortByCommitId{data: matches, logger: logger}))
+	} else {
+		sort.Sort(sortByCommitId{data: matches, logger: logger})
+	}
+
+	return dirname, matches, nil
+}
+
+func ListConfig(configPathPrefix string, logger hasPrintf) (string, []string, error) {
 
 	dirname := filepath.Dir(configPathPrefix)
 
 	dir, err := os.Open(dirname)
 	if err != nil {
-		return "", nil, fmt.Errorf("FindLastConfig: error opening dir '%s': %v", dirname, err)
+		return "", nil, fmt.Errorf("ListConfig: error opening dir '%s': %v", dirname, err)
 	}
 
 	names, e := dir.Readdirnames(0)
 	if e != nil {
-		return "", nil, fmt.Errorf("FindLastConfig: error reading dir '%s': %v", dirname, e)
+		return "", nil, fmt.Errorf("ListConfig: error reading dir '%s': %v", dirname, e)
 	}
 
 	dir.Close()
@@ -94,12 +125,6 @@ func ListConfig(configPathPrefix string, reverse bool, logger hasPrintf) (string
 		if strings.HasPrefix(x, basename) {
 			matches = append(matches, x)
 		}
-	}
-
-	if reverse {
-		sort.Sort(sort.Reverse(sortByCommitId{data: matches, logger: logger}))
-	} else {
-		sort.Sort(sortByCommitId{data: matches, logger: logger})
 	}
 
 	return dirname, matches, nil
@@ -161,7 +186,7 @@ func eraseOldFiles(configPathPrefix string, maxFiles int, logger hasPrintf) {
 		return
 	}
 
-	dirname, matches, err := ListConfig(configPathPrefix, false, logger)
+	dirname, matches, err := ListConfigSorted(configPathPrefix, false, logger)
 	if err != nil {
 		logger.Printf("eraseOldFiles: %v", err)
 		return
