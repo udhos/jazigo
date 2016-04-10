@@ -277,7 +277,7 @@ func (d *Device) match(logger hasPrintf, t transp, capture *dialog, patterns []s
 	}
 
 	begin := time.Now()
-	buf := make([]byte, 10000)
+	buf := make([]byte, 100000)
 
 	for {
 		now := time.Now()
@@ -310,8 +310,9 @@ func (d *Device) match(logger hasPrintf, t transp, capture *dialog, patterns []s
 			return badIndex, matchBuf, fmt.Errorf("match: unexpected empty read")
 		}
 
-		matchBuf = append(matchBuf, buf[:n]...)
-		capture.record(buf[:n]) // record full capture (for debbugging, etc)
+		lastRead := buf[:n]
+		matchBuf = append(matchBuf, lastRead...)
+		capture.record(lastRead) // record full capture (for debbugging, etc)
 
 		//logger.Printf("match: debug: read=%d newsize=%d", n, len(capture.buf))
 
@@ -335,10 +336,13 @@ func (d *Device) match(logger hasPrintf, t transp, capture *dialog, patterns []s
 
 func findLastLine(buf []byte) []byte {
 
+	// remove possible trailing CR LF from end of line
 	if len(buf) > 0 && buf[len(buf)-1] == '\n' {
-		buf = buf[:len(buf)-1]
+		// found LF
+		buf = buf[:len(buf)-1] // drop LF
 		if len(buf) > 0 && buf[len(buf)-1] == '\r' {
-			buf = buf[:len(buf)-1]
+			// found CR
+			buf = buf[:len(buf)-1] // drop CR
 		}
 	}
 
