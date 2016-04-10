@@ -30,7 +30,11 @@ func TestHTTP1(t *testing.T) {
 	}
 	RegisterModels(logger, app.models)
 	CreateDevice(app, logger, "http", "lab1", "localhost"+addr, "", "", "", "")
-	good, bad := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, tempRepo(), 10)
+
+	repo := tempRepo()
+	defer cleanupTempRepo()
+
+	good, bad := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10)
 	if good != 1 || bad != 0 {
 		t.Errorf("good=%d bad=%d", good, bad)
 	}

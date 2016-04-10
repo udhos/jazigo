@@ -59,10 +59,20 @@ type DeviceTable interface {
 	SetDevice(id string, d *Device) error
 }
 
+const TEMP_REPO = "/tmp/tmp-jazigo-repo"
+
 func tempRepo() string {
-	path := "/tmp/tmp-jazigo-repo"
+	path := TEMP_REPO
 	if err := os.MkdirAll(path, 0700); err != nil {
-		panic(fmt.Sprintf("tempRepo: %v", err))
+		panic(fmt.Sprintf("tempRepo: '%s': %v", path, err))
+	}
+	return path
+}
+
+func cleanupTempRepo() string {
+	path := TEMP_REPO
+	if err := os.RemoveAll(path); err != nil {
+		panic(fmt.Sprintf("cleanupTempRepo: '%s': %v", path, err))
 	}
 	return path
 }
