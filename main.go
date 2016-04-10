@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	//"github.com/udhos/gowut/gwu"
-	"github.com/icza/gowut/gwu"
 	"log"
 	//"math/rand"
 	"os"
@@ -11,6 +9,8 @@ import (
 	"flag"
 	"path/filepath"
 	"time"
+
+	"github.com/icza/gowut/gwu"
 
 	"github.com/udhos/jazigo/conf"
 	"github.com/udhos/jazigo/dev"

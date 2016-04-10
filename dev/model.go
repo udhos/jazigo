@@ -53,6 +53,22 @@ type Device struct {
 	attr attributes
 }
 
+func (d *Device) Model() string {
+	return d.devModel.name
+}
+
+func (d *Device) Id() string {
+	return d.id
+}
+
+func (d *Device) Host() string {
+	return d.hostPort
+}
+
+func (d *Device) Transport() string {
+	return d.transports
+}
+
 type DeviceTable interface {
 	ListDevices() []*Device
 	GetModel(modelName string) (*Model, error)

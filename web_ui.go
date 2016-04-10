@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	//"github.com/udhos/gowut/gwu"
-	"github.com/icza/gowut/gwu"
 	//"log"
 	//"math/rand"
 	//"os"
 	//"strconv"
+
+	"github.com/icza/gowut/gwu"
+	//"github.com/udhos/jazigo/dev"
 )
 
 func newAccPanel(user string) gwu.Panel {
@@ -107,14 +108,29 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 	l.Style().SetFontWeight(gwu.FontWeightBold).SetFontSize("130%")
 	win.Add(l)
 
-	/*
-		win.Add(gwu.NewLabel("Click on the button to login:"))
-		b := gwu.NewButton("Login")
-		b.AddEHandlerFunc(func(e gwu.Event) {
-			e.ReloadWin("login")
-		}, gwu.ETypeClick)
-		win.Add(b)
-	*/
+	t := gwu.NewTable()
+	t.Style().AddClass("device_table")
+
+	i := 0
+	for _, d := range jaz.devices {
+		labMod := gwu.NewLabel(d.Model())
+		labId := gwu.NewLabel(d.Id())
+		labHost := gwu.NewLabel(d.Host())
+		labTransport := gwu.NewLabel(d.Transport())
+
+		t.Add(labMod, i, 0)
+		t.Add(labId, i, 1)
+		t.Add(labHost, i, 2)
+		t.Add(labTransport, i, 3)
+
+		for j := 0; j < 4; j++ {
+			t.CellFmt(i, j).Style().AddClass("device_table_cell")
+		}
+
+		i++
+	}
+
+	win.Add(t)
 
 	s.AddWin(win)
 

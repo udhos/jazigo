@@ -7,3 +7,14 @@
     border: 3px solid gray;
     margin: 0 auto;
 }
+
+.device_table {
+    text-align: center;
+    border-spacing: 0.5rem;
+    border-collapse: collapse;
+}
+
+.device_table_cell {
+    padding: 2px;
+    border: 2px solid blue;
+}
