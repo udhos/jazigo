@@ -85,12 +85,6 @@ func (d *Device) LastSuccess() time.Time {
 	return d.lastSuccess
 }
 
-type DeviceTable interface {
-	ListDevices() []*Device
-	GetModel(modelName string) (*Model, error)
-	SetDevice(id string, d *Device) error
-}
-
 const TEMP_REPO = "/tmp/tmp-jazigo-repo"
 
 func tempRepo() string {
@@ -119,11 +113,11 @@ func DeviceMapToSlice(m map[string]*Device) []*Device {
 	return devices
 }
 
-func RegisterModels(logger hasPrintf, models map[string]*Model) {
-	registerModelCiscoIOS(logger, models)
-	registerModelLinux(logger, models)
-	registerModelJunOS(logger, models)
-	registerModelHTTP(logger, models)
+func RegisterModels(logger hasPrintf, t DeviceTable) {
+	registerModelCiscoIOS(logger, t)
+	registerModelLinux(logger, t)
+	registerModelJunOS(logger, t)
+	registerModelHTTP(logger, t)
 }
 
 func CreateDevice(tab DeviceTable, logger hasPrintf, modelName, id, hostPort, transports, user, pass, enable string) {

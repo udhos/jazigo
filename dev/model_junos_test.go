@@ -24,11 +24,15 @@ func TestJuniperJunOS1(t *testing.T) {
 
 	// run client test
 	logger := &testLogger{t}
-	app := &bogusApp{
-		models:  map[string]*Model{},
-		devices: map[string]*Device{},
-	}
-	RegisterModels(logger, app.models)
+	/*
+		app := &bogusApp{
+			models:  map[string]*Model{},
+			devices: map[string]*Device{},
+		}
+	*/
+	app := NewDeviceTable()
+	RegisterModels(logger, app)
+
 	CreateDevice(app, logger, "junos", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
 
 	repo := tempRepo()
@@ -55,11 +59,14 @@ func TestJuniperJunOS2(t *testing.T) {
 
 	// run client test
 	logger := &testLogger{t}
-	app := &bogusApp{
-		models:  map[string]*Model{},
-		devices: map[string]*Device{},
-	}
-	RegisterModels(logger, app.models)
+	/*
+		app := &bogusApp{
+			models:  map[string]*Model{},
+			devices: map[string]*Device{},
+		}
+	*/
+	app := NewDeviceTable()
+	RegisterModels(logger, app)
 	CreateDevice(app, logger, "junos", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
 
 	repo := tempRepo()

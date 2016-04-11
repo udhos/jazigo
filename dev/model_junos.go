@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-func registerModelJunOS(logger hasPrintf, models map[string]*Model) {
+func registerModelJunOS(logger hasPrintf, t DeviceTable) {
 	modelName := "junos"
 	m := &Model{name: modelName}
 
@@ -27,5 +27,7 @@ func registerModelJunOS(logger hasPrintf, models map[string]*Model) {
 		commandMatchTimeout:         30 * time.Second, // larger timeout for slow 'sh run'
 	}
 
-	models[modelName] = m
+	if err := t.SetModel(m); err != nil {
+		logger.Printf("registerModelJunOS: %v", err)
+	}
 }

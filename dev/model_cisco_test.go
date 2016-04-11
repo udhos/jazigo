@@ -34,6 +34,7 @@ type optionsCiscoIOS struct {
 	breakConn         bool
 }
 
+/*
 type bogusApp struct {
 	models  map[string]*Model
 	devices map[string]*Device
@@ -57,6 +58,7 @@ func (a *bogusApp) SetDevice(id string, d *Device) error {
 func (a *bogusApp) ListDevices() []*Device {
 	return DeviceMapToSlice(a.devices)
 }
+*/
 
 func TestCiscoIOS1(t *testing.T) {
 
@@ -70,11 +72,14 @@ func TestCiscoIOS1(t *testing.T) {
 
 	// run client test
 	logger := &testLogger{t}
-	app := &bogusApp{
-		models:  map[string]*Model{},
-		devices: map[string]*Device{},
-	}
-	RegisterModels(logger, app.models)
+	/*
+		app := &bogusApp{
+			models:  map[string]*Model{},
+			devices: map[string]*Device{},
+		}
+	*/
+	app := NewDeviceTable()
+	RegisterModels(logger, app)
 	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
 
 	repo := tempRepo()
@@ -105,11 +110,14 @@ func TestCiscoIOS2(t *testing.T) {
 
 	// run client test
 	logger := &testLogger{t}
-	app := &bogusApp{
-		models:  map[string]*Model{},
-		devices: map[string]*Device{},
-	}
-	RegisterModels(logger, app.models)
+	/*
+		app := &bogusApp{
+			models:  map[string]*Model{},
+			devices: map[string]*Device{},
+		}
+	*/
+	app := NewDeviceTable()
+	RegisterModels(logger, app)
 	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
 
 	repo := tempRepo()
@@ -139,11 +147,14 @@ func TestCiscoIOS3(t *testing.T) {
 
 	// run client test
 	logger := &testLogger{t}
-	app := &bogusApp{
-		models:  map[string]*Model{},
-		devices: map[string]*Device{},
-	}
-	RegisterModels(logger, app.models)
+	/*
+		app := &bogusApp{
+			models:  map[string]*Model{},
+			devices: map[string]*Device{},
+		}
+	*/
+	app := NewDeviceTable()
+	RegisterModels(logger, app)
 	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
 
 	repo := tempRepo()
@@ -172,11 +183,14 @@ func TestCiscoIOS4(t *testing.T) {
 
 	// run client test
 	logger := &testLogger{t}
-	app := &bogusApp{
-		models:  map[string]*Model{},
-		devices: map[string]*Device{},
-	}
-	RegisterModels(logger, app.models)
+	/*
+		app := &bogusApp{
+			models:  map[string]*Model{},
+			devices: map[string]*Device{},
+		}
+	*/
+	app := NewDeviceTable()
+	RegisterModels(logger, app)
 	for i := 0; i < 1000; i++ {
 		CreateDevice(app, logger, "cisco-ios", fmt.Sprintf("lab%02d", i), "localhost"+addr, "telnet", "lab", "pass", "en")
 	}

@@ -24,11 +24,14 @@ func TestHTTP1(t *testing.T) {
 
 	// run client test
 	logger := &testLogger{t}
-	app := &bogusApp{
-		models:  map[string]*Model{},
-		devices: map[string]*Device{},
-	}
-	RegisterModels(logger, app.models)
+	/*
+		app := &bogusApp{
+			models:  map[string]*Model{},
+			devices: map[string]*Device{},
+		}
+	*/
+	app := NewDeviceTable()
+	RegisterModels(logger, app)
 	CreateDevice(app, logger, "http", "lab1", "localhost"+addr, "", "", "", "")
 
 	repo := tempRepo()

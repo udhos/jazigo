@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-func registerModelHTTP(logger hasPrintf, models map[string]*Model) {
+func registerModelHTTP(logger hasPrintf, t DeviceTable) {
 	modelName := "http"
 	m := &Model{name: modelName}
 
@@ -27,5 +27,7 @@ func registerModelHTTP(logger hasPrintf, models map[string]*Model) {
 		commandMatchTimeout:         10 * time.Second, // larger timeout for slow 'sh run'
 	}
 
-	models[modelName] = m
+	if err := t.SetModel(m); err != nil {
+		logger.Printf("registerModelHTTP: %v", err)
+	}
 }

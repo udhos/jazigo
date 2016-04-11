@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-func registerModelLinux(logger hasPrintf, models map[string]*Model) {
+func registerModelLinux(logger hasPrintf, t DeviceTable) {
 	modelName := "linux"
 	m := &Model{name: modelName}
 
@@ -27,5 +27,7 @@ func registerModelLinux(logger hasPrintf, models map[string]*Model) {
 		commandMatchTimeout:         10 * time.Second,
 	}
 
-	models[modelName] = m
+	if err := t.SetModel(m); err != nil {
+		logger.Printf("registerModelLinux: %v", err)
+	}
 }

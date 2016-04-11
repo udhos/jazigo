@@ -24,8 +24,11 @@ type app struct {
 	maxConfigFiles   int
 	repositoryPath   string
 
-	models  map[string]*dev.Model  // label => model
-	devices map[string]*dev.Device // id => device
+	/*
+		models  map[string]*dev.Model  // label => model
+		devices map[string]*dev.Device // id => device
+	*/
+	dev.DeviceTableImpl
 
 	apHome    gwu.Panel
 	apAdmin   gwu.Panel
@@ -39,25 +42,6 @@ type app struct {
 	logger hasPrintf
 }
 
-func (a *app) GetModel(modelName string) (*dev.Model, error) {
-	if m, ok := a.models[modelName]; ok {
-		return m, nil
-	}
-	return nil, fmt.Errorf("GetModel: not found")
-}
-
-func (a *app) SetDevice(id string, d *dev.Device) error {
-	if _, found := a.devices[id]; found {
-		return fmt.Errorf("app.SetDevice: found")
-	}
-	a.devices[id] = d
-	return nil
-}
-
-func (a *app) ListDevices() []*dev.Device {
-	return dev.DeviceMapToSlice(a.devices)
-}
-
 type hasPrintf interface {
 	Printf(fmt string, v ...interface{})
 }
@@ -68,14 +52,13 @@ func (a *app) logf(fmt string, v ...interface{}) {
 
 func newApp(logger hasPrintf) *app {
 	app := &app{
-		models:  map[string]*dev.Model{},
-		devices: map[string]*dev.Device{},
-		logger:  logger,
+		DeviceTableImpl: *dev.NewDeviceTable(),
+		logger:          logger,
 	}
 
 	app.logf("%s %s starting", appName, appVersion)
 
-	dev.RegisterModels(app.logger, app.models)
+	dev.RegisterModels(app.logger, app)
 
 	return app
 }
