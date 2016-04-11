@@ -6,6 +6,7 @@ import (
 	//"math/rand"
 	//"os"
 	//"strconv"
+	"time"
 
 	"github.com/icza/gowut/gwu"
 	//"github.com/udhos/jazigo/dev"
@@ -111,19 +112,39 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 	t := gwu.NewTable()
 	t.Style().AddClass("device_table")
 
-	i := 0
+	const COLS = 7
+
+	t.Add(gwu.NewLabel("Model"), 0, 0)
+	t.Add(gwu.NewLabel("Device"), 0, 1)
+	t.Add(gwu.NewLabel("Host"), 0, 2)
+	t.Add(gwu.NewLabel("Transport"), 0, 3)
+	t.Add(gwu.NewLabel("Last Status"), 0, 4)
+	t.Add(gwu.NewLabel("Last Try"), 0, 5)
+	t.Add(gwu.NewLabel("Last Success"), 0, 6)
+
+	for j := 0; j < COLS; j++ {
+		t.CellFmt(0, j).Style().AddClass("device_table_cell")
+	}
+
+	i := 1
 	for _, d := range jaz.devices {
 		labMod := gwu.NewLabel(d.Model())
 		labId := gwu.NewLabel(d.Id())
 		labHost := gwu.NewLabel(d.Host())
 		labTransport := gwu.NewLabel(d.Transport())
+		labLastStatus := gwu.NewLabel(fmt.Sprintf("%v", d.LastStatus()))
+		labLastTry := gwu.NewLabel(timestampString(d.LastTry()))
+		labLastSuccess := gwu.NewLabel(timestampString(d.LastSuccess()))
 
 		t.Add(labMod, i, 0)
 		t.Add(labId, i, 1)
 		t.Add(labHost, i, 2)
 		t.Add(labTransport, i, 3)
+		t.Add(labLastStatus, i, 4)
+		t.Add(labLastTry, i, 5)
+		t.Add(labLastSuccess, i, 6)
 
-		for j := 0; j < 4; j++ {
+		for j := 0; j < COLS; j++ {
 			t.CellFmt(i, j).Style().AddClass("device_table_cell")
 		}
 
@@ -135,6 +156,13 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 	s.AddWin(win)
 
 	jaz.winHome = win
+}
+
+func timestampString(ts time.Time) string {
+	if ts.IsZero() {
+		return "never"
+	}
+	return ts.String()
 }
 
 func buildLoginWin(jaz *app, s gwu.Session) {

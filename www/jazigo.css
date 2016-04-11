@@ -16,5 +16,6 @@
 
 .device_table_cell {
     padding: 2px;
+    border-spacing: 0.5rem;
     border: 2px solid blue;
 }

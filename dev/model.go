@@ -51,6 +51,10 @@ type Device struct {
 	enablePassword string
 
 	attr attributes
+
+	lastStatus  bool // true=good false=bad
+	lastTry     time.Time
+	lastSuccess time.Time
 }
 
 func (d *Device) Model() string {
@@ -67,6 +71,18 @@ func (d *Device) Host() string {
 
 func (d *Device) Transport() string {
 	return d.transports
+}
+
+func (d *Device) LastStatus() bool {
+	return d.lastStatus
+}
+
+func (d *Device) LastTry() time.Time {
+	return d.lastTry
+}
+
+func (d *Device) LastSuccess() time.Time {
+	return d.lastSuccess
 }
 
 type DeviceTable interface {
