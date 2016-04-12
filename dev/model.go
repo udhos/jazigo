@@ -103,16 +103,6 @@ func cleanupTempRepo() string {
 	return path
 }
 
-func DeviceMapToSlice(m map[string]*Device) []*Device {
-	devices := make([]*Device, len(m))
-	i := 0
-	for _, d := range m {
-		devices[i] = d
-		i++
-	}
-	return devices
-}
-
 func RegisterModels(logger hasPrintf, t *DeviceTable) {
 	registerModelCiscoIOS(logger, t)
 	registerModelLinux(logger, t)
