@@ -5,32 +5,25 @@ import (
 	"sync"
 )
 
-type DeviceTable interface {
-	ListDevices() []*Device
-	GetModel(modelName string) (*Model, error)
-	SetDevice(id string, d *Device) error
-	SetModel(m *Model) error
-}
-
-// DeviceTableImpl: goroutine concurrency-safe DeviceTable
-type DeviceTableImpl struct {
+// DeviceTable: goroutine concurrency-safe DeviceTable
+type DeviceTable struct {
 	models  map[string]*Model  // label => model
 	devices map[string]*Device // id => device
 	lock    sync.RWMutex
 }
 
-func NewDeviceTable() *DeviceTableImpl {
-	return &DeviceTableImpl{models: map[string]*Model{}, devices: map[string]*Device{}, lock: sync.RWMutex{}}
+func NewDeviceTable() *DeviceTable {
+	return &DeviceTable{models: map[string]*Model{}, devices: map[string]*Device{}, lock: sync.RWMutex{}}
 }
 
-func (t *DeviceTableImpl) GetModel(modelName string) (*Model, error) {
+func (t *DeviceTable) GetModel(modelName string) (*Model, error) {
 	if m, ok := t.models[modelName]; ok {
 		return m, nil
 	}
 	return nil, fmt.Errorf("GetModel: not found")
 }
 
-func (t *DeviceTableImpl) SetModel(m *Model) error {
+func (t *DeviceTable) SetModel(m *Model) error {
 	if _, found := t.models[m.name]; found {
 		return fmt.Errorf("app.SetModel: found")
 	}
@@ -38,7 +31,7 @@ func (t *DeviceTableImpl) SetModel(m *Model) error {
 	return nil
 }
 
-func (t *DeviceTableImpl) SetDevice(id string, d *Device) error {
+func (t *DeviceTable) SetDevice(id string, d *Device) error {
 	if _, found := t.devices[id]; found {
 		return fmt.Errorf("app.SetDevice: found")
 	}
@@ -46,6 +39,6 @@ func (t *DeviceTableImpl) SetDevice(id string, d *Device) error {
 	return nil
 }
 
-func (t *DeviceTableImpl) ListDevices() []*Device {
+func (t *DeviceTable) ListDevices() []*Device {
 	return DeviceMapToSlice(t.devices)
 }

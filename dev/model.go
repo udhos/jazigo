@@ -113,14 +113,14 @@ func DeviceMapToSlice(m map[string]*Device) []*Device {
 	return devices
 }
 
-func RegisterModels(logger hasPrintf, t DeviceTable) {
+func RegisterModels(logger hasPrintf, t *DeviceTable) {
 	registerModelCiscoIOS(logger, t)
 	registerModelLinux(logger, t)
 	registerModelJunOS(logger, t)
 	registerModelHTTP(logger, t)
 }
 
-func CreateDevice(tab DeviceTable, logger hasPrintf, modelName, id, hostPort, transports, user, pass, enable string) {
+func CreateDevice(tab *DeviceTable, logger hasPrintf, modelName, id, hostPort, transports, user, pass, enable string) {
 	logger.Printf("CreateDevice: %s %s %s %s", modelName, id, hostPort, transports)
 
 	mod, getErr := tab.GetModel(modelName)
@@ -529,7 +529,7 @@ func round(val float64) int {
 	return int(val + 0.5)
 }
 
-func ScanDevices(tab DeviceTable, logger hasPrintf, maxConcurrency int, delayMin, delayMax time.Duration, repository string, maxFiles int) (int, int) {
+func ScanDevices(tab *DeviceTable, logger hasPrintf, maxConcurrency int, delayMin, delayMax time.Duration, repository string, maxFiles int) (int, int) {
 
 	devices := tab.ListDevices()
 	deviceCount := len(devices)
@@ -604,6 +604,6 @@ func ScanDevices(tab DeviceTable, logger hasPrintf, maxConcurrency int, delayMin
 	return success, deviceCount - success
 }
 
-func updateDeviceStatus(tab DeviceTable, devId string, good bool, last time.Time, logger hasPrintf) {
+func updateDeviceStatus(tab *DeviceTable, devId string, good bool, last time.Time, logger hasPrintf) {
 	logger.Printf("updateDeviceStatus: %s %v %v FIXME WRITEME", devId, good, last)
 }

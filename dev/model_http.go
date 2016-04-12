@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-func registerModelHTTP(logger hasPrintf, t DeviceTable) {
+func registerModelHTTP(logger hasPrintf, t *DeviceTable) {
 	modelName := "http"
 	m := &Model{name: modelName}
 

@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-func registerModelLinux(logger hasPrintf, t DeviceTable) {
+func registerModelLinux(logger hasPrintf, t *DeviceTable) {
 	modelName := "linux"
 	m := &Model{name: modelName}
 

@@ -127,7 +127,7 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 	}
 
 	i := 1
-	for _, d := range jaz.ListDevices() {
+	for _, d := range jaz.table.ListDevices() {
 		labMod := gwu.NewLabel(d.Model())
 		labId := gwu.NewLabel(d.Id())
 		labHost := gwu.NewLabel(d.Host())

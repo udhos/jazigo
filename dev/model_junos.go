@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-func registerModelJunOS(logger hasPrintf, t DeviceTable) {
+func registerModelJunOS(logger hasPrintf, t *DeviceTable) {
 	modelName := "junos"
 	m := &Model{name: modelName}
 

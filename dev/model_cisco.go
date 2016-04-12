@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-func registerModelCiscoIOS(logger hasPrintf, t DeviceTable) {
+func registerModelCiscoIOS(logger hasPrintf, t *DeviceTable) {
 	modelName := "cisco-ios"
 	m := &Model{name: modelName}
 

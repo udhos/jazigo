@@ -24,11 +24,7 @@ type app struct {
 	maxConfigFiles   int
 	repositoryPath   string
 
-	/*
-		models  map[string]*dev.Model  // label => model
-		devices map[string]*dev.Device // id => device
-	*/
-	dev.DeviceTableImpl
+	table *dev.DeviceTable
 
 	apHome    gwu.Panel
 	apAdmin   gwu.Panel
@@ -52,13 +48,13 @@ func (a *app) logf(fmt string, v ...interface{}) {
 
 func newApp(logger hasPrintf) *app {
 	app := &app{
-		DeviceTableImpl: *dev.NewDeviceTable(),
-		logger:          logger,
+		table:  dev.NewDeviceTable(),
+		logger: logger,
 	}
 
 	app.logf("%s %s starting", appName, appVersion)
 
-	dev.RegisterModels(app.logger, app)
+	dev.RegisterModels(app.logger, app.table)
 
 	return app
 }
@@ -83,16 +79,16 @@ func main() {
 		jaz.logf("last config: %s", lastConfig)
 	}
 
-	dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en")
-	dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en") // ugh
+	dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en")
+	dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en") // ugh
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab2", "localhost:2002", "ssh", "lab", "pass", "en")
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab3", "localhost:2003", "telnet,ssh", "lab", "pass", "en")
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab4", "localhost:2004", "ssh,telnet", "lab", "pass", "en")
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab5", "localhost", "telnet", "lab", "pass", "en")
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab6", "localhost", "ssh", "rat", "lab", "en")
-	dev.CreateDevice(jaz, jaz.logger, "linux", "lab7", "localhost", "ssh", "rat", "lab", "lab")
-	dev.CreateDevice(jaz, jaz.logger, "junos", "lab8", "localhost:2008", "telnet", "rat", "lab", "lab")
-	dev.CreateDevice(jaz, jaz.logger, "http", "lab9", "localhost:2009", "telnet", "", "", "")
+	dev.CreateDevice(jaz.table, jaz.logger, "linux", "lab7", "localhost", "ssh", "rat", "lab", "lab")
+	dev.CreateDevice(jaz.table, jaz.logger, "junos", "lab8", "localhost:2008", "telnet", "rat", "lab", "lab")
+	dev.CreateDevice(jaz.table, jaz.logger, "http", "lab9", "localhost:2009", "telnet", "", "", "")
 
 	appAddr := "0.0.0.0:8080"
 	serverName := fmt.Sprintf("%s application", appName)
@@ -128,7 +124,7 @@ func main() {
 	server.SetLogger(logger)
 
 	logger.Printf("FIXME: calling one-shot ScanDevices")
-	go dev.ScanDevices(jaz, logger, 3, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles) // FIXME one-shot scan
+	go dev.ScanDevices(jaz.table, logger, 3, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles) // FIXME one-shot scan
 
 	// Start GUI server
 	if err := server.Start(); err != nil {
