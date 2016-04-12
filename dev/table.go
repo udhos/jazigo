@@ -27,7 +27,7 @@ func (t *DeviceTable) GetModel(modelName string) (*Model, error) {
 		return &m1, nil
 	}
 
-	return nil, fmt.Errorf("CopyModel: not found")
+	return nil, fmt.Errorf("DeviceTable.GetModel: not found")
 }
 
 func (t *DeviceTable) SetModel(m *Model) error {
@@ -35,8 +35,9 @@ func (t *DeviceTable) SetModel(m *Model) error {
 	defer t.lock.Unlock()
 
 	if _, found := t.models[m.name]; found {
-		return fmt.Errorf("app.SetModel: found")
+		return fmt.Errorf("DeviceTable.SetModel: found")
 	}
+
 	m1 := *m // force copy data
 	t.models[m1.name] = &m1
 	return nil
@@ -47,7 +48,7 @@ func (t *DeviceTable) SetDevice(id string, d *Device) error {
 	defer t.lock.Unlock()
 
 	if _, found := t.devices[id]; found {
-		return fmt.Errorf("app.SetDevice: found")
+		return fmt.Errorf("DeviceTable.SetDevice: found")
 	}
 	d1 := *d // force copy data
 	t.devices[id] = &d1
