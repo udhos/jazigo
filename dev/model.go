@@ -85,6 +85,10 @@ func (d *Device) LastSuccess() time.Time {
 	return d.lastSuccess
 }
 
+func (d *Device) Holdtime(now time.Time, holdtime int) time.Duration {
+	return time.Duration(holdtime)*time.Second - now.Sub(d.lastSuccess)
+}
+
 const TEMP_REPO = "/tmp/tmp-jazigo-repo"
 
 func tempRepo() string {
@@ -527,7 +531,7 @@ func round(val float64) int {
 	return int(val + 0.5)
 }
 
-func ScanDevices(tab *DeviceTable, logger hasPrintf, maxConcurrency int, delayMin, delayMax time.Duration, repository string, maxFiles int) (int, int) {
+func ScanDevices(tab *DeviceTable, logger hasPrintf, maxConcurrency int, delayMin, delayMax time.Duration, repository string, maxFiles, holdtime int) (int, int, int) {
 
 	devices := tab.ListDevices()
 	deviceCount := len(devices)
@@ -535,7 +539,7 @@ func ScanDevices(tab *DeviceTable, logger hasPrintf, maxConcurrency int, delayMi
 	logger.Printf("ScanDevices: starting devices=%d maxConcurrency=%d", deviceCount, maxConcurrency)
 	if deviceCount < 1 {
 		logger.Printf("ScanDevices: aborting")
-		return 0, 0
+		return 0, 0, 0
 	}
 
 	begin := time.Now()
@@ -550,6 +554,7 @@ func ScanDevices(tab *DeviceTable, logger hasPrintf, maxConcurrency int, delayMi
 	wait := 0
 	nextDevice := 0
 	success := 0
+	skipped := 0
 
 	for nextDevice < deviceCount || wait > 0 {
 
@@ -561,16 +566,29 @@ func ScanDevices(tab *DeviceTable, logger hasPrintf, maxConcurrency int, delayMi
 				break // max concurrent limit reached
 			}
 
-			// launch one additional per-device goroutine
 			d := devices[nextDevice]
-			r := random.Float64()
-			var delay time.Duration
-			if delayMax > 0 {
-				delay = time.Duration(round(r*float64(delayMax-delayMin))) + delayMin
+
+			if h := d.Holdtime(time.Now(), holdtime); h > 0 {
+
+				// do not handle device yet (holdtime not expired)
+				logger.Printf("device: %s skipping due to holdtime=%s", d.Id(), h)
+				skipped++
+
+			} else {
+
+				// launch one additional per-device goroutine
+
+				r := random.Float64()
+				var delay time.Duration
+				if delayMax > 0 {
+					delay = time.Duration(round(r*float64(delayMax-delayMin))) + delayMin
+				}
+				go d.Fetch(logger, resultCh, delay, repository, maxFiles) // per-device goroutine
+				wait++
+
 			}
-			go d.Fetch(logger, resultCh, delay, repository, maxFiles) // per-device goroutine
+
 			nextDevice++
-			wait++
 		}
 
 		// wait for one device to finish
@@ -578,7 +596,7 @@ func ScanDevices(tab *DeviceTable, logger hasPrintf, maxConcurrency int, delayMi
 		wait--
 		end := time.Now()
 		elap := end.Sub(r.Begin)
-		logger.Printf("device result: %s %s %s %s msg=[%s] code=%d wait=%d remain=%d elap=%s", r.Model, r.DevId, r.DevHostPort, r.Transport, r.Msg, r.Code, wait, deviceCount-nextDevice, elap)
+		logger.Printf("device result: %s %s %s %s msg=[%s] code=%d wait=%d remain=%d skipped=%d elap=%s", r.Model, r.DevId, r.DevHostPort, r.Transport, r.Msg, r.Code, wait, deviceCount-nextDevice, skipped, elap)
 
 		good := r.Code == FETCH_ERR_NONE
 		updateDeviceStatus(tab, r.DevId, good, end, logger)
@@ -597,9 +615,9 @@ func ScanDevices(tab *DeviceTable, logger hasPrintf, maxConcurrency int, delayMi
 	elapsed := time.Since(begin)
 	average := elapsed / time.Duration(deviceCount)
 
-	logger.Printf("ScanDevices: finished elapsed=%s devices=%d success=%d average=%s min=%s max=%s", elapsed, deviceCount, success, average, elapMin, elapMax)
+	logger.Printf("ScanDevices: finished elapsed=%s devices=%d success=%d skipped=%d average=%s min=%s max=%s", elapsed, deviceCount, success, skipped, average, elapMin, elapMax)
 
-	return success, deviceCount - success
+	return success, deviceCount - success, skipped
 }
 
 func updateDeviceStatus(tab *DeviceTable, devId string, good bool, last time.Time, logger hasPrintf) {

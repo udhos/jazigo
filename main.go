@@ -21,8 +21,9 @@ const appVersion = "0.0"
 
 type app struct {
 	configPathPrefix string
-	maxConfigFiles   int
 	repositoryPath   string
+	maxConfigFiles   int
+	holdtime         int // seconds. Do not fetch a good config again before this amount of time.
 
 	table *dev.DeviceTable
 
@@ -48,8 +49,9 @@ func (a *app) logf(fmt string, v ...interface{}) {
 
 func newApp(logger hasPrintf) *app {
 	app := &app{
-		table:  dev.NewDeviceTable(),
-		logger: logger,
+		table:    dev.NewDeviceTable(),
+		logger:   logger,
+		holdtime: 600, // 10 minutes
 	}
 
 	app.logf("%s %s starting", appName, appVersion)
@@ -127,7 +129,7 @@ func main() {
 
 	go func() {
 		for {
-			dev.ScanDevices(jaz.table, logger, 3, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles)
+			dev.ScanDevices(jaz.table, logger, 3, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles, jaz.holdtime)
 			sleep := 10 * time.Second
 			logger.Printf("main: scan loop sleeping for %d seconds", sleep/time.Second)
 			time.Sleep(sleep)

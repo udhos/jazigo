@@ -114,7 +114,7 @@ func (s sortById) Less(i, j int) bool {
 }
 
 func buildDeviceTable(jaz *app, t gwu.Table) {
-	const COLS = 7
+	const COLS = 8
 
 	t.Add(gwu.NewLabel("Model"), 0, 0)
 	t.Add(gwu.NewLabel("Device"), 0, 1)
@@ -123,6 +123,7 @@ func buildDeviceTable(jaz *app, t gwu.Table) {
 	t.Add(gwu.NewLabel("Last Status"), 0, 4)
 	t.Add(gwu.NewLabel("Last Try"), 0, 5)
 	t.Add(gwu.NewLabel("Last Success"), 0, 6)
+	t.Add(gwu.NewLabel("Holdtime"), 0, 7)
 
 	for j := 0; j < COLS; j++ {
 		t.CellFmt(0, j).Style().AddClass("device_table_cell")
@@ -130,6 +131,8 @@ func buildDeviceTable(jaz *app, t gwu.Table) {
 
 	devList := jaz.table.ListDevices()
 	sort.Sort(sortById{data: devList})
+
+	now := time.Now()
 
 	i := 1
 	for _, d := range devList {
@@ -140,6 +143,11 @@ func buildDeviceTable(jaz *app, t gwu.Table) {
 		labLastStatus := gwu.NewLabel(fmt.Sprintf("%v", d.LastStatus()))
 		labLastTry := gwu.NewLabel(timestampString(d.LastTry()))
 		labLastSuccess := gwu.NewLabel(timestampString(d.LastSuccess()))
+		h := d.Holdtime(now, jaz.holdtime)
+		if h < 0 {
+			h = 0
+		}
+		labHoldtime := gwu.NewLabel(fmt.Sprintf("%v", h))
 
 		t.Add(labMod, i, 0)
 		t.Add(labId, i, 1)
@@ -148,6 +156,7 @@ func buildDeviceTable(jaz *app, t gwu.Table) {
 		t.Add(labLastStatus, i, 4)
 		t.Add(labLastTry, i, 5)
 		t.Add(labLastSuccess, i, 6)
+		t.Add(labHoldtime, i, 7)
 
 		for j := 0; j < COLS; j++ {
 			t.CellFmt(i, j).Style().AddClass("device_table_cell")

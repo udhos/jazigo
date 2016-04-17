@@ -85,9 +85,9 @@ func TestCiscoIOS1(t *testing.T) {
 	repo := tempRepo()
 	defer cleanupTempRepo()
 
-	good, bad := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10)
-	if good != 1 || bad != 0 {
-		t.Errorf("good=%d bad=%d", good, bad)
+	good, bad, skip := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
+	if good != 1 || bad != 0 || skip != 0 {
+		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}
 
 	//time.Sleep(time.Hour)
@@ -123,9 +123,9 @@ func TestCiscoIOS2(t *testing.T) {
 	repo := tempRepo()
 	defer cleanupTempRepo()
 
-	good, bad := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10)
-	if good != 1 || bad != 0 {
-		t.Errorf("good=%d bad=%d", good, bad)
+	good, bad, skip := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
+	if good != 1 || bad != 0 || skip != 0 {
+		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}
 
 	//time.Sleep(time.Hour)
@@ -160,9 +160,9 @@ func TestCiscoIOS3(t *testing.T) {
 	repo := tempRepo()
 	defer cleanupTempRepo()
 
-	good, bad := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10)
-	if good != 0 || bad != 1 {
-		t.Errorf("good=%d bad=%d", good, bad)
+	good, bad, skip := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
+	if good != 0 || bad != 1 || skip != 0 {
+		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}
 
 	// shutdown server
@@ -198,8 +198,8 @@ func TestCiscoIOS4(t *testing.T) {
 	repo := tempRepo()
 	defer cleanupTempRepo()
 
-	good, bad := ScanDevices(app, logger, 100, 0*time.Millisecond, 0*time.Millisecond, repo, 10)
-	if good != 1000 || bad != 0 {
+	good, bad, skip := ScanDevices(app, logger, 100, 0*time.Millisecond, 0*time.Millisecond, repo, 10, 0)
+	if good != 1000 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d", good, bad)
 	}
 
