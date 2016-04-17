@@ -125,8 +125,14 @@ func main() {
 
 	server.SetLogger(logger)
 
-	logger.Printf("FIXME: calling one-shot ScanDevices")
-	go dev.ScanDevices(jaz.table, logger, 3, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles) // FIXME one-shot scan
+	go func() {
+		for {
+			dev.ScanDevices(jaz.table, logger, 3, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles)
+			sleep := 10 * time.Second
+			logger.Printf("main: scan loop sleeping for %d seconds", sleep/time.Second)
+			time.Sleep(sleep)
+		}
+	}()
 
 	// Start GUI server
 	if err := server.Start(); err != nil {

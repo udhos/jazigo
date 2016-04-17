@@ -6,10 +6,11 @@ import (
 	//"math/rand"
 	//"os"
 	//"strconv"
+	"sort"
 	"time"
 
 	"github.com/icza/gowut/gwu"
-	//"github.com/udhos/jazigo/dev"
+	"github.com/udhos/jazigo/dev"
 )
 
 func newAccPanel(user string) gwu.Panel {
@@ -98,20 +99,21 @@ func newWin(jaz *app, path, name string) gwu.Window {
 	return win
 }
 
-func buildHomeWin(jaz *app, s gwu.Session) {
+type sortById struct {
+	data []*dev.Device
+}
 
-	winName := fmt.Sprintf("%s home", appName)
-	win := newWin(jaz, "home", winName)
+func (s sortById) Len() int {
+	return len(s.data)
+}
+func (s sortById) Swap(i, j int) {
+	s.data[i], s.data[j] = s.data[j], s.data[i]
+}
+func (s sortById) Less(i, j int) bool {
+	return s.data[i].Id() < s.data[j].Id()
+}
 
-	win.Add(jaz.apHome)
-
-	l := gwu.NewLabel(winName)
-	l.Style().SetFontWeight(gwu.FontWeightBold).SetFontSize("130%")
-	win.Add(l)
-
-	t := gwu.NewTable()
-	t.Style().AddClass("device_table")
-
+func buildDeviceTable(jaz *app, t gwu.Table) {
 	const COLS = 7
 
 	t.Add(gwu.NewLabel("Model"), 0, 0)
@@ -126,8 +128,11 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 		t.CellFmt(0, j).Style().AddClass("device_table_cell")
 	}
 
+	devList := jaz.table.ListDevices()
+	sort.Sort(sortById{data: devList})
+
 	i := 1
-	for _, d := range jaz.table.ListDevices() {
+	for _, d := range devList {
 		labMod := gwu.NewLabel(d.Model())
 		labId := gwu.NewLabel(d.Id())
 		labHost := gwu.NewLabel(d.Host())
@@ -150,6 +155,32 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 
 		i++
 	}
+}
+
+func buildHomeWin(jaz *app, s gwu.Session) {
+
+	winName := fmt.Sprintf("%s home", appName)
+	win := newWin(jaz, "home", winName)
+
+	win.Add(jaz.apHome)
+
+	l := gwu.NewLabel(winName)
+	l.Style().SetFontWeight(gwu.FontWeightBold).SetFontSize("130%")
+	win.Add(l)
+
+	t := gwu.NewTable()
+	t.Style().AddClass("device_table")
+
+	// create login button
+	refresh := gwu.NewButton("Refresh")
+	refresh.AddEHandlerFunc(func(e gwu.Event) {
+		t.Clear() // clear out table contents
+		buildDeviceTable(jaz, t)
+		e.MarkDirty(t)
+	}, gwu.ETypeClick)
+	win.Add(refresh)
+
+	buildDeviceTable(jaz, t)
 
 	win.Add(t)
 
