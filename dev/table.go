@@ -22,7 +22,7 @@ func (t *DeviceTable) GetModel(modelName string) (*Model, error) {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 
-	if m, ok := t.models[modelName]; ok {
+	if m, found := t.models[modelName]; found {
 		m1 := *m // force copy data
 		return &m1, nil
 	}
@@ -41,6 +41,18 @@ func (t *DeviceTable) SetModel(m *Model) error {
 	m1 := *m // force copy data
 	t.models[m1.name] = &m1
 	return nil
+}
+
+func (t *DeviceTable) GetDevice(id string) (*Device, error) {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
+	if d, found := t.devices[id]; found {
+		d1 := *d // force copy data
+		return &d1, nil
+	}
+
+	return nil, fmt.Errorf("DeviceTable.GetDevice: not found")
 }
 
 func (t *DeviceTable) SetDevice(d *Device) error {

@@ -603,7 +603,19 @@ func ScanDevices(tab *DeviceTable, logger hasPrintf, maxConcurrency int, delayMi
 }
 
 func updateDeviceStatus(tab *DeviceTable, devId string, good bool, last time.Time, logger hasPrintf) {
-	logger.Printf("updateDeviceStatus: %s %v %v FIXME WRITEME", devId, good, last)
+	d, getErr := tab.GetDevice(devId)
+	if getErr != nil {
+		logger.Printf("updateDeviceStatus: '%s' not found: %v", getErr)
+		return
+	}
+
+	d.lastTry = last
+	d.lastStatus = good
+	if d.lastStatus {
+		d.lastSuccess = d.lastTry
+	}
+
+	tab.UpdateDevice(d)
 }
 
 func UpdateLastSuccess(tab *DeviceTable, logger hasPrintf, repository string) {
