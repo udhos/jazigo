@@ -43,12 +43,28 @@ func (t *DeviceTable) SetModel(m *Model) error {
 	return nil
 }
 
-func (t *DeviceTable) SetDevice(id string, d *Device) error {
+func (t *DeviceTable) SetDevice(d *Device) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
+	id := d.id
+
 	if _, found := t.devices[id]; found {
 		return fmt.Errorf("DeviceTable.SetDevice: found")
+	}
+	d1 := *d // force copy data
+	t.devices[id] = &d1
+	return nil
+}
+
+func (t *DeviceTable) UpdateDevice(d *Device) error {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	id := d.id
+
+	if _, found := t.devices[id]; !found {
+		return fmt.Errorf("DeviceTable.UpdateDevice: not found")
 	}
 	d1 := *d // force copy data
 	t.devices[id] = &d1

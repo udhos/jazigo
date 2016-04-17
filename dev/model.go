@@ -121,7 +121,7 @@ func CreateDevice(tab *DeviceTable, logger hasPrintf, modelName, id, hostPort, t
 
 	d := NewDevice(mod, id, hostPort, transports, user, pass, enable)
 
-	if newDevErr := tab.SetDevice(id, d); newDevErr != nil {
+	if newDevErr := tab.SetDevice(d); newDevErr != nil {
 		logger.Printf("CreateDevice: could not add device '%s': %v", id, newDevErr)
 	}
 }
@@ -235,15 +235,23 @@ func (d *Device) saveRollback(logger hasPrintf, capture *dialog) {
 	capture.save = nil
 }
 
+func (d *Device) DeviceDir(repository string) string {
+	return filepath.Join(repository, d.id)
+}
+
+func (d *Device) DevicePathPrefix(devDir string) string {
+	return filepath.Join(devDir, d.id) + "."
+}
+
 func (d *Device) saveCommit(logger hasPrintf, capture *dialog, repository string, maxFiles int) error {
 
-	devDir := filepath.Join(repository, d.id)
+	devDir := d.DeviceDir(repository)
 
 	if mkdirErr := os.MkdirAll(devDir, 0700); mkdirErr != nil {
 		return fmt.Errorf("saveCommit: mkdir: error: %v", mkdirErr)
 	}
 
-	devPathPrefix := filepath.Join(devDir, d.id) + "."
+	devPathPrefix := d.DevicePathPrefix(devDir)
 
 	// writeFunc: copy command outputs into file
 	writeFunc := func(w conf.HasWrite) error {
@@ -596,4 +604,35 @@ func ScanDevices(tab *DeviceTable, logger hasPrintf, maxConcurrency int, delayMi
 
 func updateDeviceStatus(tab *DeviceTable, devId string, good bool, last time.Time, logger hasPrintf) {
 	logger.Printf("updateDeviceStatus: %s %v %v FIXME WRITEME", devId, good, last)
+}
+
+func UpdateLastSuccess(tab *DeviceTable, logger hasPrintf, repository string) {
+	for _, d := range tab.ListDevices() {
+		prefix := d.DevicePathPrefix(d.DeviceDir(repository))
+
+		lastConfig, lastErr := conf.FindLastConfig(prefix, logger)
+		if lastErr != nil {
+			logger.Printf("UpdateLastSuccess: find last: '%s': %v", prefix, lastErr)
+			continue
+		}
+
+		f, openErr := os.Open(lastConfig)
+		if openErr != nil {
+			logger.Printf("UpdateLastSuccess: open: '%s': %v", lastConfig, openErr)
+			continue
+		}
+
+		info, statErr := f.Stat()
+		if statErr != nil {
+			logger.Printf("UpdateLastSuccess: stat: '%s': %v", lastConfig, statErr)
+		} else {
+			d.lastSuccess = info.ModTime()
+			tab.UpdateDevice(d)
+		}
+
+		if closeErr := f.Close(); closeErr != nil {
+			logger.Printf("UpdateLastSuccess: close: '%s': %v", lastConfig, closeErr)
+		}
+
+	}
 }

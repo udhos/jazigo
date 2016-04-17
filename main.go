@@ -90,6 +90,8 @@ func main() {
 	dev.CreateDevice(jaz.table, jaz.logger, "junos", "lab8", "localhost:2008", "telnet", "rat", "lab", "lab")
 	dev.CreateDevice(jaz.table, jaz.logger, "http", "lab9", "localhost:2009", "telnet", "", "", "")
 
+	dev.UpdateLastSuccess(jaz.table, jaz.logger, jaz.repositoryPath)
+
 	appAddr := "0.0.0.0:8080"
 	serverName := fmt.Sprintf("%s application", appName)
 
