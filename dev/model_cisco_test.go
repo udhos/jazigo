@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/udhos/jazigo/temp"
 )
 
 type testServer struct {
@@ -82,8 +84,8 @@ func TestCiscoIOS1(t *testing.T) {
 	RegisterModels(logger, app)
 	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
 
-	repo := tempRepo()
-	defer cleanupTempRepo()
+	repo := temp.TempRepo()
+	defer temp.CleanupTempRepo()
 
 	good, bad, skip := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
 	if good != 1 || bad != 0 || skip != 0 {
@@ -120,8 +122,8 @@ func TestCiscoIOS2(t *testing.T) {
 	RegisterModels(logger, app)
 	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
 
-	repo := tempRepo()
-	defer cleanupTempRepo()
+	repo := temp.TempRepo()
+	defer temp.CleanupTempRepo()
 
 	good, bad, skip := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
 	if good != 1 || bad != 0 || skip != 0 {
@@ -157,8 +159,8 @@ func TestCiscoIOS3(t *testing.T) {
 	RegisterModels(logger, app)
 	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
 
-	repo := tempRepo()
-	defer cleanupTempRepo()
+	repo := temp.TempRepo()
+	defer temp.CleanupTempRepo()
 
 	good, bad, skip := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
 	if good != 0 || bad != 1 || skip != 0 {
@@ -195,8 +197,8 @@ func TestCiscoIOS4(t *testing.T) {
 		CreateDevice(app, logger, "cisco-ios", fmt.Sprintf("lab%02d", i), "localhost"+addr, "telnet", "lab", "pass", "en")
 	}
 
-	repo := tempRepo()
-	defer cleanupTempRepo()
+	repo := temp.TempRepo()
+	defer temp.CleanupTempRepo()
 
 	good, bad, skip := ScanDevices(app, logger, 100, 0*time.Millisecond, 0*time.Millisecond, repo, 10, 0)
 	if good != 1000 || bad != 0 || skip != 0 {

@@ -19,3 +19,4 @@ simple() {
 
 #go test
 go test github.com/udhos/jazigo/dev
+go test github.com/udhos/jazigo/conf

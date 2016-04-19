@@ -89,24 +89,6 @@ func (d *Device) Holdtime(now time.Time, holdtime int) time.Duration {
 	return time.Duration(holdtime)*time.Second - now.Sub(d.lastSuccess)
 }
 
-const TEMP_REPO = "/tmp/tmp-jazigo-repo"
-
-func tempRepo() string {
-	path := TEMP_REPO
-	if err := os.MkdirAll(path, 0700); err != nil {
-		panic(fmt.Sprintf("tempRepo: '%s': %v", path, err))
-	}
-	return path
-}
-
-func cleanupTempRepo() string {
-	path := TEMP_REPO
-	if err := os.RemoveAll(path); err != nil {
-		panic(fmt.Sprintf("cleanupTempRepo: '%s': %v", path, err))
-	}
-	return path
-}
-
 func RegisterModels(logger hasPrintf, t *DeviceTable) {
 	registerModelCiscoIOS(logger, t)
 	registerModelLinux(logger, t)

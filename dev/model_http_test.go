@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/udhos/jazigo/temp"
 )
 
 func TestHTTP1(t *testing.T) {
@@ -34,8 +36,8 @@ func TestHTTP1(t *testing.T) {
 	RegisterModels(logger, app)
 	CreateDevice(app, logger, "http", "lab1", "localhost"+addr, "", "", "", "")
 
-	repo := tempRepo()
-	defer cleanupTempRepo()
+	repo := temp.TempRepo()
+	defer temp.CleanupTempRepo()
 
 	good, bad, skip := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
 	if good != 1 || bad != 0 || skip != 0 {
