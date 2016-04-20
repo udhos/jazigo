@@ -3,6 +3,7 @@ package conf
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -175,6 +176,12 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 
 	if err := f.Close(); err != nil {
 		return "", fmt.Errorf("SaveNewConfig: error closing file: [%s]: %v", newFilepath, err)
+	}
+
+	// write last id into shortcut file
+	lastIdPath := fmt.Sprintf("%slast", configPathPrefix)
+	if err := ioutil.WriteFile(lastIdPath, []byte(strconv.Itoa(newCommitId)), 0700); err != nil {
+		logger.Printf("SaveNewConfig: error writing last id file '%s': %v", lastIdPath, err)
 	}
 
 	eraseOldFiles(configPathPrefix, maxFiles, logger)
