@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 type hasPrintf interface {
@@ -122,7 +123,8 @@ func ListConfig(configPathPrefix string, logger hasPrintf) (string, []string, er
 	// filter prefix
 	matches := names[:0] // slice trick: Filtering without allocating
 	for _, x := range names {
-		if strings.HasPrefix(x, basename) {
+		lastByte := rune(x[len(x)-1])
+		if unicode.IsDigit(lastByte) && strings.HasPrefix(x, basename) {
 			matches = append(matches, x)
 		}
 	}
