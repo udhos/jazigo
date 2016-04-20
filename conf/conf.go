@@ -54,6 +54,30 @@ func ExtractCommitIdFromFilename(filename string) (int, error) {
 
 func FindLastConfig(configPathPrefix string, logger hasPrintf) (string, error) {
 
+	lastIdPath := getLastIdPath(configPathPrefix)
+	f, openErr := os.Open(lastIdPath)
+	if openErr != nil {
+		defer f.Close()
+		r := bufio.NewReader(f)
+		line, _, readErr := r.ReadLine()
+		if readErr == nil {
+			id := string(line[:])
+			path := getConfigPath(configPathPrefix, id)
+			_, statErr := os.Stat(path)
+			if statErr == nil {
+				logger.Printf("FindLastConfig: found from shortcut: '%s'", path)
+				return path, nil
+			} else {
+				logger.Printf("FindLastConfig: stat failure '%s': %v", lastIdPath, statErr)
+			}
+		} else {
+			logger.Printf("FindLastConfig: read failure '%s': %v", lastIdPath, readErr)
+		}
+	}
+	logger.Printf("FindLastConfig: last id file not found '%s': %v", lastIdPath, openErr)
+
+	// search filesystem directory
+
 	dirname, matches, err := ListConfig(configPathPrefix, logger)
 	if err != nil {
 		return "", err
@@ -137,6 +161,14 @@ type HasWrite interface {
 	Write(p []byte) (int, error)
 }
 
+func getLastIdPath(configPathPrefix string) string {
+	return fmt.Sprintf("%slast", configPathPrefix)
+}
+
+func getConfigPath(configPathPrefix, id string) string {
+	return fmt.Sprintf("%s%s", configPathPrefix, id)
+}
+
 func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writeFunc func(HasWrite) error) (string, error) {
 
 	lastConfig, err1 := FindLastConfig(configPathPrefix, logger)
@@ -150,8 +182,7 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 	}
 
 	newCommitId := id + 1
-
-	newFilepath := fmt.Sprintf("%s%d", configPathPrefix, newCommitId)
+	newFilepath := getConfigPath(configPathPrefix, strconv.Itoa(newCommitId))
 
 	logger.Printf("SaveNewConfig: newPath=[%s]", newFilepath)
 
@@ -179,7 +210,7 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 	}
 
 	// write last id into shortcut file
-	lastIdPath := fmt.Sprintf("%slast", configPathPrefix)
+	lastIdPath := getLastIdPath(configPathPrefix)
 	if err := ioutil.WriteFile(lastIdPath, []byte(strconv.Itoa(newCommitId)), 0700); err != nil {
 		logger.Printf("SaveNewConfig: error writing last id file '%s': %v", lastIdPath, err)
 	}
