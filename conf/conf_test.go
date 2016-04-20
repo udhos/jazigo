@@ -43,6 +43,15 @@ func confWrite(t *testing.T, prefix, content, expected string, maxFiles int) err
 		return fmt.Errorf("confWrite: got=%s wanted=%s", path, expected)
 	}
 
+	found, findErr := FindLastConfig(prefix, logger)
+	if findErr != nil {
+		return fmt.Errorf("confWrite: FindLastConfig: error: %v", findErr)
+	}
+
+	if found != expected {
+		return fmt.Errorf("confWrite: FindLastConfig: found=%s wanted=%s", found, expected)
+	}
+
 	return nil
 }
 
