@@ -120,7 +120,7 @@ func ListConfig(configPathPrefix string, logger hasPrintf) (string, []string, er
 	basename := filepath.Base(configPathPrefix)
 
 	// filter prefix
-	matches := names[:0]
+	matches := names[:0] // slice trick: Filtering without allocating
 	for _, x := range names {
 		if strings.HasPrefix(x, basename) {
 			matches = append(matches, x)
