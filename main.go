@@ -81,16 +81,16 @@ func main() {
 		jaz.logf("last config: %s", lastConfig)
 	}
 
-	dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en")
-	dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en") // ugh
+	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en")
+	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en") // ugh
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab2", "localhost:2002", "ssh", "lab", "pass", "en")
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab3", "localhost:2003", "telnet,ssh", "lab", "pass", "en")
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab4", "localhost:2004", "ssh,telnet", "lab", "pass", "en")
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab5", "localhost", "telnet", "lab", "pass", "en")
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab6", "localhost", "ssh", "rat", "lab", "en")
-	dev.CreateDevice(jaz.table, jaz.logger, "linux", "lab7", "localhost", "ssh", "rat", "lab", "lab")
-	dev.CreateDevice(jaz.table, jaz.logger, "junos", "lab8", "localhost:2008", "telnet", "rat", "lab", "lab")
-	dev.CreateDevice(jaz.table, jaz.logger, "http", "lab9", "localhost:2009", "telnet", "", "", "")
+	//dev.CreateDevice(jaz.table, jaz.logger, "linux", "lab7", "localhost", "ssh", "rat", "lab", "lab")
+	dev.CreateDevice(jaz.table, jaz.logger, "junos", "lab8", "ex4200lab", "ssh", "test", "lab000", "lab")
+	//dev.CreateDevice(jaz.table, jaz.logger, "http", "lab9", "localhost:2009", "telnet", "", "", "")
 
 	dev.UpdateLastSuccess(jaz.table, jaz.logger, jaz.repositoryPath)
 

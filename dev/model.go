@@ -41,6 +41,9 @@ type attributes struct {
 }
 
 type Device struct {
+	logger hasPrintf
+	debug  bool
+
 	devModel   *Model
 	id         string
 	hostPort   string
@@ -105,15 +108,15 @@ func CreateDevice(tab *DeviceTable, logger hasPrintf, modelName, id, hostPort, t
 		return
 	}
 
-	d := NewDevice(mod, id, hostPort, transports, user, pass, enable)
+	d := NewDevice(logger, mod, id, hostPort, transports, user, pass, enable)
 
 	if newDevErr := tab.SetDevice(d); newDevErr != nil {
 		logger.Printf("CreateDevice: could not add device '%s': %v", id, newDevErr)
 	}
 }
 
-func NewDevice(mod *Model, id, hostPort, transports, loginUser, loginPassword, enablePassword string) *Device {
-	d := &Device{devModel: mod, id: id, hostPort: hostPort, transports: transports, loginUser: loginUser, loginPassword: loginPassword, enablePassword: enablePassword}
+func NewDevice(logger hasPrintf, mod *Model, id, hostPort, transports, loginUser, loginPassword, enablePassword string) *Device {
+	d := &Device{logger: logger, devModel: mod, id: id, hostPort: hostPort, transports: transports, loginUser: loginUser, loginPassword: loginPassword, enablePassword: enablePassword, debug: true}
 	d.attr = mod.defaultAttr
 	return d
 }
@@ -321,6 +324,11 @@ func (d *Device) match(logger hasPrintf, t transp, capture *dialog, patterns []s
 		}
 
 		lastRead := buf[:n]
+
+		if d.debug {
+			d.logf("debug recv: [%s]", lastRead)
+		}
+
 		matchBuf = append(matchBuf, lastRead...)
 		capture.record(lastRead) // record full capture (for debbugging, etc)
 
@@ -363,11 +371,19 @@ func findLastLine(buf []byte) []byte {
 	return lastLine
 }
 
+func (d *Device) logf(format string, v ...interface{}) {
+	d.logger.Printf(fmt.Sprintf("device '%s': ", d.id)+format, v...)
+}
+
 func (d *Device) send(logger hasPrintf, t transp, msg string) error {
 
 	deadline := time.Now().Add(d.attr.sendTimeout)
 	if err := t.SetDeadline(deadline); err != nil {
 		return fmt.Errorf("send: could not set read timeout: %v", err)
+	}
+
+	if d.debug {
+		d.logf("debug send: [%s]", msg)
 	}
 
 	_, wrErr := t.Write([]byte(msg))
