@@ -56,7 +56,7 @@ func FindLastConfig(configPathPrefix string, logger hasPrintf) (string, error) {
 
 	lastIdPath := getLastIdPath(configPathPrefix)
 	f, openErr := os.Open(lastIdPath)
-	if openErr != nil {
+	if openErr == nil {
 		defer f.Close()
 		r := bufio.NewReader(f)
 		line, _, readErr := r.ReadLine()
