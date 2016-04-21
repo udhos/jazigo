@@ -67,9 +67,12 @@ func main() {
 
 	jaz := newApp(logger)
 
+	var runOnce bool
+
 	flag.StringVar(&jaz.configPathPrefix, "configPathPrefix", "/etc/jazigo/jazigo.conf.", "configuration path prefix")
 	flag.StringVar(&jaz.repositoryPath, "repositoryPath", "/var/jazigo", "repository path")
 	flag.IntVar(&jaz.maxConfigFiles, "maxConfigFiles", 10, "limit number of configuration files (negative value means unlimited)")
+	flag.BoolVar(&runOnce, "runOnce", false, "exit after scanning all devices once")
 	flag.Parse()
 	jaz.logf("config path prefix: %s", jaz.configPathPrefix)
 	jaz.logf("repository path: %s", jaz.repositoryPath)
@@ -126,6 +129,12 @@ func main() {
 	buildLoginWin(jaz, server)
 
 	server.SetLogger(logger)
+
+	if runOnce {
+		dev.ScanDevices(jaz.table, logger, 3, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles, jaz.holdtime)
+		logger.Printf("runOnce: exiting after single scan")
+		return
+	}
 
 	go func() {
 		for {
