@@ -560,7 +560,7 @@ func ScanDevices(tab *DeviceTable, logger hasPrintf, maxConcurrency int, delayMi
 	for nextDevice < deviceCount || wait > 0 {
 
 		// launch additional devices
-		for nextDevice < deviceCount {
+		for ; nextDevice < deviceCount; nextDevice++ {
 			// there are devices to process
 
 			if maxConcurrency > 0 && wait >= maxConcurrency {
@@ -574,25 +574,26 @@ func ScanDevices(tab *DeviceTable, logger hasPrintf, maxConcurrency int, delayMi
 				// do not handle device yet (holdtime not expired)
 				logger.Printf("device: %s skipping due to holdtime=%s", d.Id(), h)
 				skipped++
-
-			} else {
-
-				// launch one additional per-device goroutine
-
-				r := random.Float64()
-				var delay time.Duration
-				if delayMax > 0 {
-					delay = time.Duration(round(r*float64(delayMax-delayMin))) + delayMin
-				}
-				go d.Fetch(logger, resultCh, delay, repository, maxFiles) // per-device goroutine
-				wait++
-
+				continue
 			}
 
-			nextDevice++
+			// launch one additional per-device goroutine
+
+			r := random.Float64()
+			var delay time.Duration
+			if delayMax > 0 {
+				delay = time.Duration(round(r*float64(delayMax-delayMin))) + delayMin
+			}
+			go d.Fetch(logger, resultCh, delay, repository, maxFiles) // per-device goroutine
+			wait++
+		}
+
+		if wait < 1 {
+			continue
 		}
 
 		// wait for one device to finish
+		//logger.Printf("device wait: devices=%d wait=%d remain=%d skipped=%d", deviceCount, wait, deviceCount-nextDevice, skipped)
 		r := <-resultCh
 		wait--
 		end := time.Now()

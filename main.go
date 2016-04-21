@@ -51,7 +51,7 @@ func newApp(logger hasPrintf) *app {
 	app := &app{
 		table:    dev.NewDeviceTable(),
 		logger:   logger,
-		holdtime: 600, // 10 minutes
+		holdtime: 60, // 1 minute - FIXME: 12h (do not collect/save new backup before this timeout)
 	}
 
 	app.logf("%s %s starting", appName, appVersion)
@@ -76,6 +76,7 @@ func main() {
 	flag.Parse()
 	jaz.logf("config path prefix: %s", jaz.configPathPrefix)
 	jaz.logf("repository path: %s", jaz.repositoryPath)
+	jaz.logf("runOnce: %v", runOnce)
 
 	lastConfig, configErr := conf.FindLastConfig(jaz.configPathPrefix, logger)
 	if configErr != nil {
@@ -128,24 +129,29 @@ func main() {
 	buildHomeWin(jaz, server)
 	buildLoginWin(jaz, server)
 
-	server.SetLogger(logger)
-
 	if runOnce {
 		dev.ScanDevices(jaz.table, logger, 3, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles, jaz.holdtime)
-		logger.Printf("runOnce: exiting after single scan")
+		jaz.logf("runOnce: exiting after single scan")
 		return
 	}
 
 	go func() {
+		scanInterval := 10 * time.Second // FIXME: 1h (interval between full table scan)
 		for {
+			begin := time.Now()
 			dev.ScanDevices(jaz.table, logger, 3, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles, jaz.holdtime)
-			sleep := 10 * time.Second
-			logger.Printf("main: scan loop sleeping for %d seconds", sleep/time.Second)
+			elap := time.Since(begin)
+			sleep := scanInterval - elap
+			if sleep < 1 {
+				sleep = 0
+			}
+			jaz.logf("main: scan loop sleeping for %s (target: %s)", sleep, scanInterval)
 			time.Sleep(sleep)
 		}
 	}()
 
 	// Start GUI server
+	server.SetLogger(logger)
 	if err := server.Start(); err != nil {
 		jaz.logf("jazigo main: Cound not start GUI server: %s", err)
 		return
