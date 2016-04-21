@@ -18,7 +18,7 @@ func registerModelJunOS(logger hasPrintf, t *DeviceTable) {
 		enablePasswordPromptPattern: "",
 		disabledPromptPattern:       `\S+>\s*$`,
 		enabledPromptPattern:        `\S+>\s*$`,
-		commandList:                 []string{"show configuration | display set"},
+		commandList:                 []string{"set cli screen-length 0; show configuration | display set"},
 		disablePagerCommand:         "set cli screen-length 0",
 		readTimeout:                 10 * time.Second,
 		matchTimeout:                20 * time.Second,

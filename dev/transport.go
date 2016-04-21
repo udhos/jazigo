@@ -1,10 +1,10 @@
 package dev
 
 import (
-	//"bytes"
+	"bytes"
 	"fmt"
 	"golang.org/x/crypto/ssh"
-	"io"
+	//"io"
 	"net"
 	"strings"
 	"time"
@@ -31,18 +31,19 @@ type transpSSH struct {
 	conn     net.Conn
 	client   *ssh.Client
 	session  *ssh.Session
-	//out      bytes.Buffer
-	//err      bytes.Buffer
-	reader   io.Reader
-	writeErr error
+	out      bytes.Buffer
+	err      bytes.Buffer
+	//reader   io.Reader
+	//writeErr error
 }
 
 func (s *transpSSH) EofIsError() bool {
-	return false
+	return true
 }
 
 func (s *transpSSH) Read(b []byte) (int, error) {
-	return s.reader.Read(b)
+	//return s.reader.Read(b)
+	return s.out.Read(b)
 }
 
 func (s *transpSSH) Write(b []byte) (int, error) {
@@ -62,20 +63,29 @@ func (s *transpSSH) Write(b []byte) (int, error) {
 		return noWriteLen, fmt.Errorf("openSSH: Pty: %s - %v", s.devLabel, ptyErr)
 	}
 
-	outReader, outErr := ses.StdoutPipe()
-	if outErr != nil {
-		return noWriteLen, fmt.Errorf("openSSH: session.StdoutPipe: %s - %v", s.devLabel, outReader)
-	}
-	errReader, errErr := ses.StderrPipe()
-	if errErr != nil {
-		return noWriteLen, fmt.Errorf("openSSH: session.StderrPipe: %s - %v", s.devLabel, errReader)
-	}
+	ses.Stdout = &s.out
+	ses.Stderr = &s.err
 
-	s.reader = io.MultiReader(outReader, errReader)
+	/*
+		outReader, outErr := ses.StdoutPipe()
+		if outErr != nil {
+			return noWriteLen, fmt.Errorf("openSSH: session.StdoutPipe: %s - %v", s.devLabel, outReader)
+		}
+		errReader, errErr := ses.StderrPipe()
+		if errErr != nil {
+			return noWriteLen, fmt.Errorf("openSSH: session.StderrPipe: %s - %v", s.devLabel, errReader)
+		}
 
+		s.reader = io.MultiReader(outReader, errReader)
+
+		go func() {
+		   if n, copyErr := io.Copy(dst Writer, s.reader); copyErr != nil {
+		   }
+		}()
+	*/
 	str := string(b)
 	if err := ses.Run(str); err != nil {
-		return noWriteLen, fmt.Errorf("ssh session.Run(%s): %v", str, err)
+		return noWriteLen, fmt.Errorf("ssh session.Run(%s): %v out=[%s] err=[%s]", str, err, s.out.Bytes(), s.err.Bytes())
 	}
 
 	return len(str), nil

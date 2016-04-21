@@ -35,7 +35,7 @@ func TestJuniperJunOS1(t *testing.T) {
 	app := NewDeviceTable()
 	RegisterModels(logger, app)
 
-	CreateDevice(app, logger, "junos", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
+	CreateDevice(app, logger, "junos", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
@@ -69,7 +69,7 @@ func TestJuniperJunOS2(t *testing.T) {
 	*/
 	app := NewDeviceTable()
 	RegisterModels(logger, app)
-	CreateDevice(app, logger, "junos", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
+	CreateDevice(app, logger, "junos", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()

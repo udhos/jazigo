@@ -99,7 +99,7 @@ func RegisterModels(logger hasPrintf, t *DeviceTable) {
 	registerModelHTTP(logger, t)
 }
 
-func CreateDevice(tab *DeviceTable, logger hasPrintf, modelName, id, hostPort, transports, user, pass, enable string) {
+func CreateDevice(tab *DeviceTable, logger hasPrintf, modelName, id, hostPort, transports, user, pass, enable string, debug bool) {
 	logger.Printf("CreateDevice: %s %s %s %s", modelName, id, hostPort, transports)
 
 	mod, getErr := tab.GetModel(modelName)
@@ -108,15 +108,15 @@ func CreateDevice(tab *DeviceTable, logger hasPrintf, modelName, id, hostPort, t
 		return
 	}
 
-	d := NewDevice(logger, mod, id, hostPort, transports, user, pass, enable)
+	d := NewDevice(logger, mod, id, hostPort, transports, user, pass, enable, debug)
 
 	if newDevErr := tab.SetDevice(d); newDevErr != nil {
 		logger.Printf("CreateDevice: could not add device '%s': %v", id, newDevErr)
 	}
 }
 
-func NewDevice(logger hasPrintf, mod *Model, id, hostPort, transports, loginUser, loginPassword, enablePassword string) *Device {
-	d := &Device{logger: logger, devModel: mod, id: id, hostPort: hostPort, transports: transports, loginUser: loginUser, loginPassword: loginPassword, enablePassword: enablePassword, debug: true}
+func NewDevice(logger hasPrintf, mod *Model, id, hostPort, transports, loginUser, loginPassword, enablePassword string, debug bool) *Device {
+	d := &Device{logger: logger, devModel: mod, id: id, hostPort: hostPort, transports: transports, loginUser: loginUser, loginPassword: loginPassword, enablePassword: enablePassword, debug: debug}
 	d.attr = mod.defaultAttr
 	return d
 }

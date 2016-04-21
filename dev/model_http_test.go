@@ -34,7 +34,7 @@ func TestHTTP1(t *testing.T) {
 	*/
 	app := NewDeviceTable()
 	RegisterModels(logger, app)
-	CreateDevice(app, logger, "http", "lab1", "localhost"+addr, "", "", "", "")
+	CreateDevice(app, logger, "http", "lab1", "localhost"+addr, "", "", "", "", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()

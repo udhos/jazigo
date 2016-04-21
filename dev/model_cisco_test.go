@@ -82,7 +82,7 @@ func TestCiscoIOS1(t *testing.T) {
 	*/
 	app := NewDeviceTable()
 	RegisterModels(logger, app)
-	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
+	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
@@ -120,7 +120,7 @@ func TestCiscoIOS2(t *testing.T) {
 	*/
 	app := NewDeviceTable()
 	RegisterModels(logger, app)
-	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
+	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
@@ -157,7 +157,7 @@ func TestCiscoIOS3(t *testing.T) {
 	*/
 	app := NewDeviceTable()
 	RegisterModels(logger, app)
-	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en")
+	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
@@ -194,7 +194,7 @@ func TestCiscoIOS4(t *testing.T) {
 	app := NewDeviceTable()
 	RegisterModels(logger, app)
 	for i := 0; i < 1000; i++ {
-		CreateDevice(app, logger, "cisco-ios", fmt.Sprintf("lab%02d", i), "localhost"+addr, "telnet", "lab", "pass", "en")
+		CreateDevice(app, logger, "cisco-ios", fmt.Sprintf("lab%02d", i), "localhost"+addr, "telnet", "lab", "pass", "en", false)
 	}
 
 	repo := temp.TempRepo()
