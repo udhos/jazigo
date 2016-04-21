@@ -1,7 +1,7 @@
 package dev
 
 import (
-	"bytes"
+	//"bytes"
 	"fmt"
 	"golang.org/x/crypto/ssh"
 	"io"
@@ -15,34 +15,67 @@ type transp interface {
 	Write(b []byte) (n int, err error)
 	SetDeadline(t time.Time) error
 	Close() error
+	EofIsError() bool
+}
+
+type transpTCP struct {
+	net.Conn
+}
+
+func (s *transpTCP) EofIsError() bool {
+	return true
 }
 
 type transpSSH struct {
+	devLabel string
 	conn     net.Conn
+	client   *ssh.Client
 	session  *ssh.Session
-	out      bytes.Buffer
-	err      bytes.Buffer
+	//out      bytes.Buffer
+	//err      bytes.Buffer
+	reader   io.Reader
 	writeErr error
 }
 
+func (s *transpSSH) EofIsError() bool {
+	return false
+}
+
 func (s *transpSSH) Read(b []byte) (int, error) {
-	n := copy(b, s.out.Bytes())
-	return n, io.EOF
+	return s.reader.Read(b)
 }
 
 func (s *transpSSH) Write(b []byte) (int, error) {
 
+	noWriteLen := -1
+
+	ses, sessionErr := s.client.NewSession()
+	if sessionErr != nil {
+		return noWriteLen, fmt.Errorf("openSSH: NewSession: %s - %v", s.devLabel, sessionErr)
+	}
+
+	s.session = ses
+
+	modes := ssh.TerminalModes{}
+
+	if ptyErr := ses.RequestPty("xterm", 80, 40, modes); ptyErr != nil {
+		return noWriteLen, fmt.Errorf("openSSH: Pty: %s - %v", s.devLabel, ptyErr)
+	}
+
+	outReader, outErr := ses.StdoutPipe()
+	if outErr != nil {
+		return noWriteLen, fmt.Errorf("openSSH: session.StdoutPipe: %s - %v", s.devLabel, outReader)
+	}
+	errReader, errErr := ses.StderrPipe()
+	if errErr != nil {
+		return noWriteLen, fmt.Errorf("openSSH: session.StderrPipe: %s - %v", s.devLabel, errReader)
+	}
+
+	s.reader = io.MultiReader(outReader, errReader)
+
 	str := string(b)
-
-	if err := s.session.Run(str); err != nil {
-
-		switch err.(type) {
-		//case *ssh.ExitMissingError:
-		//	s.writeErr = io.EOF
-		default:
-			return -1, fmt.Errorf("session.Run: %v out=[%s] err=[%s]", err, s.out.String(), s.err.String())
-		}
-
+	if err := ses.Run(str); err != nil {
+		return noWriteLen, fmt.Errorf("ssh session.Run(%s): %v", str, err)
 	}
 
 	return len(str), nil
@@ -125,21 +158,7 @@ func openSSH(modelName, devId, hostPort string, timeout time.Duration, user, pas
 
 	cli := ssh.NewClient(c, chans, reqs)
 
-	ses, sessionErr := cli.NewSession()
-	if sessionErr != nil {
-		return nil, fmt.Errorf("openSSH: NewSession: %s %s %s - %v", modelName, devId, hostPort, sessionErr)
-	}
-
-	modes := ssh.TerminalModes{}
-
-	if ptyErr := ses.RequestPty("xterm", 80, 40, modes); ptyErr != nil {
-		return nil, fmt.Errorf("openSSH: Pty: %s %s %s - %v", modelName, devId, hostPort, ptyErr)
-	}
-
-	s := &transpSSH{conn: conn, session: ses}
-
-	ses.Stdout = &s.out
-	ses.Stderr = &s.err
+	s := &transpSSH{conn: conn, client: cli, devLabel: fmt.Sprintf("%s %s %s", modelName, devId, hostPort)}
 
 	return s, nil
 }
@@ -151,5 +170,5 @@ func openTelnet(modelName, devId, hostPort string, timeout time.Duration) (trans
 		return nil, fmt.Errorf("openTelnet: %s %s %s - %v", modelName, devId, hostPort, err)
 	}
 
-	return conn, nil
+	return &transpTCP{conn}, nil
 }

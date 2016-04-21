@@ -347,7 +347,10 @@ func (d *Device) match(logger hasPrintf, t transp, capture *dialog, patterns []s
 		}
 
 		if eof {
-			return badIndex, matchBuf, io.EOF
+			if t.EofIsError() {
+				return badIndex, matchBuf, io.EOF
+			}
+			return badIndex, matchBuf, nil
 		}
 	}
 }
