@@ -1,7 +1,7 @@
 package dev
 
 import (
-	"bytes"
+	//"bytes"
 	"fmt"
 	"golang.org/x/crypto/ssh"
 	"io"
@@ -15,42 +15,47 @@ type transp interface {
 	Write(b []byte) (n int, err error)
 	SetDeadline(t time.Time) error
 	Close() error
-	EofIsError() bool
+	//EofIsError() bool
 }
 
 type transpTCP struct {
 	net.Conn
 }
 
+/*
 func (s *transpTCP) EofIsError() bool {
 	return true
 }
+*/
 
 type transpSSH struct {
 	devLabel string
 	conn     net.Conn
 	client   *ssh.Client
 	session  *ssh.Session
-	out      bytes.Buffer
-	err      bytes.Buffer
-	writer   io.Writer
-	//reader   io.Reader
+	//out      bytes.Buffer
+	//err      bytes.Buffer
+	writer io.Writer
+	reader io.Reader
 	//writeErr error
 }
 
+/*
 func (s *transpSSH) EofIsError() bool {
-	return false
+	return true
 }
+*/
 
 func (s *transpSSH) Read(b []byte) (int, error) {
-	return s.out.Read(b)
+	return s.reader.Read(b)
 }
 
 func (s *transpSSH) Write(b []byte) (int, error) {
 
 	n, err := s.writer.Write(b)
 	if err != nil {
-		return -1, fmt.Errorf("ssh write(%s): %v out=[%s] err=[%s]", b, err, s.out.Bytes(), s.err.Bytes())
+		//return -1, fmt.Errorf("ssh write(%s): %v out=[%s] err=[%s]", b, err, s.out.Bytes(), s.err.Bytes())
+		return -1, fmt.Errorf("ssh write(%s): %v", b, err)
 	}
 
 	return n, nil
@@ -148,8 +153,20 @@ func openSSH(modelName, devId, hostPort string, timeout time.Duration, user, pas
 		return nil, fmt.Errorf("openSSH: Pty: %s - %v", s.devLabel, ptyErr)
 	}
 
-	ses.Stdout = &s.out
-	ses.Stderr = &s.err
+	//ses.Stdout = &s.out
+	//ses.Stderr = &s.err
+
+	pipeOut, outErr := ses.StdoutPipe()
+	if outErr != nil {
+		return nil, fmt.Errorf("openSSH: StdoutPipe: %s - %v", s.devLabel, outErr)
+	}
+
+	pipeErr, errErr := ses.StderrPipe()
+	if errErr != nil {
+		return nil, fmt.Errorf("openSSH: StderrPipe: %s - %v", s.devLabel, errErr)
+	}
+
+	s.reader = io.MultiReader(pipeOut, pipeErr)
 
 	writer, wrErr := ses.StdinPipe()
 	if wrErr != nil {

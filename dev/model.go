@@ -88,8 +88,8 @@ func (d *Device) LastSuccess() time.Time {
 	return d.lastSuccess
 }
 
-func (d *Device) Holdtime(now time.Time, holdtime int) time.Duration {
-	return time.Duration(holdtime)*time.Second - now.Sub(d.lastSuccess)
+func (d *Device) Holdtime(now time.Time, holdtime time.Duration) time.Duration {
+	return holdtime - now.Sub(d.lastSuccess)
 }
 
 func RegisterModels(logger hasPrintf, t *DeviceTable) {
@@ -314,6 +314,9 @@ func (d *Device) match(logger hasPrintf, t transp, capture *dialog, patterns []s
 			}
 			switch {
 			case readErr == io.EOF:
+				if d.debug {
+					d.logf("debug recv: EOF")
+				}
 				eof = true // EOF is normal termination for SSH transport
 			default:
 				return badIndex, matchBuf, fmt.Errorf("match: unexpected error: %v", readErr)
@@ -347,10 +350,13 @@ func (d *Device) match(logger hasPrintf, t transp, capture *dialog, patterns []s
 		}
 
 		if eof {
-			if t.EofIsError() {
-				return badIndex, matchBuf, io.EOF
-			}
-			return badIndex, matchBuf, nil
+			/*
+				if t.EofIsError() {
+					return badIndex, matchBuf, io.EOF
+				}
+				return badIndex, matchBuf, nil
+			¨	*/
+			return badIndex, matchBuf, io.EOF
 		}
 	}
 }
@@ -532,7 +538,7 @@ func round(val float64) int {
 	return int(val + 0.5)
 }
 
-func ScanDevices(tab *DeviceTable, logger hasPrintf, maxConcurrency int, delayMin, delayMax time.Duration, repository string, maxFiles, holdtime int) (int, int, int) {
+func ScanDevices(tab *DeviceTable, logger hasPrintf, maxConcurrency int, delayMin, delayMax time.Duration, repository string, maxFiles int, holdtime time.Duration) (int, int, int) {
 
 	devices := tab.ListDevices()
 	deviceCount := len(devices)
@@ -570,7 +576,6 @@ func ScanDevices(tab *DeviceTable, logger hasPrintf, maxConcurrency int, delayMi
 			d := devices[nextDevice]
 
 			if h := d.Holdtime(time.Now(), holdtime); h > 0 {
-
 				// do not handle device yet (holdtime not expired)
 				logger.Printf("device: %s skipping due to holdtime=%s", d.Id(), h)
 				skipped++

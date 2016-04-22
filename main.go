@@ -23,7 +23,8 @@ type app struct {
 	configPathPrefix string
 	repositoryPath   string
 	maxConfigFiles   int
-	holdtime         int // seconds. Do not fetch a good config again before this amount of time.
+	holdtime         time.Duration
+	scanInterval     time.Duration
 
 	table *dev.DeviceTable
 
@@ -49,9 +50,10 @@ func (a *app) logf(fmt string, v ...interface{}) {
 
 func newApp(logger hasPrintf) *app {
 	app := &app{
-		table:    dev.NewDeviceTable(),
-		logger:   logger,
-		holdtime: 60, // 1 minute - FIXME: 12h (do not collect/save new backup before this timeout)
+		table:        dev.NewDeviceTable(),
+		logger:       logger,
+		holdtime:     60 * time.Second, // FIXME: 12h (do not collect/save new backup before this timeout)
+		scanInterval: 10 * time.Second, // FIXME: 1h (interval between full table scan)
 	}
 
 	app.logf("%s %s starting", appName, appVersion)
@@ -76,6 +78,8 @@ func main() {
 	flag.Parse()
 	jaz.logf("config path prefix: %s", jaz.configPathPrefix)
 	jaz.logf("repository path: %s", jaz.repositoryPath)
+	jaz.logf("scan interval: %s", jaz.scanInterval)
+	jaz.logf("holdtime: %s", jaz.holdtime)
 	jaz.logf("runOnce: %v", runOnce)
 
 	lastConfig, configErr := conf.FindLastConfig(jaz.configPathPrefix, logger)
@@ -92,8 +96,8 @@ func main() {
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab4", "localhost:2004", "ssh,telnet", "lab", "pass", "en")
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab5", "localhost", "telnet", "lab", "pass", "en")
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab6", "localhost", "ssh", "rat", "lab", "en")
-	//dev.CreateDevice(jaz.table, jaz.logger, "linux", "lab7", "localhost", "ssh", "rat", "lab", "lab")
-	dev.CreateDevice(jaz.table, jaz.logger, "junos", "lab8", "ex4200lab", "ssh", "test", "lab000", "lab", true)
+	dev.CreateDevice(jaz.table, jaz.logger, "linux", "lab7", "localhost", "ssh", "rat", "lab", "lab", false)
+	dev.CreateDevice(jaz.table, jaz.logger, "junos", "lab8", "ex4200lab", "ssh", "test", "lab000", "lab", false)
 	//dev.CreateDevice(jaz.table, jaz.logger, "http", "lab9", "localhost:2009", "telnet", "", "", "")
 
 	dev.UpdateLastSuccess(jaz.table, jaz.logger, jaz.repositoryPath)
@@ -136,16 +140,15 @@ func main() {
 	}
 
 	go func() {
-		scanInterval := 10 * time.Second // FIXME: 1h (interval between full table scan)
 		for {
 			begin := time.Now()
 			dev.ScanDevices(jaz.table, logger, 3, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles, jaz.holdtime)
 			elap := time.Since(begin)
-			sleep := scanInterval - elap
+			sleep := jaz.scanInterval - elap
 			if sleep < 1 {
 				sleep = 0
 			}
-			jaz.logf("main: scan loop sleeping for %s (target: %s)", sleep, scanInterval)
+			jaz.logf("main: scan loop sleeping for %s (target: %s)", sleep, jaz.scanInterval)
 			time.Sleep(sleep)
 		}
 	}()
