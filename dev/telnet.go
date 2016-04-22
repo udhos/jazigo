@@ -21,6 +21,8 @@ func telnetNegotiation(b []byte, n int, t transp) (int, error) {
 
 	timeout := 5 * time.Second // FIXME??
 
+	hitNeg := false
+
 	for {
 		if n < 3 {
 			break
@@ -34,6 +36,7 @@ func telnetNegotiation(b []byte, n int, t transp) (int, error) {
 			t.SetWriteDeadline(time.Now().Add(timeout)) // FIXME: handle error
 			t.Write([]byte{255, 252, opt})              // IAC WONT opt - FIXME: handle error
 			n = shift(b, n, 3)
+			hitNeg = true
 			continue
 		}
 		if b[1] == 251 {
@@ -42,12 +45,13 @@ func telnetNegotiation(b []byte, n int, t transp) (int, error) {
 			t.SetWriteDeadline(time.Now().Add(timeout)) // FIXME: handle error
 			t.Write([]byte{255, 254, opt})              // IAC DONT opt - FIXME: handle error
 			n = shift(b, n, 3)
+			hitNeg = true
 			continue
 		}
 		break
 	}
 
-	if n == 0 {
+	if n == 0 && hitNeg {
 		return 0, TELNET_NEG
 	}
 

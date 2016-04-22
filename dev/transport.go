@@ -32,7 +32,6 @@ func (s *transpTelnet) Read(b []byte) (int, error) {
 	if err != nil {
 		return n, err
 	}
-	//s.logger.Printf("telnet.Read: size=%d [%v]", n, b[:n])
 	return telnetNegotiation(b, n, s)
 }
 
