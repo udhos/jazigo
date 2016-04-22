@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"golang.org/x/crypto/ssh"
-	//"io"
+	"io"
 	"net"
 	"strings"
 	"time"
@@ -33,62 +33,27 @@ type transpSSH struct {
 	session  *ssh.Session
 	out      bytes.Buffer
 	err      bytes.Buffer
+	writer   io.Writer
 	//reader   io.Reader
 	//writeErr error
 }
 
 func (s *transpSSH) EofIsError() bool {
-	return true
+	return false
 }
 
 func (s *transpSSH) Read(b []byte) (int, error) {
-	//return s.reader.Read(b)
 	return s.out.Read(b)
 }
 
 func (s *transpSSH) Write(b []byte) (int, error) {
 
-	noWriteLen := -1
-
-	ses, sessionErr := s.client.NewSession()
-	if sessionErr != nil {
-		return noWriteLen, fmt.Errorf("openSSH: NewSession: %s - %v", s.devLabel, sessionErr)
+	n, err := s.writer.Write(b)
+	if err != nil {
+		return -1, fmt.Errorf("ssh write(%s): %v out=[%s] err=[%s]", b, err, s.out.Bytes(), s.err.Bytes())
 	}
 
-	s.session = ses
-
-	modes := ssh.TerminalModes{}
-
-	if ptyErr := ses.RequestPty("xterm", 80, 40, modes); ptyErr != nil {
-		return noWriteLen, fmt.Errorf("openSSH: Pty: %s - %v", s.devLabel, ptyErr)
-	}
-
-	ses.Stdout = &s.out
-	ses.Stderr = &s.err
-
-	/*
-		outReader, outErr := ses.StdoutPipe()
-		if outErr != nil {
-			return noWriteLen, fmt.Errorf("openSSH: session.StdoutPipe: %s - %v", s.devLabel, outReader)
-		}
-		errReader, errErr := ses.StderrPipe()
-		if errErr != nil {
-			return noWriteLen, fmt.Errorf("openSSH: session.StderrPipe: %s - %v", s.devLabel, errReader)
-		}
-
-		s.reader = io.MultiReader(outReader, errReader)
-
-		go func() {
-		   if n, copyErr := io.Copy(dst Writer, s.reader); copyErr != nil {
-		   }
-		}()
-	*/
-	str := string(b)
-	if err := ses.Run(str); err != nil {
-		return noWriteLen, fmt.Errorf("ssh session.Run(%s): %v out=[%s] err=[%s]", str, err, s.out.Bytes(), s.err.Bytes())
-	}
-
-	return len(str), nil
+	return n, nil
 }
 
 func (s *transpSSH) SetDeadline(t time.Time) error {
@@ -169,6 +134,33 @@ func openSSH(modelName, devId, hostPort string, timeout time.Duration, user, pas
 	cli := ssh.NewClient(c, chans, reqs)
 
 	s := &transpSSH{conn: conn, client: cli, devLabel: fmt.Sprintf("%s %s %s", modelName, devId, hostPort)}
+
+	ses, sessionErr := s.client.NewSession()
+	if sessionErr != nil {
+		return nil, fmt.Errorf("openSSH: NewSession: %s - %v", s.devLabel, sessionErr)
+	}
+
+	s.session = ses
+
+	modes := ssh.TerminalModes{}
+
+	if ptyErr := ses.RequestPty("xterm", 80, 40, modes); ptyErr != nil {
+		return nil, fmt.Errorf("openSSH: Pty: %s - %v", s.devLabel, ptyErr)
+	}
+
+	ses.Stdout = &s.out
+	ses.Stderr = &s.err
+
+	writer, wrErr := ses.StdinPipe()
+	if wrErr != nil {
+		return nil, fmt.Errorf("openSSH: StdinPipe: %s - %v", s.devLabel, wrErr)
+	}
+
+	s.writer = writer
+
+	if shellErr := ses.Shell(); shellErr != nil {
+		return nil, fmt.Errorf("openSSH: Remote shell error: %s - %v", s.devLabel, shellErr)
+	}
 
 	return s, nil
 }
