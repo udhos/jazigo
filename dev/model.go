@@ -329,7 +329,32 @@ func (d *Device) match(logger hasPrintf, t transp, capture *dialog, patterns []s
 		lastRead := buf[:n]
 
 		if d.debug {
-			d.logf("debug recv: [%s]", lastRead)
+			d.logf("debug recv: [%q]", lastRead)
+		}
+
+		// telnet negotiation
+
+		for {
+			if len(lastRead) < 3 {
+				break
+			}
+			if lastRead[0] != 255 {
+				break // not IAC
+			}
+			if lastRead[1] == 253 {
+				// do
+				opt := lastRead[2]
+				d.sendBytes(logger, t, []byte{255, 252, opt}) // IAC WONT opt
+				lastRead = lastRead[3:]                       // skip
+				continue
+			}
+			if lastRead[1] == 251 {
+				// will
+				opt := lastRead[2]
+				d.sendBytes(logger, t, []byte{255, 254, opt}) // IAC DONT opt
+				lastRead = lastRead[3:]                       // skip
+				continue
+			}
 		}
 
 		matchBuf = append(matchBuf, lastRead...)
@@ -385,6 +410,10 @@ func (d *Device) logf(format string, v ...interface{}) {
 }
 
 func (d *Device) send(logger hasPrintf, t transp, msg string) error {
+	return d.sendBytes(logger, t, []byte(msg))
+}
+
+func (d *Device) sendBytes(logger hasPrintf, t transp, msg []byte) error {
 
 	deadline := time.Now().Add(d.attr.sendTimeout)
 	if err := t.SetDeadline(deadline); err != nil {
@@ -392,10 +421,10 @@ func (d *Device) send(logger hasPrintf, t transp, msg string) error {
 	}
 
 	if d.debug {
-		d.logf("debug send: [%s]", msg)
+		d.logf("debug send: [%q]", msg)
 	}
 
-	_, wrErr := t.Write([]byte(msg))
+	_, wrErr := t.Write(msg)
 
 	return wrErr
 }
@@ -497,7 +526,7 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 	case 0:
 		logger.Printf("login: found username prompt")
 
-		if userErr := d.send(logger, t, d.loginUser); userErr != nil {
+		if userErr := d.send(logger, t, d.loginUser+"\n"); userErr != nil {
 			return false, fmt.Errorf("login: could not send username: %v", userErr)
 		}
 
@@ -510,7 +539,7 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 		logger.Printf("login: found password prompt")
 	}
 
-	if passErr := d.send(logger, t, d.loginPassword); passErr != nil {
+	if passErr := d.send(logger, t, d.loginPassword+"\n"); passErr != nil {
 		return false, fmt.Errorf("login: could not send password: %v", passErr)
 	}
 

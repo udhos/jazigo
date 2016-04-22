@@ -96,9 +96,10 @@ func main() {
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab4", "localhost:2004", "ssh,telnet", "lab", "pass", "en")
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab5", "localhost", "telnet", "lab", "pass", "en")
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab6", "localhost", "ssh", "rat", "lab", "en")
-	dev.CreateDevice(jaz.table, jaz.logger, "linux", "lab7", "localhost", "ssh", "rat", "lab", "lab", false)
+	//dev.CreateDevice(jaz.table, jaz.logger, "linux", "lab7", "localhost", "ssh", "rat", "lab", "lab", false)
 	dev.CreateDevice(jaz.table, jaz.logger, "junos", "lab8", "ex4200lab", "ssh", "test", "lab000", "lab", false)
-	//dev.CreateDevice(jaz.table, jaz.logger, "http", "lab9", "localhost:2009", "telnet", "", "", "")
+	dev.CreateDevice(jaz.table, jaz.logger, "junos", "lab9", "ex4200lab", "telnet", "test", "lab000", "lab", false)
+	//dev.CreateDevice(jaz.table, jaz.logger, "http", "lab10", "localhost:2009", "telnet", "", "", "")
 
 	dev.UpdateLastSuccess(jaz.table, jaz.logger, jaz.repositoryPath)
 
@@ -148,7 +149,7 @@ func main() {
 			if sleep < 1 {
 				sleep = 0
 			}
-			jaz.logf("main: scan loop sleeping for %s (target: %s)", sleep, jaz.scanInterval)
+			jaz.logf("main: scan loop sleeping for %s (target: scanInterval=%s)", sleep, jaz.scanInterval)
 			time.Sleep(sleep)
 		}
 	}()

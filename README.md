@@ -29,13 +29,19 @@ Example:
     # They're just handy pointers used in step 5 below.
     export APP_ETC=/etc/jazigo            ;# app config dir
     export APP_CONF=$APP_ETC/jazigo.conf. ;# last dot is required
-    export APP_REPO=/var/jazigo           ;# backup repository
-    mkdir $APP_ETC $APP_REPO
+    export APP_REPO=/var/jazigo/repo      ;# backup repository
+    mkdir -p $APP_ETC $APP_REPO
 
-5\. Run jazigo
+5\. Run jazigo once (see -runOnce option)
+
+`$GOPATH/bin/jazigo -configPathPrefix $APP_CONF -repositoryPath $APP_REPO -runOnce`
+
+Watch messages logged to standard output.
+
+6\. Run jazigo forever
 
 `$GOPATH/bin/jazigo -configPathPrefix $APP_CONF -repositoryPath $APP_REPO`
 
-6\. Look at the web interface
+7\. Look at the web interface
 
 Point web browser at: [http://localhost:8080/jazigo](http://localhost:8080/jazigo)
