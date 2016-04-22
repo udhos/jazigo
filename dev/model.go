@@ -292,6 +292,7 @@ func (d *Device) match(logger hasPrintf, t transp, capture *dialog, patterns []s
 	begin := time.Now()
 	buf := make([]byte, 100000)
 
+READ_LOOP:
 	for {
 		now := time.Now()
 		if now.Sub(begin) > d.attr.matchTimeout {
@@ -312,12 +313,17 @@ func (d *Device) match(logger hasPrintf, t transp, capture *dialog, patterns []s
 					return badIndex, matchBuf, fmt.Errorf("match: read timed out (%s): %v", d.attr.readTimeout, readErr)
 				}
 			}
-			switch {
-			case readErr == io.EOF:
+			switch readErr {
+			case io.EOF:
 				if d.debug {
 					d.logf("debug recv: EOF")
 				}
 				eof = true // EOF is normal termination for SSH transport
+			case TELNET_NEG:
+				if d.debug {
+					d.logf("debug recv: telnetNegotiationOnly")
+				}
+				continue READ_LOOP
 			default:
 				return badIndex, matchBuf, fmt.Errorf("match: unexpected error: %v", readErr)
 			}
@@ -330,31 +336,6 @@ func (d *Device) match(logger hasPrintf, t transp, capture *dialog, patterns []s
 
 		if d.debug {
 			d.logf("debug recv: [%q]", lastRead)
-		}
-
-		// telnet negotiation
-
-		for {
-			if len(lastRead) < 3 {
-				break
-			}
-			if lastRead[0] != 255 {
-				break // not IAC
-			}
-			if lastRead[1] == 253 {
-				// do
-				opt := lastRead[2]
-				d.sendBytes(logger, t, []byte{255, 252, opt}) // IAC WONT opt
-				lastRead = lastRead[3:]                       // skip
-				continue
-			}
-			if lastRead[1] == 251 {
-				// will
-				opt := lastRead[2]
-				d.sendBytes(logger, t, []byte{255, 254, opt}) // IAC DONT opt
-				lastRead = lastRead[3:]                       // skip
-				continue
-			}
 		}
 
 		matchBuf = append(matchBuf, lastRead...)
@@ -375,12 +356,6 @@ func (d *Device) match(logger hasPrintf, t transp, capture *dialog, patterns []s
 		}
 
 		if eof {
-			/*
-				if t.EofIsError() {
-					return badIndex, matchBuf, io.EOF
-				}
-				return badIndex, matchBuf, nil
-			¨	*/
 			return badIndex, matchBuf, io.EOF
 		}
 	}

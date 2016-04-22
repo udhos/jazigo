@@ -14,37 +14,36 @@ type transp interface {
 	Read(b []byte) (n int, err error)
 	Write(b []byte) (n int, err error)
 	SetDeadline(t time.Time) error
+	SetWriteDeadline(t time.Time) error
 	Close() error
-	//EofIsError() bool
 }
 
 type transpTCP struct {
 	net.Conn
 }
 
-/*
-func (s *transpTCP) EofIsError() bool {
-	return true
+type transpTelnet struct {
+	net.Conn
+	logger hasPrintf
 }
-*/
+
+func (s *transpTelnet) Read(b []byte) (int, error) {
+	n, err := s.Conn.Read(b)
+	if err != nil {
+		return n, err
+	}
+	//s.logger.Printf("telnet.Read: size=%d [%v]", n, b[:n])
+	return telnetNegotiation(b, n, s)
+}
 
 type transpSSH struct {
 	devLabel string
 	conn     net.Conn
 	client   *ssh.Client
 	session  *ssh.Session
-	//out      bytes.Buffer
-	//err      bytes.Buffer
-	writer io.Writer
-	reader io.Reader
-	//writeErr error
+	writer   io.Writer
+	reader   io.Reader
 }
-
-/*
-func (s *transpSSH) EofIsError() bool {
-	return true
-}
-*/
 
 func (s *transpSSH) Read(b []byte) (int, error) {
 	return s.reader.Read(b)
@@ -63,6 +62,10 @@ func (s *transpSSH) Write(b []byte) (int, error) {
 
 func (s *transpSSH) SetDeadline(t time.Time) error {
 	return s.conn.SetDeadline(t)
+}
+
+func (s *transpSSH) SetWriteDeadline(t time.Time) error {
+	return s.conn.SetWriteDeadline(t)
 }
 
 func (s *transpSSH) Close() error {
@@ -87,18 +90,23 @@ func openTransport(logger hasPrintf, modelName, devId, hostPort, transports, use
 		case "ssh":
 			//logger.Printf("openTransport: %s %s %s - trying SSH", modelName, devId, hostPort)
 			hp := forceHostPort(hostPort, "22")
-			s, err := openSSH(modelName, devId, hp, timeout, user, pass)
+			s, err := openSSH(logger, modelName, devId, hp, timeout, user, pass)
 			if err == nil {
-				// ssh connected
 				return s, t, true, nil
 			}
 			logger.Printf("openTransport: %v", err)
-		default:
+		case "telnet":
 			//logger.Printf("openTransport: %s %s %s - trying TELNET", modelName, devId, hostPort)
 			hp := forceHostPort(hostPort, "23")
-			s, err := openTelnet(modelName, devId, hp, timeout)
+			s, err := openTelnet(logger, modelName, devId, hp, timeout)
 			if err == nil {
-				// tcp connected
+				return s, t, false, nil
+			}
+			logger.Printf("openTransport: %v", err)
+		default:
+			//logger.Printf("openTransport: %s %s %s - trying TCP", modelName, devId, hostPort)
+			s, err := openTCP(logger, modelName, devId, hostPort, timeout)
+			if err == nil {
 				return s, t, false, nil
 			}
 			logger.Printf("openTransport: %v", err)
@@ -116,7 +124,7 @@ func forceHostPort(hostPort, defaultPort string) string {
 	return hostPort
 }
 
-func openSSH(modelName, devId, hostPort string, timeout time.Duration, user, pass string) (transp, error) {
+func openSSH(logger hasPrintf, modelName, devId, hostPort string, timeout time.Duration, user, pass string) (transp, error) {
 
 	conn, dialErr := net.DialTimeout("tcp", hostPort, timeout)
 	if dialErr != nil {
@@ -153,9 +161,6 @@ func openSSH(modelName, devId, hostPort string, timeout time.Duration, user, pas
 		return nil, fmt.Errorf("openSSH: Pty: %s - %v", s.devLabel, ptyErr)
 	}
 
-	//ses.Stdout = &s.out
-	//ses.Stderr = &s.err
-
 	pipeOut, outErr := ses.StdoutPipe()
 	if outErr != nil {
 		return nil, fmt.Errorf("openSSH: StdoutPipe: %s - %v", s.devLabel, outErr)
@@ -182,11 +187,21 @@ func openSSH(modelName, devId, hostPort string, timeout time.Duration, user, pas
 	return s, nil
 }
 
-func openTelnet(modelName, devId, hostPort string, timeout time.Duration) (transp, error) {
+func openTelnet(logger hasPrintf, modelName, devId, hostPort string, timeout time.Duration) (transp, error) {
 
 	conn, err := net.DialTimeout("tcp", hostPort, timeout)
 	if err != nil {
 		return nil, fmt.Errorf("openTelnet: %s %s %s - %v", modelName, devId, hostPort, err)
+	}
+
+	return &transpTelnet{conn, logger}, nil
+}
+
+func openTCP(logger hasPrintf, modelName, devId, hostPort string, timeout time.Duration) (transp, error) {
+
+	conn, err := net.DialTimeout("tcp", hostPort, timeout)
+	if err != nil {
+		return nil, fmt.Errorf("openTCP: %s %s %s - %v", modelName, devId, hostPort, err)
 	}
 
 	return &transpTCP{conn}, nil
