@@ -9,6 +9,7 @@ Supported Platforms
 Please send pull requests for new plataforms.
 
 - Cisco IOS
+- Cisco IOS XR
 - Juniper JunOS
 - HTTP (collect output of http GET method)
 - Linux (collect output of SSH commands)
