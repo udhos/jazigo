@@ -130,8 +130,13 @@ func openSSH(logger hasPrintf, modelName, devId, hostPort string, timeout time.D
 		return nil, fmt.Errorf("openSSH: Dial: %s %s %s - %v", modelName, devId, hostPort, dialErr)
 	}
 
+	conf := &ssh.Config{}
+	conf.SetDefaults()
+	conf.Ciphers = append(conf.Ciphers, "3des-cbc") // 3des-cbc is needed for IOS XR
+
 	config := &ssh.ClientConfig{
-		User: user,
+		Config: *conf,
+		User:   user,
 		Auth: []ssh.AuthMethod{
 			ssh.Password(pass),
 		},

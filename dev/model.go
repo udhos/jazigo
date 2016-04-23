@@ -477,6 +477,28 @@ func (d *Device) pagingOff(logger hasPrintf, t transp, capture *dialog) error {
 }
 
 func (d *Device) enable(logger hasPrintf, t transp, capture *dialog) error {
+
+	// test enabled prompt
+
+	if emptyErr := d.sendln(logger, t, ""); emptyErr != nil {
+		return fmt.Errorf("enable: could not send empty: %v", emptyErr)
+	}
+
+	m0, _, err0 := d.match(logger, t, capture, []string{d.attr.disabledPromptPattern, d.attr.enabledPromptPattern})
+	if err0 != nil {
+		return fmt.Errorf("enable: could not find command prompt: %v", err0)
+	}
+
+	switch m0 {
+	case 0:
+		logger.Printf("enable: found disabled command prompt")
+	case 1:
+		logger.Printf("enable: found enabled command prompt")
+		return nil
+	}
+
+	// send enable
+
 	if enableErr := d.sendln(logger, t, d.attr.enableCommand); enableErr != nil {
 		return fmt.Errorf("enable: could not send enable command '%s': %v", d.attr.enableCommand, enableErr)
 	}

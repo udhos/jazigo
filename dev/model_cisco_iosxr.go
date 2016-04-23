@@ -18,7 +18,7 @@ func registerModelCiscoIOSXR(logger hasPrintf, t *DeviceTable) {
 		enablePasswordPromptPattern: `Password:\s*$`,
 		disabledPromptPattern:       `\S+>\s*$`,
 		enabledPromptPattern:        `\S+#\s*$`,
-		commandList:                 []string{"show clock det", "show ver", "show run"},
+		commandList:                 []string{"show clock det", "show ver br", "show run"},
 		disablePagerCommand:         "term len 0",
 		readTimeout:                 10 * time.Second,
 		matchTimeout:                20 * time.Second,
