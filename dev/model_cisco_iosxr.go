@@ -4,22 +4,22 @@ import (
 	"time"
 )
 
-func registerModelJunOS(logger hasPrintf, t *DeviceTable) {
-	modelName := "junos"
+func registerModelCiscoIOSXR(logger hasPrintf, t *DeviceTable) {
+	modelName := "cisco-iosxr"
 	m := &Model{name: modelName}
 
 	m.defaultAttr = attributes{
 		needLoginChat:               true,
-		needEnabledMode:             false,
+		needEnabledMode:             true,
 		needPagingOff:               true,
-		enableCommand:               "",
-		usernamePromptPattern:       `login:\s*$`,
+		enableCommand:               "enable",
+		usernamePromptPattern:       `Username:\s*$`,
 		passwordPromptPattern:       `Password:\s*$`,
-		enablePasswordPromptPattern: "",
+		enablePasswordPromptPattern: `Password:\s*$`,
 		disabledPromptPattern:       `\S+>\s*$`,
-		enabledPromptPattern:        `\S+>\s*$`,
-		commandList:                 []string{"show ver", "show conf | disp set"},
-		disablePagerCommand:         "set cli screen-length 0",
+		enabledPromptPattern:        `\S+#\s*$`,
+		commandList:                 []string{"show clock det", "show ver", "show run"},
+		disablePagerCommand:         "term len 0",
 		readTimeout:                 10 * time.Second,
 		matchTimeout:                20 * time.Second,
 		sendTimeout:                 5 * time.Second,
@@ -28,6 +28,6 @@ func registerModelJunOS(logger hasPrintf, t *DeviceTable) {
 	}
 
 	if err := t.SetModel(m, logger); err != nil {
-		logger.Printf("registerModelJunOS: %v", err)
+		logger.Printf("registerModelCiscoIOSXR: %v", err)
 	}
 }

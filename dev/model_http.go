@@ -25,6 +25,7 @@ func registerModelHTTP(logger hasPrintf, t *DeviceTable) {
 		sendTimeout:                 5 * time.Second,
 		commandReadTimeout:          5 * time.Second,  // larger timeout for slow 'sh run'
 		commandMatchTimeout:         10 * time.Second, // larger timeout for slow 'sh run'
+		supressAutoLF:               true,
 	}
 
 	if err := t.SetModel(m, logger); err != nil {

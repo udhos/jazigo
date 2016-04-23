@@ -1,0 +1,13 @@
+
+
+User Access Verification
+
+Username: lab
+Password:
+
+
+RP/0/RSP0/CPU0:asr9k#term len 0
+Tue Oct 1 22:01:33.421 BRST
+RP/0/RSP0/CPU0:asr9k#
+RP/0/RSP0/CPU0:asr9k#sh run
+RP/0/RSP0/CPU0:asr9k#

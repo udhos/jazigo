@@ -17,7 +17,7 @@ func (e telnetNegotiationOnly) Error() string {
 	return "telnetNegotiationOnly"
 }
 
-func telnetNegotiation(b []byte, n int, t transp) (int, error) {
+func telnetNegotiation(b []byte, n int, t *transpTelnet) (int, error) {
 
 	timeout := 5 * time.Second // FIXME??
 
@@ -33,6 +33,7 @@ func telnetNegotiation(b []byte, n int, t transp) (int, error) {
 		if b[1] == 253 {
 			// do
 			opt := b[2]
+			//t.logger.Printf("recv neg: [%q]", b[:n])
 			t.SetWriteDeadline(time.Now().Add(timeout)) // FIXME: handle error
 			t.Write([]byte{255, 252, opt})              // IAC WONT opt - FIXME: handle error
 			n = shift(b, n, 3)
@@ -42,6 +43,7 @@ func telnetNegotiation(b []byte, n int, t transp) (int, error) {
 		if b[1] == 251 {
 			// will
 			opt := b[2]
+			//t.logger.Printf("recv neg: [%q]", b[:n])
 			t.SetWriteDeadline(time.Now().Add(timeout)) // FIXME: handle error
 			t.Write([]byte{255, 254, opt})              // IAC DONT opt - FIXME: handle error
 			n = shift(b, n, 3)
@@ -50,6 +52,8 @@ func telnetNegotiation(b []byte, n int, t transp) (int, error) {
 		}
 		break
 	}
+
+	//t.logger.Printf("telnetNegotiation")
 
 	if n == 0 && hitNeg {
 		return 0, TELNET_NEG

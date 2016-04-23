@@ -30,6 +30,7 @@ type attributes struct {
 	enabledPromptPattern        string   // #
 	commandList                 []string // show run
 	disablePagerCommand         string   // term len 0
+	supressAutoLF               bool     // do not send auto LF
 
 	// readTimeout: per-read timeout (protection against inactivity)
 	// matchTimeout: full match timeout (protection against slow sender -- think 1 byte per second)
@@ -94,6 +95,7 @@ func (d *Device) Holdtime(now time.Time, holdtime time.Duration) time.Duration {
 
 func RegisterModels(logger hasPrintf, t *DeviceTable) {
 	registerModelCiscoIOS(logger, t)
+	registerModelCiscoIOSXR(logger, t)
 	registerModelLinux(logger, t)
 	registerModelJunOS(logger, t)
 	registerModelHTTP(logger, t)
@@ -388,6 +390,13 @@ func (d *Device) send(logger hasPrintf, t transp, msg string) error {
 	return d.sendBytes(logger, t, []byte(msg))
 }
 
+func (d *Device) sendln(logger hasPrintf, t transp, msg string) error {
+	if d.attr.supressAutoLF {
+		return d.send(logger, t, msg)
+	}
+	return d.send(logger, t, msg+"\n")
+}
+
 func (d *Device) sendBytes(logger hasPrintf, t transp, msg []byte) error {
 
 	deadline := time.Now().Add(d.attr.sendTimeout)
@@ -423,7 +432,7 @@ func (d *Device) sendCommands(logger hasPrintf, t transp, capture *dialog) error
 	for i, c := range d.attr.commandList {
 
 		if c != "" {
-			if err := d.send(logger, t, c); err != nil {
+			if err := d.sendln(logger, t, c); err != nil {
 				return fmt.Errorf("sendCommands: could not send command [%d] '%s': %v", i, c, err)
 			}
 		}
@@ -456,7 +465,7 @@ func (d *Device) save(logger hasPrintf, capture *dialog, command string, buf []b
 }
 
 func (d *Device) pagingOff(logger hasPrintf, t transp, capture *dialog) error {
-	if pagerErr := d.send(logger, t, d.attr.disablePagerCommand); pagerErr != nil {
+	if pagerErr := d.sendln(logger, t, d.attr.disablePagerCommand); pagerErr != nil {
 		return fmt.Errorf("pager off: could not send pager disabling command '%s': %v", d.attr.disablePagerCommand, pagerErr)
 	}
 
@@ -468,7 +477,7 @@ func (d *Device) pagingOff(logger hasPrintf, t transp, capture *dialog) error {
 }
 
 func (d *Device) enable(logger hasPrintf, t transp, capture *dialog) error {
-	if enableErr := d.send(logger, t, d.attr.enableCommand); enableErr != nil {
+	if enableErr := d.sendln(logger, t, d.attr.enableCommand); enableErr != nil {
 		return fmt.Errorf("enable: could not send enable command '%s': %v", d.attr.enableCommand, enableErr)
 	}
 
@@ -481,7 +490,7 @@ func (d *Device) enable(logger hasPrintf, t transp, capture *dialog) error {
 		return nil // found enabled command prompt
 	}
 
-	if passErr := d.send(logger, t, d.enablePassword); passErr != nil {
+	if passErr := d.sendln(logger, t, d.enablePassword); passErr != nil {
 		return fmt.Errorf("enable: could not send enable password: %v", passErr)
 	}
 
@@ -503,7 +512,7 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 	case 0:
 		logger.Printf("login: found username prompt")
 
-		if userErr := d.send(logger, t, d.loginUser+"\n"); userErr != nil {
+		if userErr := d.sendln(logger, t, d.loginUser); userErr != nil {
 			return false, fmt.Errorf("login: could not send username: %v", userErr)
 		}
 
@@ -516,7 +525,7 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 		logger.Printf("login: found password prompt")
 	}
 
-	if passErr := d.send(logger, t, d.loginPassword+"\n"); passErr != nil {
+	if passErr := d.sendln(logger, t, d.loginPassword); passErr != nil {
 		return false, fmt.Errorf("login: could not send password: %v", passErr)
 	}
 
