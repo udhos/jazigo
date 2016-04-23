@@ -1,19 +1,17 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
-	//"math/rand"
 	"os"
-	//"strconv"
-	"flag"
 	"path/filepath"
 	"time"
 
 	"github.com/icza/gowut/gwu"
 
-	"github.com/udhos/jazigo/conf"
 	"github.com/udhos/jazigo/dev"
+	"github.com/udhos/jazigo/store"
 )
 
 const appName = "jazigo"
@@ -82,7 +80,7 @@ func main() {
 	jaz.logf("holdtime: %s", jaz.holdtime)
 	jaz.logf("runOnce: %v", runOnce)
 
-	lastConfig, configErr := conf.FindLastConfig(jaz.configPathPrefix, logger)
+	lastConfig, configErr := store.FindLastConfig(jaz.configPathPrefix, logger)
 	if configErr != nil {
 		jaz.logf("error reading config: '%s': %v", jaz.configPathPrefix, configErr)
 	} else {

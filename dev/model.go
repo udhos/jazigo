@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/udhos/jazigo/conf"
+	"github.com/udhos/jazigo/store"
 )
 
 type Model struct {
@@ -245,7 +245,7 @@ func (d *Device) saveCommit(logger hasPrintf, capture *dialog, repository string
 	devPathPrefix := d.DevicePathPrefix(devDir)
 
 	// writeFunc: copy command outputs into file
-	writeFunc := func(w conf.HasWrite) error {
+	writeFunc := func(w store.HasWrite) error {
 		for _, b := range capture.save {
 			n, writeErr := w.Write(b)
 			if writeErr != nil {
@@ -258,7 +258,7 @@ func (d *Device) saveCommit(logger hasPrintf, capture *dialog, repository string
 		return nil
 	}
 
-	path, writeErr := conf.SaveNewConfig(devPathPrefix, maxFiles, logger, writeFunc)
+	path, writeErr := store.SaveNewConfig(devPathPrefix, maxFiles, logger, writeFunc)
 	if writeErr != nil {
 		return fmt.Errorf("saveCommit: error: %v", writeErr)
 	}
@@ -662,7 +662,7 @@ func UpdateLastSuccess(tab *DeviceTable, logger hasPrintf, repository string) {
 	for _, d := range tab.ListDevices() {
 		prefix := d.DevicePathPrefix(d.DeviceDir(repository))
 
-		lastConfig, lastErr := conf.FindLastConfig(prefix, logger)
+		lastConfig, lastErr := store.FindLastConfig(prefix, logger)
 		if lastErr != nil {
 			logger.Printf("UpdateLastSuccess: find last: '%s': %v", prefix, lastErr)
 			continue

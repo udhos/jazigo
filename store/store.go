@@ -1,4 +1,4 @@
-package conf
+package store
 
 import (
 	"bufio"

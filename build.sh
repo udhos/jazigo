@@ -12,11 +12,12 @@ s=$GOPATH/bin/gosimple
 simple() {
     # gosimple cant handle source files from multiple packages
     $s *.go
-    $s conf/*.go
     $s dev/*.go
+    $s store/*.go
+    $s temp/*.go
 }
 [ -x "$s" ] && simple
 
 #go test
 go test github.com/udhos/jazigo/dev
-go test github.com/udhos/jazigo/conf
+go test github.com/udhos/jazigo/store
