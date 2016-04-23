@@ -3,6 +3,16 @@ About Jazigo
 
 Jazigo is a tool written in Go for retrieving configuration for multiple devices, similar to rancid and oxidized.
 
+Supported Platforms
+===================
+
+Please send pull requests for new plataforms.
+
+- Cisco IOS
+- Juniper JunOS
+- HTTP (collect output of http GET method)
+- Linux (collect output of SSH commands)
+
 Quick Start
 ===========
 

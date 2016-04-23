@@ -27,7 +27,7 @@ func registerModelJunOS(logger hasPrintf, t *DeviceTable) {
 		commandMatchTimeout:         30 * time.Second, // larger timeout for slow 'sh run'
 	}
 
-	if err := t.SetModel(m); err != nil {
+	if err := t.SetModel(m, logger); err != nil {
 		logger.Printf("registerModelJunOS: %v", err)
 	}
 }

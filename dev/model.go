@@ -422,8 +422,10 @@ func (d *Device) sendCommands(logger hasPrintf, t transp, capture *dialog) error
 
 	for i, c := range d.attr.commandList {
 
-		if err := d.send(logger, t, c); err != nil {
-			return fmt.Errorf("sendCommands: could not send command [%d] '%s': %v", i, c, err)
+		if c != "" {
+			if err := d.send(logger, t, c); err != nil {
+				return fmt.Errorf("sendCommands: could not send command [%d] '%s': %v", i, c, err)
+			}
 		}
 
 		pattern := d.attr.enabledPromptPattern

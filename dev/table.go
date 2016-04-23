@@ -30,7 +30,10 @@ func (t *DeviceTable) GetModel(modelName string) (*Model, error) {
 	return nil, fmt.Errorf("DeviceTable.GetModel: not found")
 }
 
-func (t *DeviceTable) SetModel(m *Model) error {
+func (t *DeviceTable) SetModel(m *Model, logger hasPrintf) error {
+
+	logger.Printf("DeviceTable.SetModel: registering model: '%s'", m.name)
+
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
