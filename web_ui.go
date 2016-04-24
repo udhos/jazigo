@@ -110,7 +110,7 @@ func (s sortById) Swap(i, j int) {
 	s.data[i], s.data[j] = s.data[j], s.data[i]
 }
 func (s sortById) Less(i, j int) bool {
-	return s.data[i].Id() < s.data[j].Id()
+	return s.data[i].Id < s.data[j].Id
 }
 
 func buildDeviceTable(jaz *app, t gwu.Table) {
@@ -138,20 +138,20 @@ func buildDeviceTable(jaz *app, t gwu.Table) {
 	i := 1
 	for _, d := range devList {
 		labMod := gwu.NewLabel(d.Model())
-		labId := gwu.NewLabel(d.Id())
-		labHost := gwu.NewLabel(d.Host())
-		labTransport := gwu.NewLabel(d.Transport())
+		labId := gwu.NewLabel(d.Id)
+		labHost := gwu.NewLabel(d.HostPort)
+		labTransport := gwu.NewLabel(d.Transports)
 		labLastStatus := gwu.NewLabel(fmt.Sprintf("%v", d.LastStatus()))
 		labLastTry := gwu.NewLabel(timestampString(d.LastTry()))
 		labLastSuccess := gwu.NewLabel(timestampString(d.LastSuccess()))
-		h := d.Holdtime(now, jaz.holdtime)
+		h := d.Holdtime(now, jaz.cfg.Holdtime)
 		if h < 0 {
 			h = 0
 		}
 		labHoldtime := gwu.NewLabel(fmt.Sprintf("%v", h))
 
 		buttonRun := gwu.NewButton("Run")
-		id := d.Id()
+		id := d.Id
 		buttonRun.AddEHandlerFunc(func(e gwu.Event) {
 			runPriority(jaz, id)
 		}, gwu.ETypeClick)

@@ -21,10 +21,6 @@ const appVersion = "0.0"
 type app struct {
 	configPathPrefix string
 	repositoryPath   string
-	maxConfigFiles   int
-	holdtime         time.Duration
-	scanInterval     time.Duration
-	maxConcurrency   int
 
 	table *dev.DeviceTable
 
@@ -54,13 +50,9 @@ func (a *app) logf(fmt string, v ...interface{}) {
 
 func newApp(logger hasPrintf) *app {
 	app := &app{
-		table:          dev.NewDeviceTable(),
-		logger:         logger,
-		holdtime:       60 * time.Second, // FIXME: 12h (do not collect/save new backup before this timeout)
-		scanInterval:   10 * time.Second, // FIXME: 1h (interval between full table scan)
-		priority:       make(chan string),
-		maxConcurrency: 3,
-		maxConfigFiles: 10,
+		table:    dev.NewDeviceTable(),
+		logger:   logger,
+		priority: make(chan string),
 	}
 
 	app.logf("%s %s starting", appName, appVersion)
@@ -92,8 +84,6 @@ func main() {
 	flag.Parse()
 	jaz.logf("config path prefix: %s", jaz.configPathPrefix)
 	jaz.logf("repository path: %s", jaz.repositoryPath)
-	jaz.logf("scan interval: %s", jaz.scanInterval)
-	jaz.logf("holdtime: %s", jaz.holdtime)
 	jaz.logf("runOnce: %v", runOnce)
 
 	lastConfig, configErr := store.FindLastConfig(jaz.configPathPrefix, logger)
@@ -110,7 +100,8 @@ func main() {
 		}
 	}
 
-	saveConfig(jaz) // FIXME this is not the right place to save the config
+	jaz.logf("scan interval: %s", jaz.cfg.ScanInterval)
+	jaz.logf("holdtime: %s", jaz.cfg.Holdtime)
 
 	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en")
 	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en") // ugh
@@ -129,6 +120,8 @@ func main() {
 	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-iosxr", "lab12", "192.168.56.1:2012", "ssh", "user", "pass", "cisco8", true)
 
 	dev.UpdateLastSuccess(jaz.table, jaz.logger, jaz.repositoryPath)
+
+	saveConfig(jaz) // FIXME this is not the right place to save the config
 
 	appAddr := "0.0.0.0:8080"
 	serverName := fmt.Sprintf("%s application", appName)
@@ -157,7 +150,7 @@ func main() {
 	buildLoginWin(jaz, server)
 
 	if runOnce {
-		dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, jaz.maxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles, jaz.holdtime)
+		dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, jaz.cfg.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.cfg.MaxConfigFiles, jaz.cfg.Holdtime)
 		jaz.logf("runOnce: exiting after single scan")
 		return
 	}
@@ -165,29 +158,29 @@ func main() {
 	go func() {
 		for {
 			begin := time.Now()
-			dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, jaz.maxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles, jaz.holdtime)
+			dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, jaz.cfg.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.cfg.MaxConfigFiles, jaz.cfg.Holdtime)
 
 		SLEEP:
 			for {
 				elap := time.Since(begin)
-				sleep := jaz.scanInterval - elap
+				sleep := jaz.cfg.ScanInterval - elap
 				if sleep < 1 {
 					sleep = 0
 				}
-				jaz.logf("main: sleeping for %s (target: scanInterval=%s)", sleep, jaz.scanInterval)
+				jaz.logf("main: sleeping for %s (target: scanInterval=%s)", sleep, jaz.cfg.ScanInterval)
 				select {
 				case <-time.After(sleep):
 					jaz.logf("main: sleep done")
 					break SLEEP
 				case id := <-jaz.priority:
 					jaz.logf("main: sleep interrupted by priority: device %s", id)
-					d, clearErr := dev.ClearDeviceStatus(jaz.table, id, logger, jaz.holdtime)
+					d, clearErr := dev.ClearDeviceStatus(jaz.table, id, logger, jaz.cfg.Holdtime)
 					if clearErr != nil {
 						jaz.logf("main: sleep interrupted by priority: device %s - error: %v", id, clearErr)
 						continue SLEEP
 					}
 					singleDevice := []*dev.Device{d}
-					dev.ScanDevices(jaz.table, singleDevice, logger, jaz.maxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles, jaz.holdtime)
+					dev.ScanDevices(jaz.table, singleDevice, logger, jaz.cfg.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.cfg.MaxConfigFiles, jaz.cfg.Holdtime)
 				}
 			}
 		}
@@ -203,6 +196,12 @@ func main() {
 
 func saveConfig(jaz *app) {
 
+	devices := jaz.table.ListDevices()
+	jaz.cfg.Devices = make([]conf.DevConfig, len(devices))
+	for i, d := range devices {
+		jaz.cfg.Devices[i] = d.DevConfig
+	}
+
 	confWriteFunc := func(w store.HasWrite) error {
 		b, err := jaz.cfg.Dump()
 		if err != nil {
@@ -214,7 +213,7 @@ func saveConfig(jaz *app) {
 		return nil
 	}
 
-	_, saveErr := store.SaveNewConfig(jaz.configPathPrefix, jaz.maxConfigFiles, jaz.logger, confWriteFunc)
+	_, saveErr := store.SaveNewConfig(jaz.configPathPrefix, jaz.cfg.MaxConfigFiles, jaz.logger, confWriteFunc)
 	if saveErr != nil {
 		jaz.logger.Printf("main: could not save config: %v", saveErr)
 		panic("main: could not save config") // FIXME log only

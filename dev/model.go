@@ -10,52 +10,20 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/udhos/jazigo/conf"
 	"github.com/udhos/jazigo/store"
 )
 
 type Model struct {
 	name        string
-	defaultAttr attributes
-}
-
-type attributes struct {
-	needLoginChat               bool     // need login chat
-	needEnabledMode             bool     // need enabled mode
-	needPagingOff               bool     // need disabled pager
-	enableCommand               string   // enable
-	usernamePromptPattern       string   // Username:
-	passwordPromptPattern       string   // Password:
-	enablePasswordPromptPattern string   // Password:
-	disabledPromptPattern       string   // >
-	enabledPromptPattern        string   // #
-	commandList                 []string // show run
-	disablePagerCommand         string   // term len 0
-	supressAutoLF               bool     // do not send auto LF
-
-	// readTimeout: per-read timeout (protection against inactivity)
-	// matchTimeout: full match timeout (protection against slow sender -- think 1 byte per second)
-	readTimeout         time.Duration // protection against inactivity
-	matchTimeout        time.Duration // protection against slow sender
-	sendTimeout         time.Duration // protection against inactivity
-	commandReadTimeout  time.Duration // larger timeout for slow responses (slow show running)
-	commandMatchTimeout time.Duration // larger timeout for slow responses (slow show running)
+	defaultAttr conf.DevAttributes
 }
 
 type Device struct {
-	logger hasPrintf
-	debug  bool
+	conf.DevConfig
 
-	devModel   *Model
-	id         string
-	hostPort   string
-	transports string
-
-	loginUser      string
-	loginPassword  string
-	enablePassword string
-
-	attr attributes
-
+	logger      hasPrintf
+	devModel    *Model
 	lastStatus  bool // true=good false=bad
 	lastTry     time.Time
 	lastSuccess time.Time
@@ -63,18 +31,6 @@ type Device struct {
 
 func (d *Device) Model() string {
 	return d.devModel.name
-}
-
-func (d *Device) Id() string {
-	return d.id
-}
-
-func (d *Device) Host() string {
-	return d.hostPort
-}
-
-func (d *Device) Transport() string {
-	return d.transports
 }
 
 func (d *Device) LastStatus() bool {
@@ -118,8 +74,8 @@ func CreateDevice(tab *DeviceTable, logger hasPrintf, modelName, id, hostPort, t
 }
 
 func NewDevice(logger hasPrintf, mod *Model, id, hostPort, transports, loginUser, loginPassword, enablePassword string, debug bool) *Device {
-	d := &Device{logger: logger, devModel: mod, id: id, hostPort: hostPort, transports: transports, loginUser: loginUser, loginPassword: loginPassword, enablePassword: enablePassword, debug: debug}
-	d.attr = mod.defaultAttr
+	d := &Device{logger: logger, devModel: mod, DevConfig: conf.DevConfig{Id: id, HostPort: hostPort, Transports: transports, LoginUser: loginUser, LoginPassword: loginPassword, EnablePassword: enablePassword, Debug: debug}}
+	d.Attr = mod.defaultAttr
 	return d
 }
 
@@ -159,7 +115,7 @@ func (d *dialog) record(buf []byte) {
 // fetch runs in a per-device goroutine
 func (d *Device) Fetch(logger hasPrintf, resultCh chan FetchResult, delay time.Duration, repository string, maxFiles int) {
 	modelName := d.devModel.name
-	logger.Printf("fetch: %s %s %s %s delay=%dms", modelName, d.id, d.hostPort, d.transports, delay/time.Millisecond)
+	logger.Printf("fetch: %s %s %s %s delay=%dms", modelName, d.Id, d.HostPort, d.Transports, delay/time.Millisecond)
 
 	if delay > 0 {
 		time.Sleep(delay)
@@ -167,24 +123,24 @@ func (d *Device) Fetch(logger hasPrintf, resultCh chan FetchResult, delay time.D
 
 	begin := time.Now()
 
-	session, transport, logged, err := openTransport(logger, modelName, d.id, d.hostPort, d.transports, d.loginUser, d.loginPassword)
+	session, transport, logged, err := openTransport(logger, modelName, d.Id, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword)
 	if err != nil {
-		resultCh <- FetchResult{Model: modelName, DevId: d.id, DevHostPort: d.hostPort, Transport: transport, Msg: fmt.Sprintf("fetch transport: %v", err), Code: FETCH_ERR_TRANSP, Begin: begin}
+		resultCh <- FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch transport: %v", err), Code: FETCH_ERR_TRANSP, Begin: begin}
 		return
 	}
 
 	defer session.Close()
 
-	logger.Printf("fetch: %s %s %s - transport OPEN logged=%v", modelName, d.id, d.hostPort, logged)
+	logger.Printf("fetch: %s %s %s - transport OPEN logged=%v", modelName, d.Id, d.HostPort, logged)
 
 	capture := dialog{}
 
 	enabled := false
 
-	if d.attr.needLoginChat && !logged {
+	if d.Attr.NeedLoginChat && !logged {
 		e, loginErr := d.login(logger, session, &capture)
 		if loginErr != nil {
-			resultCh <- FetchResult{Model: modelName, DevId: d.id, DevHostPort: d.hostPort, Transport: transport, Msg: fmt.Sprintf("fetch login: %v", loginErr), Code: FETCH_ERR_LOGIN, Begin: begin}
+			resultCh <- FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch login: %v", loginErr), Code: FETCH_ERR_LOGIN, Begin: begin}
 			return
 		}
 		if e {
@@ -192,34 +148,34 @@ func (d *Device) Fetch(logger hasPrintf, resultCh chan FetchResult, delay time.D
 		}
 	}
 
-	if d.attr.needEnabledMode && !enabled {
+	if d.Attr.NeedEnabledMode && !enabled {
 		enableErr := d.enable(logger, session, &capture)
 		if enableErr != nil {
-			resultCh <- FetchResult{Model: modelName, DevId: d.id, DevHostPort: d.hostPort, Transport: transport, Msg: fmt.Sprintf("fetch enable: %v", enableErr), Code: FETCH_ERR_ENABLE, Begin: begin}
+			resultCh <- FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch enable: %v", enableErr), Code: FETCH_ERR_ENABLE, Begin: begin}
 			return
 		}
 	}
 
-	if d.attr.needPagingOff {
+	if d.Attr.NeedPagingOff {
 		pagingErr := d.pagingOff(logger, session, &capture)
 		if pagingErr != nil {
-			resultCh <- FetchResult{Model: modelName, DevId: d.id, DevHostPort: d.hostPort, Transport: transport, Msg: fmt.Sprintf("fetch pager off: %v", pagingErr), Code: FETCH_ERR_PAGER, Begin: begin}
+			resultCh <- FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch pager off: %v", pagingErr), Code: FETCH_ERR_PAGER, Begin: begin}
 			return
 		}
 	}
 
 	if cmdErr := d.sendCommands(logger, session, &capture); cmdErr != nil {
 		d.saveRollback(logger, &capture)
-		resultCh <- FetchResult{Model: modelName, DevId: d.id, DevHostPort: d.hostPort, Transport: transport, Msg: fmt.Sprintf("commands: %v", cmdErr), Code: FETCH_ERR_COMMANDS, Begin: begin}
+		resultCh <- FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("commands: %v", cmdErr), Code: FETCH_ERR_COMMANDS, Begin: begin}
 		return
 	}
 
 	if saveErr := d.saveCommit(logger, &capture, repository, maxFiles); saveErr != nil {
-		resultCh <- FetchResult{Model: modelName, DevId: d.id, DevHostPort: d.hostPort, Transport: transport, Msg: fmt.Sprintf("save commit: %v", saveErr), Code: FETCH_ERR_SAVE, Begin: begin}
+		resultCh <- FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("save commit: %v", saveErr), Code: FETCH_ERR_SAVE, Begin: begin}
 		return
 	}
 
-	resultCh <- FetchResult{Model: modelName, DevId: d.id, DevHostPort: d.hostPort, Transport: transport, Code: FETCH_ERR_NONE, Begin: begin}
+	resultCh <- FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Code: FETCH_ERR_NONE, Begin: begin}
 }
 
 func (d *Device) saveRollback(logger hasPrintf, capture *dialog) {
@@ -227,11 +183,11 @@ func (d *Device) saveRollback(logger hasPrintf, capture *dialog) {
 }
 
 func (d *Device) DeviceDir(repository string) string {
-	return filepath.Join(repository, d.id)
+	return filepath.Join(repository, d.Id)
 }
 
 func (d *Device) DevicePathPrefix(devDir string) string {
-	return filepath.Join(devDir, d.id) + "."
+	return filepath.Join(devDir, d.Id) + "."
 }
 
 func (d *Device) saveCommit(logger hasPrintf, capture *dialog, repository string, maxFiles int) error {
@@ -263,7 +219,7 @@ func (d *Device) saveCommit(logger hasPrintf, capture *dialog, repository string
 		return fmt.Errorf("saveCommit: error: %v", writeErr)
 	}
 
-	logger.Printf("saveCommit: dev '%s' saved to '%s'", d.id, path)
+	logger.Printf("saveCommit: dev '%s' saved to '%s'", d.Id, path)
 
 	return nil
 }
@@ -297,11 +253,11 @@ func (d *Device) match(logger hasPrintf, t transp, capture *dialog, patterns []s
 READ_LOOP:
 	for {
 		now := time.Now()
-		if now.Sub(begin) > d.attr.matchTimeout {
-			return badIndex, matchBuf, fmt.Errorf("match: timed out: %s", d.attr.matchTimeout)
+		if now.Sub(begin) > d.Attr.MatchTimeout {
+			return badIndex, matchBuf, fmt.Errorf("match: timed out: %s", d.Attr.MatchTimeout)
 		}
 
-		deadline := now.Add(d.attr.readTimeout)
+		deadline := now.Add(d.Attr.ReadTimeout)
 		if err := t.SetDeadline(deadline); err != nil {
 			return badIndex, matchBuf, fmt.Errorf("match: could not set read timeout: %v", err)
 		}
@@ -312,17 +268,17 @@ READ_LOOP:
 		if readErr != nil {
 			if te, ok := readErr.(hasTimeout); ok {
 				if te.Timeout() {
-					return badIndex, matchBuf, fmt.Errorf("match: read timed out (%s): %v", d.attr.readTimeout, readErr)
+					return badIndex, matchBuf, fmt.Errorf("match: read timed out (%s): %v", d.Attr.ReadTimeout, readErr)
 				}
 			}
 			switch readErr {
 			case io.EOF:
-				if d.debug {
+				if d.Debug {
 					d.logf("debug recv: EOF")
 				}
 				eof = true // EOF is normal termination for SSH transport
 			case TELNET_NEG:
-				if d.debug {
+				if d.Debug {
 					d.logf("debug recv: telnetNegotiationOnly")
 				}
 				continue READ_LOOP
@@ -336,7 +292,7 @@ READ_LOOP:
 
 		lastRead := buf[:n]
 
-		if d.debug {
+		if d.Debug {
 			d.logf("debug recv: [%q]", lastRead)
 		}
 
@@ -383,7 +339,7 @@ func findLastLine(buf []byte) []byte {
 }
 
 func (d *Device) logf(format string, v ...interface{}) {
-	d.logger.Printf(fmt.Sprintf("device '%s': ", d.id)+format, v...)
+	d.logger.Printf(fmt.Sprintf("device '%s': ", d.Id)+format, v...)
 }
 
 func (d *Device) send(logger hasPrintf, t transp, msg string) error {
@@ -391,7 +347,7 @@ func (d *Device) send(logger hasPrintf, t transp, msg string) error {
 }
 
 func (d *Device) sendln(logger hasPrintf, t transp, msg string) error {
-	if d.attr.supressAutoLF {
+	if d.Attr.SupressAutoLF {
 		return d.send(logger, t, msg)
 	}
 	return d.send(logger, t, msg+"\n")
@@ -399,12 +355,12 @@ func (d *Device) sendln(logger hasPrintf, t transp, msg string) error {
 
 func (d *Device) sendBytes(logger hasPrintf, t transp, msg []byte) error {
 
-	deadline := time.Now().Add(d.attr.sendTimeout)
+	deadline := time.Now().Add(d.Attr.SendTimeout)
 	if err := t.SetDeadline(deadline); err != nil {
 		return fmt.Errorf("send: could not set read timeout: %v", err)
 	}
 
-	if d.debug {
+	if d.Debug {
 		d.logf("debug send: [%q]", msg)
 	}
 
@@ -416,20 +372,20 @@ func (d *Device) sendBytes(logger hasPrintf, t transp, msg []byte) error {
 func (d *Device) sendCommands(logger hasPrintf, t transp, capture *dialog) error {
 
 	// save timeouts
-	saveReadTimeout := d.attr.readTimeout
-	saveMatchTimeout := d.attr.matchTimeout
+	saveReadTimeout := d.Attr.ReadTimeout
+	saveMatchTimeout := d.Attr.MatchTimeout
 
 	// temporarily change timeouts
-	d.attr.readTimeout = d.attr.commandReadTimeout
-	d.attr.matchTimeout = d.attr.commandMatchTimeout
+	d.Attr.ReadTimeout = d.Attr.CommandReadTimeout
+	d.Attr.MatchTimeout = d.Attr.CommandMatchTimeout
 
 	// restore timeouts
 	defer func() {
-		d.attr.readTimeout = saveReadTimeout
-		d.attr.matchTimeout = saveMatchTimeout
+		d.Attr.ReadTimeout = saveReadTimeout
+		d.Attr.MatchTimeout = saveMatchTimeout
 	}()
 
-	for i, c := range d.attr.commandList {
+	for i, c := range d.Attr.CommandList {
 
 		if c != "" {
 			if err := d.sendln(logger, t, c); err != nil {
@@ -437,7 +393,7 @@ func (d *Device) sendCommands(logger hasPrintf, t transp, capture *dialog) error
 			}
 		}
 
-		pattern := d.attr.enabledPromptPattern
+		pattern := d.Attr.EnabledPromptPattern
 
 		_, matchBuf, matchErr := d.match(logger, t, capture, []string{pattern})
 		switch matchErr {
@@ -465,11 +421,11 @@ func (d *Device) save(logger hasPrintf, capture *dialog, command string, buf []b
 }
 
 func (d *Device) pagingOff(logger hasPrintf, t transp, capture *dialog) error {
-	if pagerErr := d.sendln(logger, t, d.attr.disablePagerCommand); pagerErr != nil {
-		return fmt.Errorf("pager off: could not send pager disabling command '%s': %v", d.attr.disablePagerCommand, pagerErr)
+	if pagerErr := d.sendln(logger, t, d.Attr.DisablePagerCommand); pagerErr != nil {
+		return fmt.Errorf("pager off: could not send pager disabling command '%s': %v", d.Attr.DisablePagerCommand, pagerErr)
 	}
 
-	if _, _, err := d.match(logger, t, capture, []string{d.attr.enabledPromptPattern}); err != nil {
+	if _, _, err := d.match(logger, t, capture, []string{d.Attr.EnabledPromptPattern}); err != nil {
 		return fmt.Errorf("pager off: could not match command prompt: %v", err)
 	}
 
@@ -484,7 +440,7 @@ func (d *Device) enable(logger hasPrintf, t transp, capture *dialog) error {
 		return fmt.Errorf("enable: could not send empty: %v", emptyErr)
 	}
 
-	m0, _, err0 := d.match(logger, t, capture, []string{d.attr.disabledPromptPattern, d.attr.enabledPromptPattern})
+	m0, _, err0 := d.match(logger, t, capture, []string{d.Attr.DisabledPromptPattern, d.Attr.EnabledPromptPattern})
 	if err0 != nil {
 		return fmt.Errorf("enable: could not find command prompt: %v", err0)
 	}
@@ -499,11 +455,11 @@ func (d *Device) enable(logger hasPrintf, t transp, capture *dialog) error {
 
 	// send enable
 
-	if enableErr := d.sendln(logger, t, d.attr.enableCommand); enableErr != nil {
-		return fmt.Errorf("enable: could not send enable command '%s': %v", d.attr.enableCommand, enableErr)
+	if enableErr := d.sendln(logger, t, d.Attr.EnableCommand); enableErr != nil {
+		return fmt.Errorf("enable: could not send enable command '%s': %v", d.Attr.EnableCommand, enableErr)
 	}
 
-	m, _, err := d.match(logger, t, capture, []string{d.attr.enablePasswordPromptPattern, d.attr.enabledPromptPattern})
+	m, _, err := d.match(logger, t, capture, []string{d.Attr.EnablePasswordPromptPattern, d.Attr.EnabledPromptPattern})
 	if err != nil {
 		return fmt.Errorf("enable: could not match after-enable prompt: %v", err)
 	}
@@ -512,11 +468,11 @@ func (d *Device) enable(logger hasPrintf, t transp, capture *dialog) error {
 		return nil // found enabled command prompt
 	}
 
-	if passErr := d.sendln(logger, t, d.enablePassword); passErr != nil {
+	if passErr := d.sendln(logger, t, d.EnablePassword); passErr != nil {
 		return fmt.Errorf("enable: could not send enable password: %v", passErr)
 	}
 
-	if _, _, mismatch := d.match(logger, t, capture, []string{d.attr.enabledPromptPattern}); mismatch != nil {
+	if _, _, mismatch := d.match(logger, t, capture, []string{d.Attr.EnabledPromptPattern}); mismatch != nil {
 		return fmt.Errorf("enable: could not find enabled command prompt: %v", mismatch)
 	}
 
@@ -525,7 +481,7 @@ func (d *Device) enable(logger hasPrintf, t transp, capture *dialog) error {
 
 func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error) {
 
-	m1, _, err := d.match(logger, t, capture, []string{d.attr.usernamePromptPattern, d.attr.passwordPromptPattern})
+	m1, _, err := d.match(logger, t, capture, []string{d.Attr.UsernamePromptPattern, d.Attr.PasswordPromptPattern})
 	if err != nil {
 		return false, fmt.Errorf("login: could not find username prompt: %v", err)
 	}
@@ -534,11 +490,11 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 	case 0:
 		logger.Printf("login: found username prompt")
 
-		if userErr := d.sendln(logger, t, d.loginUser); userErr != nil {
+		if userErr := d.sendln(logger, t, d.LoginUser); userErr != nil {
 			return false, fmt.Errorf("login: could not send username: %v", userErr)
 		}
 
-		_, _, err := d.match(logger, t, capture, []string{d.attr.passwordPromptPattern})
+		_, _, err := d.match(logger, t, capture, []string{d.Attr.PasswordPromptPattern})
 		if err != nil {
 			return false, fmt.Errorf("login: could not find password prompt: %v", err)
 		}
@@ -547,11 +503,11 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 		logger.Printf("login: found password prompt")
 	}
 
-	if passErr := d.sendln(logger, t, d.loginPassword); passErr != nil {
+	if passErr := d.sendln(logger, t, d.LoginPassword); passErr != nil {
 		return false, fmt.Errorf("login: could not send password: %v", passErr)
 	}
 
-	m, _, err := d.match(logger, t, capture, []string{d.attr.disabledPromptPattern, d.attr.enabledPromptPattern})
+	m, _, err := d.match(logger, t, capture, []string{d.Attr.DisabledPromptPattern, d.Attr.EnabledPromptPattern})
 	if err != nil {
 		return false, fmt.Errorf("login: could not find command prompt: %v", err)
 	}
@@ -613,7 +569,7 @@ func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, maxConc
 
 			if h := d.Holdtime(time.Now(), holdtime); h > 0 {
 				// do not handle device yet (holdtime not expired)
-				logger.Printf("device: %s skipping due to holdtime=%s", d.Id(), h)
+				logger.Printf("device: %s skipping due to holdtime=%s", d.Id, h)
 				skipped++
 				continue
 			}

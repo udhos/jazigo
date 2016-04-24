@@ -2,30 +2,32 @@ package dev
 
 import (
 	"time"
+
+	"github.com/udhos/jazigo/conf"
 )
 
 func registerModelHTTP(logger hasPrintf, t *DeviceTable) {
 	modelName := "http"
 	m := &Model{name: modelName}
 
-	m.defaultAttr = attributes{
-		needLoginChat:               false,
-		needEnabledMode:             false,
-		needPagingOff:               false,
-		enableCommand:               "",
-		usernamePromptPattern:       "",
-		passwordPromptPattern:       "",
-		enablePasswordPromptPattern: "",
-		disabledPromptPattern:       "",
-		enabledPromptPattern:        "",
-		commandList:                 []string{"GET / HTTP/1.0\r\n\r\n"},
-		disablePagerCommand:         "",
-		readTimeout:                 5 * time.Second,
-		matchTimeout:                10 * time.Second,
-		sendTimeout:                 5 * time.Second,
-		commandReadTimeout:          5 * time.Second,  // larger timeout for slow 'sh run'
-		commandMatchTimeout:         10 * time.Second, // larger timeout for slow 'sh run'
-		supressAutoLF:               true,
+	m.defaultAttr = conf.DevAttributes{
+		NeedLoginChat:               false,
+		NeedEnabledMode:             false,
+		NeedPagingOff:               false,
+		EnableCommand:               "",
+		UsernamePromptPattern:       "",
+		PasswordPromptPattern:       "",
+		EnablePasswordPromptPattern: "",
+		DisabledPromptPattern:       "",
+		EnabledPromptPattern:        "",
+		CommandList:                 []string{"GET / HTTP/1.0\r\n\r\n"},
+		DisablePagerCommand:         "",
+		ReadTimeout:                 5 * time.Second,
+		MatchTimeout:                10 * time.Second,
+		SendTimeout:                 5 * time.Second,
+		CommandReadTimeout:          5 * time.Second,  // larger timeout for slow 'sh run'
+		CommandMatchTimeout:         10 * time.Second, // larger timeout for slow 'sh run'
+		SupressAutoLF:               true,
 	}
 
 	if err := t.SetModel(m, logger); err != nil {
