@@ -1,7 +1,7 @@
 About Jazigo
 =============
 
-Jazigo is a tool written in Go for retrieving configuration for multiple devices, similar to rancid and oxidized.
+Jazigo is a tool written in Go for retrieving configuration for multiple devices, similar to [rancid](http://www.shrubbery.net/rancid/), [fetchconfig](https://github.com/udhos/fetchconfig) and [oxidized](https://github.com/ytti/oxidized).
 
 Supported Platforms
 ===================
