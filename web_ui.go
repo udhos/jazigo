@@ -180,14 +180,21 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 	t := gwu.NewTable()
 	t.Style().AddClass("device_table")
 
-	// create login button
-	refresh := gwu.NewButton("Refresh")
-	refresh.AddEHandlerFunc(func(e gwu.Event) {
+	refresh := func(e gwu.Event) {
 		t.Clear() // clear out table contents
 		buildDeviceTable(jaz, t)
 		e.MarkDirty(t)
+	}
+
+	refreshButton := gwu.NewButton("Refresh")
+	refreshButton.AddEHandlerFunc(func(e gwu.Event) {
+		refresh(e)
 	}, gwu.ETypeClick)
-	win.Add(refresh)
+	win.Add(refreshButton)
+
+	win.AddEHandlerFunc(func(e gwu.Event) {
+		refresh(e)
+	}, gwu.ETypeWinLoad)
 
 	buildDeviceTable(jaz, t)
 
