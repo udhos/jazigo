@@ -575,9 +575,8 @@ func round(val float64) int {
 	return int(val + 0.5)
 }
 
-func ScanDevices(tab *DeviceTable, logger hasPrintf, maxConcurrency int, delayMin, delayMax time.Duration, repository string, maxFiles int, holdtime time.Duration) (int, int, int) {
+func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, maxConcurrency int, delayMin, delayMax time.Duration, repository string, maxFiles int, holdtime time.Duration) (int, int, int) {
 
-	devices := tab.ListDevices()
 	deviceCount := len(devices)
 
 	logger.Printf("ScanDevices: starting devices=%d maxConcurrency=%d", deviceCount, maxConcurrency)
@@ -664,7 +663,7 @@ func ScanDevices(tab *DeviceTable, logger hasPrintf, maxConcurrency int, delayMi
 	return success, deviceCount - success, skipped
 }
 
-func updateDeviceStatus(tab *DeviceTable, devId string, good bool, last time.Time, logger hasPrintf) {
+func updateDeviceStatus(tab DeviceUpdater, devId string, good bool, last time.Time, logger hasPrintf) {
 	d, getErr := tab.GetDevice(devId)
 	if getErr != nil {
 		logger.Printf("updateDeviceStatus: '%s' not found: %v", getErr)
@@ -680,6 +679,28 @@ func updateDeviceStatus(tab *DeviceTable, devId string, good bool, last time.Tim
 	tab.UpdateDevice(d)
 }
 
+// ClearDeviceStatus: forget about last success (expire holdtime).
+// Otherwise holdtime could prevent immediate backup.
+func ClearDeviceStatus(tab DeviceUpdater, devId string, logger hasPrintf, holdtime time.Duration) (*Device, error) {
+	d, getErr := tab.GetDevice(devId)
+	if getErr != nil {
+		logger.Printf("ClearDeviceStatus: '%s' not found: %v", getErr)
+		return nil, getErr
+	}
+
+	now := time.Now()
+	h1 := d.Holdtime(now, holdtime)
+
+	d.lastSuccess = time.Time{} // expire holdime
+	tab.UpdateDevice(d)
+
+	h2 := d.Holdtime(now, holdtime)
+	logger.Printf("ClearDeviceStatus: device %s holdtime: old=%v new=%v", devId, h1, h2)
+
+	return d, nil
+}
+
+// UpdateLastSuccess: get device last sucess from filesystem.
 func UpdateLastSuccess(tab *DeviceTable, logger hasPrintf, repository string) {
 	for _, d := range tab.ListDevices() {
 		prefix := d.DevicePathPrefix(d.DeviceDir(repository))

@@ -14,6 +14,11 @@ type DeviceTable struct {
 	lock    sync.RWMutex
 }
 
+type DeviceUpdater interface {
+	GetDevice(id string) (*Device, error)
+	UpdateDevice(d *Device) error
+}
+
 func NewDeviceTable() *DeviceTable {
 	return &DeviceTable{models: map[string]*Model{}, devices: map[string]*Device{}, lock: sync.RWMutex{}}
 }

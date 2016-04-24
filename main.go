@@ -24,6 +24,7 @@ type app struct {
 	maxConfigFiles   int
 	holdtime         time.Duration
 	scanInterval     time.Duration
+	maxConcurrency   int
 
 	table *dev.DeviceTable
 
@@ -39,6 +40,8 @@ type app struct {
 	cssPath string
 
 	logger hasPrintf
+
+	priority chan string
 }
 
 type hasPrintf interface {
@@ -51,10 +54,13 @@ func (a *app) logf(fmt string, v ...interface{}) {
 
 func newApp(logger hasPrintf) *app {
 	app := &app{
-		table:        dev.NewDeviceTable(),
-		logger:       logger,
-		holdtime:     60 * time.Second, // FIXME: 12h (do not collect/save new backup before this timeout)
-		scanInterval: 10 * time.Second, // FIXME: 1h (interval between full table scan)
+		table:          dev.NewDeviceTable(),
+		logger:         logger,
+		holdtime:       60 * time.Second, // FIXME: 12h (do not collect/save new backup before this timeout)
+		scanInterval:   10 * time.Second, // FIXME: 1h (interval between full table scan)
+		priority:       make(chan string),
+		maxConcurrency: 3,
+		maxConfigFiles: 10,
 	}
 
 	app.logf("%s %s starting", appName, appVersion)
@@ -82,7 +88,6 @@ func main() {
 	flag.StringVar(&jaz.configPathPrefix, "configPathPrefix", "/etc/jazigo/jazigo.conf.", "configuration path prefix")
 	flag.StringVar(&jaz.repositoryPath, "repositoryPath", "/var/jazigo", "repository path")
 	flag.StringVar(&staticDir, "wwwStaticPath", defaultStaticDir(), "directory for static www content")
-	flag.IntVar(&jaz.maxConfigFiles, "maxConfigFiles", 10, "limit number of configuration files (negative value means unlimited)")
 	flag.BoolVar(&runOnce, "runOnce", false, "exit after scanning all devices once")
 	flag.Parse()
 	jaz.logf("config path prefix: %s", jaz.configPathPrefix)
@@ -152,7 +157,7 @@ func main() {
 	buildLoginWin(jaz, server)
 
 	if runOnce {
-		dev.ScanDevices(jaz.table, logger, 3, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles, jaz.holdtime)
+		dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, jaz.maxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles, jaz.holdtime)
 		jaz.logf("runOnce: exiting after single scan")
 		return
 	}
@@ -160,14 +165,31 @@ func main() {
 	go func() {
 		for {
 			begin := time.Now()
-			dev.ScanDevices(jaz.table, logger, 3, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles, jaz.holdtime)
-			elap := time.Since(begin)
-			sleep := jaz.scanInterval - elap
-			if sleep < 1 {
-				sleep = 0
+			dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, jaz.maxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles, jaz.holdtime)
+
+		SLEEP:
+			for {
+				elap := time.Since(begin)
+				sleep := jaz.scanInterval - elap
+				if sleep < 1 {
+					sleep = 0
+				}
+				jaz.logf("main: sleeping for %s (target: scanInterval=%s)", sleep, jaz.scanInterval)
+				select {
+				case <-time.After(sleep):
+					jaz.logf("main: sleep done")
+					break SLEEP
+				case id := <-jaz.priority:
+					jaz.logf("main: sleep interrupted by priority: device %s", id)
+					d, clearErr := dev.ClearDeviceStatus(jaz.table, id, logger, jaz.holdtime)
+					if clearErr != nil {
+						jaz.logf("main: sleep interrupted by priority: device %s - error: %v", id, clearErr)
+						continue SLEEP
+					}
+					singleDevice := []*dev.Device{d}
+					dev.ScanDevices(jaz.table, singleDevice, logger, jaz.maxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.maxConfigFiles, jaz.holdtime)
+				}
 			}
-			jaz.logf("main: scan loop sleeping for %s (target: scanInterval=%s)", sleep, jaz.scanInterval)
-			time.Sleep(sleep)
 		}
 	}()
 

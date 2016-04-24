@@ -26,21 +26,15 @@ func TestJuniperJunOS1(t *testing.T) {
 
 	// run client test
 	logger := &testLogger{t}
-	/*
-		app := &bogusApp{
-			models:  map[string]*Model{},
-			devices: map[string]*Device{},
-		}
-	*/
-	app := NewDeviceTable()
-	RegisterModels(logger, app)
+	tab := NewDeviceTable()
+	RegisterModels(logger, tab)
 
-	CreateDevice(app, logger, "junos", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
+	CreateDevice(tab, logger, "junos", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
+	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
 	if good != 1 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}
@@ -61,20 +55,14 @@ func TestJuniperJunOS2(t *testing.T) {
 
 	// run client test
 	logger := &testLogger{t}
-	/*
-		app := &bogusApp{
-			models:  map[string]*Model{},
-			devices: map[string]*Device{},
-		}
-	*/
-	app := NewDeviceTable()
-	RegisterModels(logger, app)
-	CreateDevice(app, logger, "junos", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
+	tab := NewDeviceTable()
+	RegisterModels(logger, tab)
+	CreateDevice(tab, logger, "junos", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
+	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
 	if good != 0 || bad != 1 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}

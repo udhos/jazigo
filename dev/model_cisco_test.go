@@ -36,32 +36,6 @@ type optionsCiscoIOS struct {
 	breakConn         bool
 }
 
-/*
-type bogusApp struct {
-	models  map[string]*Model
-	devices map[string]*Device
-}
-
-func (a *bogusApp) GetModel(modelName string) (*Model, error) {
-	if m, ok := a.models[modelName]; ok {
-		return m, nil
-	}
-	return nil, fmt.Errorf("bogusApp.GetModel: not found")
-}
-
-func (a *bogusApp) SetDevice(id string, d *Device) error {
-	if _, found := a.devices[id]; found {
-		return fmt.Errorf("bogusApp.SetDevice: found")
-	}
-	a.devices[id] = d
-	return nil
-}
-
-func (a *bogusApp) ListDevices() []*Device {
-	return DeviceMapToSlice(a.devices)
-}
-*/
-
 func TestCiscoIOS1(t *testing.T) {
 
 	// launch bogus test server
@@ -74,20 +48,14 @@ func TestCiscoIOS1(t *testing.T) {
 
 	// run client test
 	logger := &testLogger{t}
-	/*
-		app := &bogusApp{
-			models:  map[string]*Model{},
-			devices: map[string]*Device{},
-		}
-	*/
-	app := NewDeviceTable()
-	RegisterModels(logger, app)
-	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
+	tab := NewDeviceTable()
+	RegisterModels(logger, tab)
+	CreateDevice(tab, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
+	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
 	if good != 1 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}
@@ -112,20 +80,14 @@ func TestCiscoIOS2(t *testing.T) {
 
 	// run client test
 	logger := &testLogger{t}
-	/*
-		app := &bogusApp{
-			models:  map[string]*Model{},
-			devices: map[string]*Device{},
-		}
-	*/
-	app := NewDeviceTable()
-	RegisterModels(logger, app)
-	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
+	tab := NewDeviceTable()
+	RegisterModels(logger, tab)
+	CreateDevice(tab, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
+	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
 	if good != 1 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}
@@ -149,20 +111,14 @@ func TestCiscoIOS3(t *testing.T) {
 
 	// run client test
 	logger := &testLogger{t}
-	/*
-		app := &bogusApp{
-			models:  map[string]*Model{},
-			devices: map[string]*Device{},
-		}
-	*/
-	app := NewDeviceTable()
-	RegisterModels(logger, app)
-	CreateDevice(app, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
+	tab := NewDeviceTable()
+	RegisterModels(logger, tab)
+	CreateDevice(tab, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(app, logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
+	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
 	if good != 0 || bad != 1 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}
@@ -185,22 +141,16 @@ func TestCiscoIOS4(t *testing.T) {
 
 	// run client test
 	logger := &testLogger{t}
-	/*
-		app := &bogusApp{
-			models:  map[string]*Model{},
-			devices: map[string]*Device{},
-		}
-	*/
-	app := NewDeviceTable()
-	RegisterModels(logger, app)
+	tab := NewDeviceTable()
+	RegisterModels(logger, tab)
 	for i := 0; i < 1000; i++ {
-		CreateDevice(app, logger, "cisco-ios", fmt.Sprintf("lab%02d", i), "localhost"+addr, "telnet", "lab", "pass", "en", false)
+		CreateDevice(tab, logger, "cisco-ios", fmt.Sprintf("lab%02d", i), "localhost"+addr, "telnet", "lab", "pass", "en", false)
 	}
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(app, logger, 100, 0*time.Millisecond, 0*time.Millisecond, repo, 10, 0)
+	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 100, 0*time.Millisecond, 0*time.Millisecond, repo, 10, 0)
 	if good != 1000 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d", good, bad)
 	}

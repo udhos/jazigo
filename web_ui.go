@@ -114,7 +114,7 @@ func (s sortById) Less(i, j int) bool {
 }
 
 func buildDeviceTable(jaz *app, t gwu.Table) {
-	const COLS = 8
+	const COLS = 9
 
 	t.Add(gwu.NewLabel("Model"), 0, 0)
 	t.Add(gwu.NewLabel("Device"), 0, 1)
@@ -124,6 +124,7 @@ func buildDeviceTable(jaz *app, t gwu.Table) {
 	t.Add(gwu.NewLabel("Last Try"), 0, 5)
 	t.Add(gwu.NewLabel("Last Success"), 0, 6)
 	t.Add(gwu.NewLabel("Holdtime"), 0, 7)
+	t.Add(gwu.NewLabel("Run Now"), 0, 8)
 
 	for j := 0; j < COLS; j++ {
 		t.CellFmt(0, j).Style().AddClass("device_table_cell")
@@ -149,6 +150,12 @@ func buildDeviceTable(jaz *app, t gwu.Table) {
 		}
 		labHoldtime := gwu.NewLabel(fmt.Sprintf("%v", h))
 
+		buttonRun := gwu.NewButton("Run")
+		id := d.Id()
+		buttonRun.AddEHandlerFunc(func(e gwu.Event) {
+			runPriority(jaz, id)
+		}, gwu.ETypeClick)
+
 		t.Add(labMod, i, 0)
 		t.Add(labId, i, 1)
 		t.Add(labHost, i, 2)
@@ -157,6 +164,7 @@ func buildDeviceTable(jaz *app, t gwu.Table) {
 		t.Add(labLastTry, i, 5)
 		t.Add(labLastSuccess, i, 6)
 		t.Add(labHoldtime, i, 7)
+		t.Add(buttonRun, i, 8)
 
 		for j := 0; j < COLS; j++ {
 			t.CellFmt(i, j).Style().AddClass("device_table_cell")
@@ -164,6 +172,11 @@ func buildDeviceTable(jaz *app, t gwu.Table) {
 
 		i++
 	}
+}
+
+func runPriority(jaz *app, id string) {
+	jaz.logger.Printf("runPriority: device: %s", id)
+	jaz.priority <- id
 }
 
 func buildHomeWin(jaz *app, s gwu.Session) {
