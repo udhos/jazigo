@@ -74,7 +74,7 @@ func CreateDevice(tab *DeviceTable, logger hasPrintf, modelName, id, hostPort, t
 }
 
 func NewDevice(logger hasPrintf, mod *Model, id, hostPort, transports, loginUser, loginPassword, enablePassword string, debug bool) *Device {
-	d := &Device{logger: logger, devModel: mod, DevConfig: conf.DevConfig{Id: id, HostPort: hostPort, Transports: transports, LoginUser: loginUser, LoginPassword: loginPassword, EnablePassword: enablePassword, Debug: debug}}
+	d := &Device{logger: logger, devModel: mod, DevConfig: conf.DevConfig{Model: mod.name, Id: id, HostPort: hostPort, Transports: transports, LoginUser: loginUser, LoginPassword: loginPassword, EnablePassword: enablePassword, Debug: debug}}
 	d.Attr = mod.defaultAttr
 	return d
 }
