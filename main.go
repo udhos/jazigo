@@ -10,6 +10,7 @@ import (
 
 	"github.com/icza/gowut/gwu"
 
+	"github.com/udhos/jazigo/conf"
 	"github.com/udhos/jazigo/dev"
 	"github.com/udhos/jazigo/store"
 )
@@ -25,6 +26,8 @@ type app struct {
 	scanInterval     time.Duration
 
 	table *dev.DeviceTable
+
+	cfg *conf.Config
 
 	apHome    gwu.Panel
 	apAdmin   gwu.Panel
@@ -91,9 +94,18 @@ func main() {
 	lastConfig, configErr := store.FindLastConfig(jaz.configPathPrefix, logger)
 	if configErr != nil {
 		jaz.logf("error reading config: '%s': %v", jaz.configPathPrefix, configErr)
+		jaz.cfg = conf.New()
 	} else {
 		jaz.logf("last config: %s", lastConfig)
+		var loadErr error
+		jaz.cfg, loadErr = conf.Load(lastConfig)
+		if loadErr != nil {
+			jaz.logf("could not load config: '%s': %v", lastConfig, loadErr)
+			panic("main: could not load config")
+		}
 	}
+
+	saveConfig(jaz) // FIXME this is not the right place to save the config
 
 	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en")
 	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en") // ugh
@@ -164,5 +176,25 @@ func main() {
 	if err := server.Start(); err != nil {
 		jaz.logf("jazigo main: Cound not start GUI server: %s", err)
 		return
+	}
+}
+
+func saveConfig(jaz *app) {
+
+	confWriteFunc := func(w store.HasWrite) error {
+		b, err := jaz.cfg.Dump()
+		if err != nil {
+			return err
+		}
+		if _, wrErr := w.Write(b); wrErr != nil {
+			return wrErr
+		}
+		return nil
+	}
+
+	_, saveErr := store.SaveNewConfig(jaz.configPathPrefix, jaz.maxConfigFiles, jaz.logger, confWriteFunc)
+	if saveErr != nil {
+		jaz.logger.Printf("main: could not save config: %v", saveErr)
+		panic("main: could not save config") // FIXME log only
 	}
 }
