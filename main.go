@@ -61,6 +61,12 @@ func newApp(logger hasPrintf) *app {
 	return app
 }
 
+func defaultStaticDir() string {
+	gopath := os.Getenv("GOPATH")
+	pkgPath := filepath.Join("src", "github.com", "udhos", "jazigo") // from package github.com/udhos/jazigo
+	return filepath.Join(gopath, pkgPath, "www")
+}
+
 func main() {
 
 	logger := log.New(os.Stdout, "", log.LstdFlags)
@@ -68,9 +74,11 @@ func main() {
 	jaz := newApp(logger)
 
 	var runOnce bool
+	var staticDir string
 
 	flag.StringVar(&jaz.configPathPrefix, "configPathPrefix", "/etc/jazigo/jazigo.conf.", "configuration path prefix")
 	flag.StringVar(&jaz.repositoryPath, "repositoryPath", "/var/jazigo", "repository path")
+	flag.StringVar(&staticDir, "wwwStaticPath", defaultStaticDir(), "directory for static www content")
 	flag.IntVar(&jaz.maxConfigFiles, "maxConfigFiles", 10, "limit number of configuration files (negative value means unlimited)")
 	flag.BoolVar(&runOnce, "runOnce", false, "exit after scanning all devices once")
 	flag.Parse()
@@ -114,14 +122,9 @@ func main() {
 	//server := gwu.NewServerTLS(appName, appAddr, folder+"cert.pem", folder+"key.pem")
 	server.SetText(serverName)
 
-	gopath := os.Getenv("GOPATH")
-	pkgPath := filepath.Join("src", "github.com", "udhos", "jazigo") // from package github.com/udhos/jazigo
-	staticDir := filepath.Join(gopath, pkgPath, "www")
 	staticPath := "static"
 	staticPathFull := fmt.Sprintf("/%s/%s", appName, staticPath)
-
 	jaz.logf("static dir: path=[%s] mapped to dir=[%s]", staticPathFull, staticDir)
-
 	jaz.cssPath = fmt.Sprintf("%s/jazigo.css", staticPathFull)
 	jaz.logf("css path: %s", jaz.cssPath)
 
