@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/icza/gowut/gwu"
+	"github.com/udhos/lockfile"
 
 	"github.com/udhos/jazigo/conf"
 	"github.com/udhos/jazigo/dev"
@@ -21,6 +22,8 @@ const appVersion = "0.0"
 type app struct {
 	configPathPrefix string
 	repositoryPath   string
+	configLock       lockfile.Lockfile
+	repositoryLock   lockfile.Lockfile
 
 	table *dev.DeviceTable
 
@@ -82,9 +85,18 @@ func main() {
 	flag.StringVar(&staticDir, "wwwStaticPath", defaultStaticDir(), "directory for static www content")
 	flag.BoolVar(&runOnce, "runOnce", false, "exit after scanning all devices once")
 	flag.Parse()
+
+	jaz.logf("runOnce: %v", runOnce)
 	jaz.logf("config path prefix: %s", jaz.configPathPrefix)
 	jaz.logf("repository path: %s", jaz.repositoryPath)
-	jaz.logf("runOnce: %v", runOnce)
+
+	if lockErr := exclusiveLock(jaz); lockErr != nil {
+		jaz.logf("main: could not get exclusive lock: %v", lockErr)
+		panic("main: refusing to run without exclusive lock")
+	}
+	defer exclusiveUnlock(jaz)
+
+	// load config
 
 	lastConfig, configErr := store.FindLastConfig(jaz.configPathPrefix, logger)
 	if configErr != nil {
@@ -191,6 +203,41 @@ func main() {
 	if err := server.Start(); err != nil {
 		jaz.logf("jazigo main: Cound not start GUI server: %s", err)
 		return
+	}
+}
+
+func exclusiveLock(jaz *app) error {
+	configLockPath := fmt.Sprintf("%slock", jaz.configPathPrefix)
+	var newErr error
+	if jaz.configLock, newErr = lockfile.New(configLockPath); newErr != nil {
+		return fmt.Errorf("exclusiveLock: new failure: '%s': %v", configLockPath, newErr)
+	}
+	if err := jaz.configLock.TryLock(); err != nil {
+		return fmt.Errorf("exclusiveLock: lock failure: '%s': %v", configLockPath, err)
+	}
+
+	repositoryLockPath := fmt.Sprintf("%slock", jaz.repositoryPath)
+	if jaz.repositoryLock, newErr = lockfile.New(repositoryLockPath); newErr != nil {
+		jaz.configLock.Unlock()
+		return fmt.Errorf("exclusiveLock: new failure: '%s': %v", repositoryLockPath, newErr)
+	}
+	if err := jaz.repositoryLock.TryLock(); err != nil {
+		jaz.configLock.Unlock()
+		return fmt.Errorf("exclusiveLock: lock failure: '%s': %v", repositoryLockPath, err)
+	}
+
+	return nil
+}
+
+func exclusiveUnlock(jaz *app) {
+	configLockPath := fmt.Sprintf("%slock", jaz.configPathPrefix)
+	if err := jaz.configLock.Unlock(); err != nil {
+		jaz.logger.Printf("exclusiveUnlock: '%s': %v", configLockPath, err)
+	}
+
+	repositoryLockPath := fmt.Sprintf("%slock", jaz.repositoryPath)
+	if err := jaz.repositoryLock.Unlock(); err != nil {
+		jaz.logger.Printf("exclusiveUnlock: '%s': %v", repositoryLockPath, err)
 	}
 }
 
