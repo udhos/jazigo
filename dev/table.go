@@ -77,6 +77,13 @@ func (t *DeviceTable) SetDevice(d *Device) error {
 	return nil
 }
 
+func (t *DeviceTable) KillDevice(id string) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	delete(t.devices, id)
+}
+
 func (t *DeviceTable) UpdateDevice(d *Device) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()

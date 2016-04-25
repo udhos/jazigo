@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/icza/gowut/gwu"
@@ -27,7 +30,8 @@ type app struct {
 
 	table *dev.DeviceTable
 
-	cfg *conf.Config
+	//cfg *conf.Config
+	options conf.AppConfig
 
 	apHome    gwu.Panel
 	apAdmin   gwu.Panel
@@ -79,14 +83,19 @@ func main() {
 
 	var runOnce bool
 	var staticDir string
+	var deviceImport bool
+	var deviceDelete bool
+	var deviceList bool
 
 	flag.StringVar(&jaz.configPathPrefix, "configPathPrefix", "/etc/jazigo/jazigo.conf.", "configuration path prefix")
 	flag.StringVar(&jaz.repositoryPath, "repositoryPath", "/var/jazigo", "repository path")
 	flag.StringVar(&staticDir, "wwwStaticPath", defaultStaticDir(), "directory for static www content")
 	flag.BoolVar(&runOnce, "runOnce", false, "exit after scanning all devices once")
+	flag.BoolVar(&deviceDelete, "deviceDelete", false, "delete devices specified in stdin")
+	flag.BoolVar(&deviceImport, "deviceImport", false, "import devices from stdin")
+	flag.BoolVar(&deviceList, "deviceList", false, "list devices from stdout")
 	flag.Parse()
 
-	jaz.logf("runOnce: %v", runOnce)
 	jaz.logf("config path prefix: %s", jaz.configPathPrefix)
 	jaz.logf("repository path: %s", jaz.repositoryPath)
 
@@ -97,23 +106,11 @@ func main() {
 	defer exclusiveUnlock(jaz)
 
 	// load config
+	loadConfig(jaz)
 
-	lastConfig, configErr := store.FindLastConfig(jaz.configPathPrefix, logger)
-	if configErr != nil {
-		jaz.logf("error reading config: '%s': %v", jaz.configPathPrefix, configErr)
-		jaz.cfg = conf.New()
-	} else {
-		jaz.logf("last config: %s", lastConfig)
-		var loadErr error
-		jaz.cfg, loadErr = conf.Load(lastConfig)
-		if loadErr != nil {
-			jaz.logf("could not load config: '%s': %v", lastConfig, loadErr)
-			panic("main: could not load config")
-		}
-	}
-
-	jaz.logf("scan interval: %s", jaz.cfg.ScanInterval)
-	jaz.logf("holdtime: %s", jaz.cfg.Holdtime)
+	jaz.logf("runOnce: %v", runOnce)
+	jaz.logf("scan interval: %s", jaz.options.ScanInterval)
+	jaz.logf("holdtime: %s", jaz.options.Holdtime)
 
 	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en")
 	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en") // ugh
@@ -123,17 +120,18 @@ func main() {
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab5", "localhost", "telnet", "lab", "pass", "en")
 	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab6", "localhost", "ssh", "rat", "lab", "en")
 	//dev.CreateDevice(jaz.table, jaz.logger, "http", "lab7", "localhost:2009", "telnet", "", "", "")
-
-	dev.CreateDevice(jaz.table, jaz.logger, "linux", "lab8", "localhost", "ssh", "rat", "lab", "lab", false)
-	dev.CreateDevice(jaz.table, jaz.logger, "junos", "lab9", "ex4200lab", "ssh", "test", "lab000", "lab", false)
-	dev.CreateDevice(jaz.table, jaz.logger, "junos", "lab10", "ex4200lab", "telnet", "test", "lab000", "lab", false)
-
+	//dev.CreateDevice(jaz.table, jaz.logger, "linux", "lab8", "localhost", "ssh", "rat", "lab", "lab", false)
+	//dev.CreateDevice(jaz.table, jaz.logger, "junos", "lab9", "ex4200lab", "ssh", "test", "lab000", "lab", false)
+	//dev.CreateDevice(jaz.table, jaz.logger, "junos", "lab10", "ex4200lab", "telnet", "test", "lab000", "lab", false)
 	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-iosxr", "lab11", "192.168.56.1:2011", "telnet", "user", "pass", "pass", false)
-	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-iosxr", "lab12", "192.168.56.1:2012", "ssh", "user", "pass", "cisco8", true)
+	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-iosxr", "lab12", "192.168.56.1:2012", "ssh", "user", "pass", "pass", true)
+
+	if exit := manageDeviceList(jaz, deviceImport, deviceDelete, deviceList); exit != nil {
+		jaz.logf("main: %v", exit)
+		return
+	}
 
 	dev.UpdateLastSuccess(jaz.table, jaz.logger, jaz.repositoryPath)
-
-	saveConfig(jaz) // FIXME this is not the right place to save the config
 
 	appAddr := "0.0.0.0:8080"
 	serverName := fmt.Sprintf("%s application", appName)
@@ -162,7 +160,7 @@ func main() {
 	buildLoginWin(jaz, server)
 
 	if runOnce {
-		dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, jaz.cfg.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.cfg.MaxConfigFiles, jaz.cfg.Holdtime)
+		dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, jaz.options.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.options.MaxConfigFiles, jaz.options.Holdtime)
 		jaz.logf("runOnce: exiting after single scan")
 		return
 	}
@@ -170,29 +168,29 @@ func main() {
 	go func() {
 		for {
 			begin := time.Now()
-			dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, jaz.cfg.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.cfg.MaxConfigFiles, jaz.cfg.Holdtime)
+			dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, jaz.options.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.options.MaxConfigFiles, jaz.options.Holdtime)
 
 		SLEEP:
 			for {
 				elap := time.Since(begin)
-				sleep := jaz.cfg.ScanInterval - elap
+				sleep := jaz.options.ScanInterval - elap
 				if sleep < 1 {
 					sleep = 0
 				}
-				jaz.logf("main: sleeping for %s (target: scanInterval=%s)", sleep, jaz.cfg.ScanInterval)
+				jaz.logf("main: sleeping for %s (target: scanInterval=%s)", sleep, jaz.options.ScanInterval)
 				select {
 				case <-time.After(sleep):
 					jaz.logf("main: sleep done")
 					break SLEEP
 				case id := <-jaz.priority:
 					jaz.logf("main: sleep interrupted by priority: device %s", id)
-					d, clearErr := dev.ClearDeviceStatus(jaz.table, id, logger, jaz.cfg.Holdtime)
+					d, clearErr := dev.ClearDeviceStatus(jaz.table, id, logger, jaz.options.Holdtime)
 					if clearErr != nil {
 						jaz.logf("main: sleep interrupted by priority: device %s - error: %v", id, clearErr)
 						continue SLEEP
 					}
 					singleDevice := []*dev.Device{d}
-					dev.ScanDevices(jaz.table, singleDevice, logger, jaz.cfg.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.cfg.MaxConfigFiles, jaz.cfg.Holdtime)
+					dev.ScanDevices(jaz.table, singleDevice, logger, jaz.options.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.options.MaxConfigFiles, jaz.options.Holdtime)
 				}
 			}
 		}
@@ -204,6 +202,136 @@ func main() {
 		jaz.logf("jazigo main: Cound not start GUI server: %s", err)
 		return
 	}
+}
+
+func loadConfig(jaz *app) {
+
+	var cfg *conf.Config
+
+	lastConfig, configErr := store.FindLastConfig(jaz.configPathPrefix, jaz.logger)
+	if configErr != nil {
+		jaz.logf("error reading config: '%s': %v", jaz.configPathPrefix, configErr)
+		cfg = conf.New()
+	} else {
+		jaz.logf("last config: %s", lastConfig)
+		var loadErr error
+		cfg, loadErr = conf.Load(lastConfig)
+		if loadErr != nil {
+			jaz.logf("could not load config: '%s': %v", lastConfig, loadErr)
+			panic("main: could not load config")
+		}
+	}
+
+	jaz.options = cfg.Options
+
+	for _, c := range cfg.Devices {
+		d, newErr := dev.NewDeviceFromConf(jaz.table, jaz.logger, &c)
+		if newErr != nil {
+			jaz.logger.Printf("loadConfig: failure creating device '%s': %v", c.Id, newErr)
+			continue
+		}
+		if addErr := jaz.table.SetDevice(d); addErr != nil {
+			jaz.logger.Printf("loadConfig: failure adding device '%s': %v", c.Id, addErr)
+			continue
+		}
+		jaz.logger.Printf("loadConfig: loaded device '%s'", c.Id)
+	}
+}
+
+func manageDeviceList(jaz *app, imp, del, list bool) error {
+	if del && imp {
+		return fmt.Errorf("deviceImport and deviceDelete are mutually exclusive")
+	}
+
+	if del {
+		jaz.logf("main: reading device list from stdin")
+
+		reader := bufio.NewReader(os.Stdin)
+	LOOP_DEL:
+		for {
+			text, inErr := reader.ReadString('\n')
+			switch inErr {
+			case io.EOF:
+				break LOOP_DEL
+			case nil:
+			default:
+				return fmt.Errorf("stdin error: %v", inErr)
+			}
+
+			id := strings.TrimSpace(text)
+
+			jaz.logf("killing device [%s]", id)
+
+			if _, getErr := jaz.table.GetDevice(id); getErr != nil {
+				jaz.logf("killing device [%s] - not found: %v", id, getErr)
+				continue
+			}
+
+			jaz.table.KillDevice(id)
+		}
+
+		saveConfig(jaz)
+	}
+
+	if imp {
+		jaz.logf("reading device list from stdin")
+
+		reader := bufio.NewReader(os.Stdin)
+	LOOP_ADD:
+		for {
+			text, inErr := reader.ReadString('\n')
+			switch inErr {
+			case io.EOF:
+				break LOOP_ADD
+			case nil:
+			default:
+				return fmt.Errorf("stdin error: %v", inErr)
+			}
+
+			f := strings.Fields(text)
+
+			count := len(f)
+			if count < 6 {
+				return fmt.Errorf("missing fields from device line: [%s]", text)
+			}
+			enable := ""
+			if count > 6 {
+				enable = f[6]
+			}
+			debug := false
+			if count > 7 {
+				debug = true
+			}
+
+			dev.CreateDevice(jaz.table, jaz.logger, f[0], f[1], f[2], f[3], f[4], f[5], enable, debug)
+		}
+
+		saveConfig(jaz)
+	}
+
+	if list {
+		devices := jaz.table.ListDevices()
+
+		jaz.logf("main: issuing device list to stdout: %d devices", len(devices))
+
+		for _, d := range devices {
+			enable := d.EnablePassword
+			if enable == "" {
+				enable = "."
+			}
+			debug := ""
+			if d.Debug {
+				debug = "debug"
+			}
+			fmt.Printf("%s %s %s %s %s %s %s %s\n", d.DevConfig.Model, d.Id, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword, enable, debug)
+		}
+	}
+
+	if del || imp || list {
+		return fmt.Errorf("device list management done")
+	}
+
+	return nil
 }
 
 func exclusiveLock(jaz *app) error {
@@ -244,13 +372,18 @@ func exclusiveUnlock(jaz *app) {
 func saveConfig(jaz *app) {
 
 	devices := jaz.table.ListDevices()
-	jaz.cfg.Devices = make([]conf.DevConfig, len(devices))
+
+	var cfg conf.Config
+	cfg.Options = jaz.options // copy options from app
+	cfg.Devices = make([]conf.DevConfig, len(devices))
+
+	// copy devices from device table
 	for i, d := range devices {
-		jaz.cfg.Devices[i] = d.DevConfig
+		cfg.Devices[i] = d.DevConfig
 	}
 
 	confWriteFunc := func(w store.HasWrite) error {
-		b, err := jaz.cfg.Dump()
+		b, err := cfg.Dump()
 		if err != nil {
 			return err
 		}
@@ -264,7 +397,8 @@ func saveConfig(jaz *app) {
 		return nil
 	}
 
-	_, saveErr := store.SaveNewConfig(jaz.configPathPrefix, jaz.cfg.MaxConfigFiles, jaz.logger, confWriteFunc)
+	// save
+	_, saveErr := store.SaveNewConfig(jaz.configPathPrefix, cfg.Options.MaxConfigFiles, jaz.logger, confWriteFunc)
 	if saveErr != nil {
 		jaz.logger.Printf("main: could not save config: %v", saveErr)
 		panic("main: could not save config") // FIXME log only

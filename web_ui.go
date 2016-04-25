@@ -144,7 +144,7 @@ func buildDeviceTable(jaz *app, t gwu.Table) {
 		labLastStatus := gwu.NewLabel(fmt.Sprintf("%v", d.LastStatus()))
 		labLastTry := gwu.NewLabel(timestampString(d.LastTry()))
 		labLastSuccess := gwu.NewLabel(timestampString(d.LastSuccess()))
-		h := d.Holdtime(now, jaz.cfg.Holdtime)
+		h := d.Holdtime(now, jaz.options.Holdtime)
 		if h < 0 {
 			h = 0
 		}

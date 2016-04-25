@@ -73,6 +73,15 @@ func CreateDevice(tab *DeviceTable, logger hasPrintf, modelName, id, hostPort, t
 	}
 }
 
+func NewDeviceFromConf(tab *DeviceTable, logger hasPrintf, cfg *conf.DevConfig) (*Device, error) {
+	mod, getErr := tab.GetModel(cfg.Model)
+	if getErr != nil {
+		return nil, fmt.Errorf("NewDeviceFromConf: could not find model '%s': %v", cfg.Model, getErr)
+	}
+	d := &Device{logger: logger, devModel: mod, DevConfig: *cfg}
+	return d, nil
+}
+
 func NewDevice(logger hasPrintf, mod *Model, id, hostPort, transports, loginUser, loginPassword, enablePassword string, debug bool) *Device {
 	d := &Device{logger: logger, devModel: mod, DevConfig: conf.DevConfig{Model: mod.name, Id: id, HostPort: hostPort, Transports: transports, LoginUser: loginUser, LoginPassword: loginPassword, EnablePassword: enablePassword, Debug: debug}}
 	d.Attr = mod.defaultAttr

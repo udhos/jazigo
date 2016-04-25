@@ -51,13 +51,13 @@ type DevConfig struct {
 }
 
 type Config struct {
-	AppConfig
+	Options AppConfig
 	Devices []DevConfig
 }
 
 func New() *Config {
 	return &Config{
-		AppConfig: AppConfig{
+		Options: AppConfig{
 			Holdtime:       60 * time.Second, // FIXME: 12h (do not collect/save new backup before this timeout)
 			ScanInterval:   10 * time.Second, // FIXME: 1h (interval between full table scan)
 			MaxConcurrency: 3,
