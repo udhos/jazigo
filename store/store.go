@@ -171,6 +171,38 @@ func getConfigPath(configPathPrefix, id string) string {
 
 func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writeFunc func(HasWrite) error) (string, error) {
 
+	// get tmp file
+	tmpPath := getConfigPath(configPathPrefix, "tmp")
+
+	if _, err := os.Stat(tmpPath); err == nil {
+		return "", fmt.Errorf("SaveNewConfig: tmp file exists: [%s]", tmpPath)
+	}
+
+	f, createErr := os.Create(tmpPath)
+	if createErr != nil {
+		return "", fmt.Errorf("SaveNewConfig: error creating tmp file: [%s]: %v", tmpPath, createErr)
+	}
+
+	defer os.Remove(tmpPath)
+
+	// write to tmp file
+
+	w := bufio.NewWriter(f)
+
+	if err := writeFunc(w); err != nil {
+		return "", fmt.Errorf("SaveNewConfig: writeFunc error: [%s]: %v", tmpPath, err)
+	}
+
+	if err := w.Flush(); err != nil {
+		return "", fmt.Errorf("SaveNewConfig: error flushing file: [%s]: %v", tmpPath, err)
+	}
+
+	if err := f.Close(); err != nil {
+		return "", fmt.Errorf("SaveNewConfig: error closing file: [%s]: %v", tmpPath, err)
+	}
+
+	// get new file
+
 	lastConfig, err1 := FindLastConfig(configPathPrefix, logger)
 	if err1 != nil {
 		logger.Printf("SaveNewConfig: error reading config: [%s]: %v", configPathPrefix, err1)
@@ -190,30 +222,21 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 		return "", fmt.Errorf("SaveNewConfig: new file exists: [%s]", newFilepath)
 	}
 
-	f, err3 := os.Create(newFilepath)
-	if err3 != nil {
-		return "", fmt.Errorf("SaveNewConfig: error creating file: [%s]: %v", newFilepath, err3)
+	// rename tmp to new file
+
+	if renameErr := os.Rename(tmpPath, newFilepath); renameErr != nil {
+		return "", fmt.Errorf("SaveNewConfig: could not rename '%s' to '%s'; %v", tmpPath, newFilepath, renameErr)
 	}
 
-	w := bufio.NewWriter(f)
-
-	if err := writeFunc(w); err != nil {
-		return "", fmt.Errorf("SaveNewConfig: writeFunc error: [%s]: %v", newFilepath, err)
-	}
-
-	if err := w.Flush(); err != nil {
-		return "", fmt.Errorf("SaveNewConfig: error flushing file: [%s]: %v", newFilepath, err)
-	}
-
-	if err := f.Close(); err != nil {
-		return "", fmt.Errorf("SaveNewConfig: error closing file: [%s]: %v", newFilepath, err)
-	}
+	// write shortcut file
 
 	// write last id into shortcut file
 	lastIdPath := getLastIdPath(configPathPrefix)
 	if err := ioutil.WriteFile(lastIdPath, []byte(strconv.Itoa(newCommitId)), 0700); err != nil {
 		logger.Printf("SaveNewConfig: error writing last id file '%s': %v", lastIdPath, err)
 	}
+
+	// erase old file
 
 	eraseOldFiles(configPathPrefix, maxFiles, logger)
 
