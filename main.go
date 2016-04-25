@@ -111,6 +111,8 @@ func main() {
 	jaz.logf("runOnce: %v", runOnce)
 	jaz.logf("scan interval: %s", jaz.options.ScanInterval)
 	jaz.logf("holdtime: %s", jaz.options.Holdtime)
+	jaz.logf("maximum config files: %d", jaz.options.MaxConfigFiles)
+	jaz.logf("maximum concurrency: %d", jaz.options.MaxConcurrency)
 
 	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en")
 	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en") // ugh

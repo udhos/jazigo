@@ -60,8 +60,8 @@ func New() *Config {
 		Options: AppConfig{
 			Holdtime:       60 * time.Second, // FIXME: 12h (do not collect/save new backup before this timeout)
 			ScanInterval:   10 * time.Second, // FIXME: 1h (interval between full table scan)
-			MaxConcurrency: 3,
-			MaxConfigFiles: 10,
+			MaxConcurrency: 10,
+			MaxConfigFiles: 20,
 		},
 		Devices: []DevConfig{},
 	}
