@@ -216,7 +216,7 @@ func exclusiveLock(jaz *app) error {
 		return fmt.Errorf("exclusiveLock: lock failure: '%s': %v", configLockPath, err)
 	}
 
-	repositoryLockPath := fmt.Sprintf("%slock", jaz.repositoryPath)
+	repositoryLockPath := filepath.Join(jaz.repositoryPath, "lock")
 	if jaz.repositoryLock, newErr = lockfile.New(repositoryLockPath); newErr != nil {
 		jaz.configLock.Unlock()
 		return fmt.Errorf("exclusiveLock: new failure: '%s': %v", repositoryLockPath, newErr)
@@ -235,7 +235,7 @@ func exclusiveUnlock(jaz *app) {
 		jaz.logger.Printf("exclusiveUnlock: '%s': %v", configLockPath, err)
 	}
 
-	repositoryLockPath := fmt.Sprintf("%slock", jaz.repositoryPath)
+	repositoryLockPath := filepath.Join(jaz.repositoryPath, "lock")
 	if err := jaz.repositoryLock.Unlock(); err != nil {
 		jaz.logger.Printf("exclusiveUnlock: '%s': %v", repositoryLockPath, err)
 	}
