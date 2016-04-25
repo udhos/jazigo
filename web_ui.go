@@ -113,7 +113,7 @@ func (s sortById) Less(i, j int) bool {
 	return s.data[i].Id < s.data[j].Id
 }
 
-func buildDeviceTable(jaz *app, t gwu.Table) {
+func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table) {
 	const COLS = 9
 
 	t.Add(gwu.NewLabel("Model"), 0, 0)
@@ -138,7 +138,27 @@ func buildDeviceTable(jaz *app, t gwu.Table) {
 	i := 1
 	for _, d := range devList {
 		labMod := gwu.NewLabel(d.Model())
-		labId := gwu.NewLabel(d.Id)
+
+		devWin := "device-" + d.Id
+		labId := gwu.NewLink(d.Id, "/"+appName+"/"+devWin)
+		labId.AddEHandlerFunc(func(e gwu.Event) {
+			win := s.WinByName(devWin)
+			if win == nil {
+				win = newWin(jaz, devWin, "Device "+d.Id)
+				win.Add(gwu.NewLabel("Device: " + d.Id))
+
+				panel := gwu.NewTabPanel()
+
+				panel.Add(gwu.NewLabel("Files"), gwu.NewLabel("Files"))
+				panel.Add(gwu.NewLabel("Properties"), gwu.NewLabel("Properties"))
+				panel.Add(gwu.NewLabel("Error Log"), gwu.NewLabel("Error Log"))
+
+				win.Add(panel)
+				s.AddWin(win)
+				//jaz.logger.Printf("buildDeviceTable: win=[%s] created", devWin)
+			}
+		}, gwu.ETypeClick)
+
 		labHost := gwu.NewLabel(d.HostPort)
 		labTransport := gwu.NewLabel(d.Transports)
 		labLastStatus := gwu.NewLabel(fmt.Sprintf("%v", d.LastStatus()))
@@ -195,7 +215,7 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 
 	refresh := func(e gwu.Event) {
 		t.Clear() // clear out table contents
-		buildDeviceTable(jaz, t)
+		buildDeviceTable(jaz, s, t)
 		e.MarkDirty(t)
 	}
 
@@ -209,7 +229,7 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 		refresh(e)
 	}, gwu.ETypeWinLoad)
 
-	buildDeviceTable(jaz, t)
+	buildDeviceTable(jaz, s, t)
 
 	win.Add(t)
 
