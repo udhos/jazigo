@@ -254,8 +254,12 @@ func saveConfig(jaz *app) {
 		if err != nil {
 			return err
 		}
-		if _, wrErr := w.Write(b); wrErr != nil {
+		n, wrErr := w.Write(b)
+		if wrErr != nil {
 			return wrErr
+		}
+		if n != len(b) {
+			return fmt.Errorf("saveConfig: partial write: wrote=%d size=%d", n, len(b))
 		}
 		return nil
 	}
