@@ -392,7 +392,7 @@ func saveConfig(jaz *app) {
 	devices := jaz.table.ListDevices()
 
 	var cfg conf.Config
-	cfg.Options = jaz.options // copy options from app
+	cfg.Options = jaz.options // copy options from app FIXME: concurrency unsafe
 	cfg.Devices = make([]conf.DevConfig, len(devices))
 
 	// copy devices from device table
@@ -419,6 +419,5 @@ func saveConfig(jaz *app) {
 	_, saveErr := store.SaveNewConfig(jaz.configPathPrefix, cfg.Options.MaxConfigFiles, jaz.logger, confWriteFunc)
 	if saveErr != nil {
 		jaz.logger.Printf("main: could not save config: %v", saveErr)
-		panic("main: could not save config") // FIXME log only
 	}
 }
