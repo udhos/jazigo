@@ -144,7 +144,7 @@ func main() {
 
 	dev.UpdateLastSuccess(jaz.table, jaz.logger, jaz.repositoryPath)
 
-	appAddr := "0.0.0.0:8080"
+	appAddr := ":8080"
 	serverName := fmt.Sprintf("%s application", appName)
 
 	// Create GUI server
