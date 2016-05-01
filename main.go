@@ -75,6 +75,13 @@ func defaultStaticDir() string {
 	return filepath.Join(gopath, pkgPath, "www")
 }
 
+func addTrailingDot(path string) string {
+	if path[len(path)-1] != '.' {
+		return path + "."
+	}
+	return path
+}
+
 func main() {
 
 	logger := log.New(os.Stdout, "", log.LstdFlags)
@@ -95,6 +102,8 @@ func main() {
 	flag.BoolVar(&deviceImport, "deviceImport", false, "import devices from stdin")
 	flag.BoolVar(&deviceList, "deviceList", false, "list devices from stdout")
 	flag.Parse()
+
+	jaz.configPathPrefix = addTrailingDot(jaz.configPathPrefix)
 
 	jaz.logf("config path prefix: %s", jaz.configPathPrefix)
 	jaz.logf("repository path: %s", jaz.repositoryPath)
