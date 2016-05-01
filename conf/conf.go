@@ -50,6 +50,15 @@ type DevConfig struct {
 	Attr           DevAttributes
 }
 
+func NewDeviceFromString(str string) (*DevConfig, error) {
+	b := []byte(str)
+	c := &DevConfig{}
+	if err := yaml.Unmarshal(b, c); err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
 func (c *DevConfig) Dump() ([]byte, error) {
 	b, err := yaml.Marshal(c)
 	if err != nil {
@@ -81,7 +90,7 @@ func Load(path string) (*Config, error) {
 		return nil, readErr
 	}
 	c := New()
-	if err := yaml.Unmarshal(b, &c); err != nil {
+	if err := yaml.Unmarshal(b, c); err != nil {
 		return nil, err
 	}
 	return c, nil

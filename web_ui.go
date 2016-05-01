@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/icza/gowut/gwu"
+	"github.com/udhos/jazigo/conf"
 	"github.com/udhos/jazigo/dev"
 	"github.com/udhos/jazigo/store"
 )
@@ -138,10 +139,14 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId, winName, win
 	filesTab.Style().AddClass("device_files_table")
 
 	propPanel := gwu.NewPanel()
+	propButtonReset := gwu.NewButton("Reset")
+	propButtonSave := gwu.NewButton("Save")
 	propMsg := gwu.NewLabel("No error")
 	propText := gwu.NewTextBox("Text Box")
 	propText.SetRows(20)
 	propText.SetCols(100)
+	propPanel.Add(propButtonReset)
+	propPanel.Add(propButtonSave)
 	propPanel.Add(propMsg)
 	propPanel.Add(propText)
 
@@ -150,6 +155,26 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId, winName, win
 	panel.Add(gwu.NewLabel("Error Log"), gwu.NewLabel("Error Log"))
 
 	win.Add(panel)
+
+	resetProp := func(e gwu.Event) {
+		d, getErr := jaz.table.GetDevice(devId)
+		if getErr != nil {
+			propMsg.SetText(fmt.Sprintf("Get device error: %v", getErr))
+			e.MarkDirty(propPanel)
+			return
+		}
+
+		b, dumpErr := d.DevConfig.Dump()
+		if dumpErr != nil {
+			propMsg.SetText(fmt.Sprintf("Device dump error: %v", dumpErr))
+			e.MarkDirty(propPanel)
+			return
+		}
+
+		propText.SetText(string(b))
+
+		e.MarkDirty(propPanel)
+	}
 
 	refresh := func(e gwu.Event) {
 		// build file list
@@ -196,26 +221,47 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId, winName, win
 
 		// build file properties
 
-		d, getErr := jaz.table.GetDevice(devId)
-		if getErr != nil {
-			propMsg.SetText(fmt.Sprintf("Get device error: %v", getErr))
-			e.MarkDirty(propPanel)
-			return
-		}
-
-		b, dumpErr := d.DevConfig.Dump()
-		if dumpErr != nil {
-			propMsg.SetText(fmt.Sprintf("Device dump error: %v", dumpErr))
-			e.MarkDirty(propPanel)
-			return
-		}
-
-		propText.SetText(string(b))
+		resetProp(e)
 
 		e.MarkDirty(win)
 	}
 
 	refresh(e) // first run
+
+	propButtonReset.AddEHandlerFunc(func(e gwu.Event) {
+		resetProp(e)
+	}, gwu.ETypeClick)
+
+	propButtonSave.AddEHandlerFunc(func(e gwu.Event) {
+		str := propText.Text()
+
+		defer e.MarkDirty(propPanel)
+
+		c, parseErr := conf.NewDeviceFromString(str)
+		if parseErr != nil {
+			propMsg.SetText(fmt.Sprintf("Parse device error: %v", parseErr))
+			return
+		}
+
+		d, getErr := jaz.table.GetDevice(devId)
+		if getErr != nil {
+			propMsg.SetText(fmt.Sprintf("Get device error: %v", getErr))
+			return
+		}
+
+		d.DevConfig = *c
+
+		updateErr := jaz.table.UpdateDevice(d)
+		if updateErr != nil {
+			propMsg.SetText(fmt.Sprintf("Update error: %v", updateErr))
+			return
+		}
+
+		saveConfig(jaz)
+
+		propMsg.SetText("Device updated.")
+
+	}, gwu.ETypeClick)
 
 	refreshButton.AddEHandlerFunc(func(e gwu.Event) {
 		refresh(e)
