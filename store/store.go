@@ -172,6 +172,7 @@ func getConfigPath(configPathPrefix, id string) string {
 func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writeFunc func(HasWrite) error) (string, error) {
 
 	// get tmp file
+
 	tmpPath := getConfigPath(configPathPrefix, "tmp")
 
 	if _, err := os.Stat(tmpPath); err == nil {
@@ -234,6 +235,11 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 	lastIdPath := getLastIdPath(configPathPrefix)
 	if err := ioutil.WriteFile(lastIdPath, []byte(strconv.Itoa(newCommitId)), 0700); err != nil {
 		logger.Printf("SaveNewConfig: error writing last id file '%s': %v", lastIdPath, err)
+
+		// since we failed to update the shortcut file,
+		// it might be pointing to old backup.
+		// then it's safer to simply remove it.
+		os.Remove(lastIdPath)
 	}
 
 	// erase old file
