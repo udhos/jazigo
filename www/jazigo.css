@@ -19,3 +19,14 @@
     border-spacing: 0.5rem;
     border: 2px solid blue;
 }
+
+.device_files_table {
+    border-spacing: 0.5rem;
+    border-collapse: collapse;
+}
+
+.device_files_cell {
+    padding: 1px;
+    border-spacing: 0.5rem;
+    border: 1px solid blue;
+}

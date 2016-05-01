@@ -6,6 +6,8 @@ import (
 	//"math/rand"
 	//"os"
 	//"strconv"
+	"os"
+	"path/filepath"
 	"sort"
 	"time"
 
@@ -133,6 +135,8 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId, winName, win
 	filesPanel.Add(filesMsg)
 	filesPanel.Add(filesTab)
 
+	filesTab.Style().AddClass("device_files_table")
+
 	propPanel := gwu.NewPanel()
 	propMsg := gwu.NewLabel("No error")
 	propText := gwu.NewTextBox("Text Box")
@@ -151,7 +155,7 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId, winName, win
 		// build file list
 
 		prefix := dev.DeviceFullPrefix(jaz.repositoryPath, devId)
-		_, matches, listErr := store.ListConfigSorted(prefix, true, jaz.logger)
+		dirname, matches, listErr := store.ListConfigSorted(prefix, true, jaz.logger)
 		if listErr != nil {
 			filesMsg.SetText(fmt.Sprintf("List files error: %v", listErr))
 			e.MarkDirty(filesPanel)
@@ -162,8 +166,32 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId, winName, win
 
 		filesTab.Clear()
 
+		const COLS = 2
+
 		for i, m := range matches {
-			filesTab.Add(gwu.NewLabel(m), i, 0)
+			path := filepath.Join(dirname, m)
+			timeStr := "unknown"
+			f, openErr := os.Open(path)
+			if openErr != nil {
+				timeStr += fmt.Sprintf("(could not open file: %v)", openErr)
+			}
+			info, statErr := f.Stat()
+			if statErr == nil {
+				timeStr = info.ModTime().String()
+			} else {
+				timeStr += fmt.Sprintf("(could not stat: %v)", statErr)
+			}
+
+			filePath := fmt.Sprintf("/%s/%s/%s/%s", appName, jaz.repoPath, devId, m)
+			devLink := gwu.NewLink(m, filePath)
+
+			filesTab.Add(devLink, i, 0)
+			filesTab.Add(gwu.NewLabel(timeStr), i, 1)
+
+			for j := 0; j < COLS; j++ {
+				filesTab.CellFmt(i, j).Style().AddClass("device_files_cell")
+			}
+
 		}
 
 		// build file properties

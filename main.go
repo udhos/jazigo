@@ -40,7 +40,8 @@ type app struct {
 	winAdmin  gwu.Window
 	winLogout gwu.Window
 
-	cssPath string
+	cssPath  string
+	repoPath string
 
 	logger hasPrintf
 
@@ -60,6 +61,7 @@ func newApp(logger hasPrintf) *app {
 		table:    dev.NewDeviceTable(),
 		logger:   logger,
 		priority: make(chan string),
+		repoPath: "repo",
 	}
 
 	app.logf("%s %s starting", appName, appVersion)
@@ -156,10 +158,15 @@ func main() {
 	staticPath := "static"
 	staticPathFull := fmt.Sprintf("/%s/%s", appName, staticPath)
 	jaz.logf("static dir: path=[%s] mapped to dir=[%s]", staticPathFull, staticDir)
+	server.AddStaticDir(staticPath, staticDir)
+
 	jaz.cssPath = fmt.Sprintf("%s/jazigo.css", staticPathFull)
 	jaz.logf("css path: %s", jaz.cssPath)
 
-	server.AddStaticDir(staticPath, staticDir)
+	repoPath := jaz.repoPath
+	repoPathFull := fmt.Sprintf("/%s/%s", appName, repoPath)
+	jaz.logf("static dir: path=[%s] mapped to dir=[%s]", repoPathFull, jaz.repositoryPath)
+	server.AddStaticDir(repoPath, jaz.repositoryPath)
 
 	// create account panel
 	jaz.apHome = newAccPanel("")
