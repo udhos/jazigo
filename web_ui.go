@@ -11,6 +11,7 @@ import (
 
 	"github.com/icza/gowut/gwu"
 	"github.com/udhos/jazigo/dev"
+	"github.com/udhos/jazigo/store"
 )
 
 func newAccPanel(user string) gwu.Panel {
@@ -113,6 +114,92 @@ func (s sortById) Less(i, j int) bool {
 	return s.data[i].Id < s.data[j].Id
 }
 
+func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId, winName, winTitle string) {
+	win := s.WinByName(winName)
+	if win != nil {
+		return
+	}
+	win = newWin(jaz, winName, winTitle)
+	win.Add(gwu.NewLabel(winTitle))
+
+	refreshButton := gwu.NewButton("Refresh")
+	win.Add(refreshButton)
+
+	panel := gwu.NewTabPanel()
+
+	filesPanel := gwu.NewPanel()
+	filesMsg := gwu.NewLabel("No error")
+	filesTab := gwu.NewTable()
+	filesPanel.Add(filesMsg)
+	filesPanel.Add(filesTab)
+
+	propPanel := gwu.NewPanel()
+	propMsg := gwu.NewLabel("No error")
+	propText := gwu.NewTextBox("Text Box")
+	propText.SetRows(20)
+	propText.SetCols(100)
+	propPanel.Add(propMsg)
+	propPanel.Add(propText)
+
+	panel.Add(gwu.NewLabel("Files"), filesPanel)
+	panel.Add(gwu.NewLabel("Properties"), propPanel)
+	panel.Add(gwu.NewLabel("Error Log"), gwu.NewLabel("Error Log"))
+
+	win.Add(panel)
+
+	refresh := func(e gwu.Event) {
+		// build file list
+
+		prefix := dev.DeviceFullPrefix(jaz.repositoryPath, devId)
+		_, matches, listErr := store.ListConfigSorted(prefix, true, jaz.logger)
+		if listErr != nil {
+			filesMsg.SetText(fmt.Sprintf("List files error: %v", listErr))
+			e.MarkDirty(filesPanel)
+			return
+		}
+
+		filesMsg.SetText(fmt.Sprintf("%d files", len(matches)))
+
+		filesTab.Clear()
+
+		for i, m := range matches {
+			filesTab.Add(gwu.NewLabel(m), i, 0)
+		}
+
+		// build file properties
+
+		d, getErr := jaz.table.GetDevice(devId)
+		if getErr != nil {
+			propMsg.SetText(fmt.Sprintf("Get device error: %v", getErr))
+			e.MarkDirty(propPanel)
+			return
+		}
+
+		b, dumpErr := d.DevConfig.Dump()
+		if dumpErr != nil {
+			propMsg.SetText(fmt.Sprintf("Device dump error: %v", dumpErr))
+			e.MarkDirty(propPanel)
+			return
+		}
+
+		propText.SetText(string(b))
+
+		e.MarkDirty(win)
+	}
+
+	refresh(e) // first run
+
+	refreshButton.AddEHandlerFunc(func(e gwu.Event) {
+		refresh(e)
+	}, gwu.ETypeClick)
+
+	win.AddEHandlerFunc(func(e gwu.Event) {
+		refresh(e)
+	}, gwu.ETypeWinLoad)
+
+	s.AddWin(win)
+}
+
 func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table) {
 	const COLS = 9
 
@@ -142,21 +229,7 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table) {
 		devWin := "device-" + d.Id
 		labId := gwu.NewLink(d.Id, "/"+appName+"/"+devWin)
 		labId.AddEHandlerFunc(func(e gwu.Event) {
-			win := s.WinByName(devWin)
-			if win == nil {
-				win = newWin(jaz, devWin, "Device "+d.Id)
-				win.Add(gwu.NewLabel("Device: " + d.Id))
-
-				panel := gwu.NewTabPanel()
-
-				panel.Add(gwu.NewLabel("Files"), gwu.NewLabel("Files"))
-				panel.Add(gwu.NewLabel("Properties"), gwu.NewLabel("Properties"))
-				panel.Add(gwu.NewLabel("Error Log"), gwu.NewLabel("Error Log"))
-
-				win.Add(panel)
-				s.AddWin(win)
-				//jaz.logger.Printf("buildDeviceTable: win=[%s] created", devWin)
-			}
+			buildDeviceWindow(jaz, s, e, d.Id, devWin, "Device: "+d.Id)
 		}, gwu.ETypeClick)
 
 		labHost := gwu.NewLabel(d.HostPort)
@@ -173,7 +246,8 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table) {
 		buttonRun := gwu.NewButton("Run")
 		id := d.Id
 		buttonRun.AddEHandlerFunc(func(e gwu.Event) {
-			runPriority(jaz, id)
+			// run in a goroutine to not block the UI on channel write
+			go runPriority(jaz, id)
 		}, gwu.ETypeClick)
 
 		t.Add(labMod, i, 0)

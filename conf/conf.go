@@ -50,6 +50,14 @@ type DevConfig struct {
 	Attr           DevAttributes
 }
 
+func (c *DevConfig) Dump() ([]byte, error) {
+	b, err := yaml.Marshal(c)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
 type Config struct {
 	Options AppConfig
 	Devices []DevConfig

@@ -191,12 +191,20 @@ func (d *Device) saveRollback(logger hasPrintf, capture *dialog) {
 	capture.save = nil
 }
 
+func deviceDirectory(repository, id string) string {
+	return filepath.Join(repository, id)
+}
+
 func (d *Device) DeviceDir(repository string) string {
-	return filepath.Join(repository, d.Id)
+	return deviceDirectory(repository, d.Id)
+}
+
+func DeviceFullPrefix(repository, id string) string {
+	return filepath.Join(deviceDirectory(repository, id), id+".")
 }
 
 func (d *Device) DevicePathPrefix(devDir string) string {
-	return filepath.Join(devDir, d.Id) + "."
+	return filepath.Join(devDir, d.Id+".")
 }
 
 func (d *Device) saveCommit(logger hasPrintf, capture *dialog, repository string, maxFiles int) error {

@@ -143,6 +143,8 @@ func ListConfig(configPathPrefix string, logger hasPrintf) (string, []string, er
 
 	dir.Close()
 
+	logger.Printf("ListConfig: prefix=[%s] names=%d", configPathPrefix, len(names))
+
 	basename := filepath.Base(configPathPrefix)
 
 	// filter prefix
