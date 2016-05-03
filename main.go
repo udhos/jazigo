@@ -28,10 +28,8 @@ type app struct {
 	configLock       lockfile.Lockfile
 	repositoryLock   lockfile.Lockfile
 
-	table *dev.DeviceTable
-
-	//cfg *conf.Config
-	options conf.AppConfig
+	table   *dev.DeviceTable
+	options *conf.Options
 
 	apHome    gwu.Panel
 	apAdmin   gwu.Panel
@@ -59,6 +57,7 @@ func (a *app) logf(fmt string, v ...interface{}) {
 func newApp(logger hasPrintf) *app {
 	app := &app{
 		table:    dev.NewDeviceTable(),
+		options:  conf.NewOptions(),
 		logger:   logger,
 		priority: make(chan string),
 		repoPath: "repo",
@@ -120,10 +119,11 @@ func main() {
 	loadConfig(jaz)
 
 	jaz.logf("runOnce: %v", runOnce)
-	jaz.logf("scan interval: %s", jaz.options.ScanInterval)
-	jaz.logf("holdtime: %s", jaz.options.Holdtime)
-	jaz.logf("maximum config files: %d", jaz.options.MaxConfigFiles)
-	jaz.logf("maximum concurrency: %d", jaz.options.MaxConcurrency)
+	opt := jaz.options.Get()
+	jaz.logf("scan interval: %s", opt.ScanInterval)
+	jaz.logf("holdtime: %s", opt.Holdtime)
+	jaz.logf("maximum config files: %d", opt.MaxConfigFiles)
+	jaz.logf("maximum concurrency: %d", opt.MaxConcurrency)
 
 	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en")
 	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en") // ugh
@@ -178,7 +178,7 @@ func main() {
 	buildLoginWin(jaz, server)
 
 	if runOnce {
-		dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, jaz.options.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.options.MaxConfigFiles, jaz.options.Holdtime)
+		dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, opt.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt.MaxConfigFiles, opt.Holdtime)
 		jaz.logf("runOnce: exiting after single scan")
 		return
 	}
@@ -186,29 +186,31 @@ func main() {
 	go func() {
 		for {
 			begin := time.Now()
-			dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, jaz.options.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.options.MaxConfigFiles, jaz.options.Holdtime)
+			opt := jaz.options.Get()
+			dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, opt.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt.MaxConfigFiles, opt.Holdtime)
 
 		SLEEP:
 			for {
+				opt = jaz.options.Get()
 				elap := time.Since(begin)
-				sleep := jaz.options.ScanInterval - elap
+				sleep := opt.ScanInterval - elap
 				if sleep < 1 {
 					sleep = 0
 				}
-				jaz.logf("main: sleeping for %s (target: scanInterval=%s)", sleep, jaz.options.ScanInterval)
+				jaz.logf("main: sleeping for %s (target: scanInterval=%s)", sleep, opt.ScanInterval)
 				select {
 				case <-time.After(sleep):
 					jaz.logf("main: sleep done")
 					break SLEEP
 				case id := <-jaz.priority:
 					jaz.logf("main: sleep interrupted by priority: device %s", id)
-					d, clearErr := dev.ClearDeviceStatus(jaz.table, id, logger, jaz.options.Holdtime)
+					d, clearErr := dev.ClearDeviceStatus(jaz.table, id, logger, opt.Holdtime)
 					if clearErr != nil {
 						jaz.logf("main: sleep interrupted by priority: device %s - error: %v", id, clearErr)
 						continue SLEEP
 					}
 					singleDevice := []*dev.Device{d}
-					dev.ScanDevices(jaz.table, singleDevice, logger, jaz.options.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.options.MaxConfigFiles, jaz.options.Holdtime)
+					dev.ScanDevices(jaz.table, singleDevice, logger, opt.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt.MaxConfigFiles, opt.Holdtime)
 				}
 			}
 		}
@@ -240,7 +242,7 @@ func loadConfig(jaz *app) {
 		}
 	}
 
-	jaz.options = cfg.Options
+	jaz.options.Set(&cfg.Options)
 
 	for _, c := range cfg.Devices {
 		d, newErr := dev.NewDeviceFromConf(jaz.table, jaz.logger, &c)
@@ -392,7 +394,7 @@ func saveConfig(jaz *app) {
 	devices := jaz.table.ListDevices()
 
 	var cfg conf.Config
-	cfg.Options = jaz.options // copy options from app FIXME: concurrency unsafe
+	cfg.Options = *jaz.options.Get() // clone
 	cfg.Devices = make([]conf.DevConfig, len(devices))
 
 	// copy devices from device table

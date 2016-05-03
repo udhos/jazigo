@@ -296,6 +296,8 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table) {
 
 	now := time.Now()
 
+	options := jaz.options.Get()
+
 	i := 1
 	for _, d := range devList {
 		labMod := gwu.NewLabel(d.Model())
@@ -311,7 +313,7 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table) {
 		labLastStatus := gwu.NewLabel(fmt.Sprintf("%v", d.LastStatus()))
 		labLastTry := gwu.NewLabel(timestampString(d.LastTry()))
 		labLastSuccess := gwu.NewLabel(timestampString(d.LastSuccess()))
-		h := d.Holdtime(now, jaz.options.Holdtime)
+		h := d.Holdtime(now, options.Holdtime)
 		if h < 0 {
 			h = 0
 		}
