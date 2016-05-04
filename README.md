@@ -39,7 +39,7 @@ Example:
 
 3\. Compile and install
 
-`go install github.com/udhos/jazigo`
+`go install github.com/udhos/jazigo/jazigo`
 
 4\. Decide where to store config and backup files
 
@@ -56,12 +56,12 @@ Example:
 
 `$GOPATH/bin/jazigo -configPathPrefix $APP_CONF -repositoryPath $APP_REPO -runOnce`
 
-Watch messages logged to standard output.
+Watch messages logged to standard output for errors.
 
 6\. Run jazigo forever
 
 `$GOPATH/bin/jazigo -configPathPrefix $APP_CONF -repositoryPath $APP_REPO`
 
-7\. Look at the web interface
+7\. Open the web interface
 
 Point web browser at: [http://localhost:8080/jazigo](http://localhost:8080/jazigo)
