@@ -93,6 +93,7 @@ func main() {
 	var staticDir string
 	var deviceImport bool
 	var deviceDelete bool
+	var devicePurge bool
 	var deviceList bool
 
 	flag.StringVar(&jaz.configPathPrefix, "configPathPrefix", "/etc/jazigo/jazigo.conf.", "configuration path prefix")
@@ -100,6 +101,7 @@ func main() {
 	flag.StringVar(&staticDir, "wwwStaticPath", defaultStaticDir(), "directory for static www content")
 	flag.BoolVar(&runOnce, "runOnce", false, "exit after scanning all devices once")
 	flag.BoolVar(&deviceDelete, "deviceDelete", false, "delete devices specified in stdin")
+	flag.BoolVar(&devicePurge, "devicePurge", false, "purge devices specified in stdin")
 	flag.BoolVar(&deviceImport, "deviceImport", false, "import devices from stdin")
 	flag.BoolVar(&deviceList, "deviceList", false, "list devices from stdout")
 	flag.Parse()
@@ -139,7 +141,7 @@ func main() {
 	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-iosxr", "lab11", "192.168.56.1:2011", "telnet", "user", "pass", "pass", false)
 	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-iosxr", "lab12", "192.168.56.1:2012", "ssh", "user", "pass", "pass", true)
 
-	if exit := manageDeviceList(jaz, deviceImport, deviceDelete, deviceList); exit != nil {
+	if exit := manageDeviceList(jaz, deviceImport, deviceDelete, devicePurge, deviceList); exit != nil {
 		jaz.logf("main: %v", exit)
 		return
 	}
@@ -258,9 +260,15 @@ func loadConfig(jaz *app) {
 	}
 }
 
-func manageDeviceList(jaz *app, imp, del, list bool) error {
-	if del && imp {
+func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
+	if del && purge {
+		return fmt.Errorf("deviceDelete and devicePurge are mutually exclusive")
+	}
+	if imp && del {
 		return fmt.Errorf("deviceImport and deviceDelete are mutually exclusive")
+	}
+	if imp && purge {
+		return fmt.Errorf("deviceImport and devicePurge are mutually exclusive")
 	}
 
 	if del {
@@ -280,14 +288,44 @@ func manageDeviceList(jaz *app, imp, del, list bool) error {
 
 			id := strings.TrimSpace(text)
 
-			jaz.logf("killing device [%s]", id)
+			jaz.logf("deleting device [%s]", id)
 
 			if _, getErr := jaz.table.GetDevice(id); getErr != nil {
-				jaz.logf("killing device [%s] - not found: %v", id, getErr)
+				jaz.logf("deleting device [%s] - not found: %v", id, getErr)
 				continue
 			}
 
-			jaz.table.KillDevice(id)
+			jaz.table.DeleteDevice(id)
+		}
+
+		saveConfig(jaz)
+	}
+
+	if purge {
+		jaz.logf("main: reading device list from stdin")
+
+		reader := bufio.NewReader(os.Stdin)
+	LOOP_PURGE:
+		for {
+			text, inErr := reader.ReadString('\n')
+			switch inErr {
+			case io.EOF:
+				break LOOP_PURGE
+			case nil:
+			default:
+				return fmt.Errorf("stdin error: %v", inErr)
+			}
+
+			id := strings.TrimSpace(text)
+
+			jaz.logf("purging device [%s]", id)
+
+			if _, getErr := jaz.table.GetDevice(id); getErr != nil {
+				jaz.logf("purging device [%s] - not found: %v", id, getErr)
+				continue
+			}
+
+			jaz.table.PurgeDevice(id)
 		}
 
 		saveConfig(jaz)
@@ -347,7 +385,7 @@ func manageDeviceList(jaz *app, imp, del, list bool) error {
 		}
 	}
 
-	if del || imp || list {
+	if del || purge || imp || list {
 		return fmt.Errorf("device list management done")
 	}
 
