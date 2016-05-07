@@ -162,29 +162,7 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId string) strin
 
 	win.Add(panel)
 
-	resetProp := func(e gwu.Event) {
-		d, getErr := jaz.table.GetDevice(devId)
-		if getErr != nil {
-			propMsg.SetText(fmt.Sprintf("Get device error: %v", getErr))
-			e.MarkDirty(propPanel)
-			return
-		}
-
-		b, dumpErr := d.DevConfig.Dump()
-		if dumpErr != nil {
-			propMsg.SetText(fmt.Sprintf("Device dump error: %v", dumpErr))
-			e.MarkDirty(propPanel)
-			return
-		}
-
-		propText.SetText(string(b))
-
-		e.MarkDirty(propPanel)
-	}
-
-	refresh := func(e gwu.Event) {
-		// build file list
-
+	fileList := func(e gwu.Event) {
 		prefix := dev.DeviceFullPrefix(jaz.repositoryPath, devId)
 		dirname, matches, listErr := store.ListConfigSorted(prefix, true, jaz.logger)
 		if listErr != nil {
@@ -210,7 +188,7 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId string) strin
 			if statErr == nil {
 				timeStr = info.ModTime().String()
 			} else {
-				timeStr += fmt.Sprintf("(could not stat: %v)", statErr)
+				timeStr += fmt.Sprintf("(could not stat file: %v)", statErr)
 			}
 
 			filePath := fmt.Sprintf("/%s/%s/%s/%s", appName, jaz.repoPath, devId, m)
@@ -224,6 +202,32 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId string) strin
 			}
 
 		}
+	}
+
+	resetProp := func(e gwu.Event) {
+		d, getErr := jaz.table.GetDevice(devId)
+		if getErr != nil {
+			propMsg.SetText(fmt.Sprintf("Get device error: %v", getErr))
+			e.MarkDirty(propPanel)
+			return
+		}
+
+		b, dumpErr := d.DevConfig.Dump()
+		if dumpErr != nil {
+			propMsg.SetText(fmt.Sprintf("Device dump error: %v", dumpErr))
+			e.MarkDirty(propPanel)
+			return
+		}
+
+		propText.SetText(string(b))
+
+		e.MarkDirty(propPanel)
+	}
+
+	refresh := func(e gwu.Event) {
+		// build file list
+
+		fileList(e)
 
 		// build file properties
 
