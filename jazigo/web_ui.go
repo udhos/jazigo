@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/icza/gowut/gwu"
@@ -429,8 +430,10 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event)) gwu.P
 	labelPass := gwu.NewLabel("Pass")
 	labelEnable := gwu.NewLabel("Enable")
 
+	autoIdPrefix := "auto"
+
 	textModel := gwu.NewTextBox("cisco-ios")
-	textId := gwu.NewTextBox("auto1")
+	textId := gwu.NewTextBox(autoIdPrefix)
 	textHost := gwu.NewTextBox("")
 	textTransport := gwu.NewTextBox("ssh,telnet")
 	textUser := gwu.NewTextBox("")
@@ -461,20 +464,38 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event)) gwu.P
 	createPanel.Add(panelEnable)
 	createPanel.Add(button)
 
+	createAutoId := func() {
+		if strings.HasPrefix(textId.Text(), autoIdPrefix) {
+			textId.SetText(jaz.table.FindDeviceFreeId(autoIdPrefix))
+		}
+	}
+
 	button.AddEHandlerFunc(func(e gwu.Event) {
 		id := textId.Text()
-		_, err := jaz.table.GetDevice(id)
-		if err == nil {
+		_, err1 := jaz.table.GetDevice(id)
+		if err1 == nil {
 			msg.SetText("Device ID already exists: " + id)
 			e.MarkDirty(createDevPanel)
 			return
 		}
 		dev.CreateDevice(jaz.table, jaz.logger, textModel.Text(), id, textHost.Text(), textTransport.Text(), textUser.Text(), textPass.Text(), textEnable.Text(), false)
+		_, err2 := jaz.table.GetDevice(id)
+		if err2 != nil {
+			msg.SetText("Could not create device with ID: " + id)
+			e.MarkDirty(createDevPanel)
+			return
+		}
 		saveConfig(jaz)
+
+		createAutoId()
+		e.MarkDirty(textId)
+
 		msg.SetText("Device created: " + id)
 		e.MarkDirty(createDevPanel) // redraw msg
 		refresh(e)                  // redraw device table
 	}, gwu.ETypeClick)
+
+	createAutoId() // first call
 
 	return createDevPanel
 }

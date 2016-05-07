@@ -40,6 +40,7 @@ type DevAttributes struct {
 
 type DevConfig struct {
 	Debug          bool
+	Deleted        bool
 	Model          string
 	Id             string
 	HostPort       string

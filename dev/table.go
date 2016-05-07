@@ -2,6 +2,8 @@ package dev
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -114,4 +116,26 @@ func copyDeviceMapToSlice(m map[string]*Device) []*Device {
 		i++
 	}
 	return devices
+}
+
+func (t *DeviceTable) FindDeviceFreeId(prefix string) string {
+	pLen := len(prefix)
+	devices := t.ListDevices()
+	highest := 0
+	for _, d := range devices {
+		id := d.Id
+		if !strings.HasPrefix(id, prefix) {
+			continue
+		}
+		suffix := id[pLen:]
+		value, err := strconv.Atoi(suffix)
+		if err != nil {
+			continue
+		}
+		if value > highest {
+			highest = value
+		}
+	}
+	free := highest + 1
+	return prefix + strconv.Itoa(free)
 }

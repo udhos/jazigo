@@ -571,6 +571,7 @@ func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, maxConc
 	nextDevice := 0
 	success := 0
 	skipped := 0
+	deleted := 0
 
 	for nextDevice < deviceCount || wait > 0 {
 
@@ -583,6 +584,11 @@ func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, maxConc
 			}
 
 			d := devices[nextDevice]
+
+			if d.Deleted {
+				deleted++
+				continue
+			}
 
 			if h := d.Holdtime(time.Now(), holdtime); h > 0 {
 				// do not handle device yet (holdtime not expired)
@@ -631,9 +637,9 @@ func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, maxConc
 	elapsed := time.Since(begin)
 	average := elapsed / time.Duration(deviceCount)
 
-	logger.Printf("ScanDevices: finished elapsed=%s devices=%d success=%d skipped=%d average=%s min=%s max=%s", elapsed, deviceCount, success, skipped, average, elapMin, elapMax)
+	logger.Printf("ScanDevices: finished elapsed=%s devices=%d success=%d skipped=%d deleted=%d average=%s min=%s max=%s", elapsed, deviceCount, success, skipped, deleted, average, elapMin, elapMax)
 
-	return success, deviceCount - success, skipped
+	return success, deviceCount - success, skipped + deleted
 }
 
 func updateDeviceStatus(tab DeviceUpdater, devId string, good bool, last time.Time, logger hasPrintf) {
