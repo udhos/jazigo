@@ -117,11 +117,17 @@ func (s sortById) Less(i, j int) bool {
 	return s.data[i].Id < s.data[j].Id
 }
 
-func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId, winName, winTitle string) {
+func deviceWinName(id string) string {
+	return "device-" + id
+}
+
+func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId string) string {
+	winName := deviceWinName(devId)
 	win := s.WinByName(winName)
 	if win != nil {
-		return
+		return winName
 	}
+	winTitle := "Device: " + devId
 	win = newWin(jaz, winName, winTitle)
 	win.Add(gwu.NewLabel(winTitle))
 
@@ -272,6 +278,8 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId, winName, win
 	}, gwu.ETypeWinLoad)
 
 	s.AddWin(win)
+
+	return winName
 }
 
 func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table) {
@@ -304,8 +312,9 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table) {
 
 		devWin := "device-" + d.Id
 		labId := gwu.NewLink(d.Id, "/"+appName+"/"+devWin)
+		devId := d.Id // get dev id for closure below
 		labId.AddEHandlerFunc(func(e gwu.Event) {
-			buildDeviceWindow(jaz, s, e, d.Id, devWin, "Device: "+d.Id)
+			buildDeviceWindow(jaz, s, e, devId)
 		}, gwu.ETypeClick)
 
 		labHost := gwu.NewLabel(d.HostPort)
@@ -369,6 +378,8 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 		e.MarkDirty(t)
 	}
 
+	createDevPanel := buildCreateDevPanel(jaz, s, refresh)
+
 	refreshButton := gwu.NewButton("Refresh")
 	refreshButton.AddEHandlerFunc(func(e gwu.Event) {
 		refresh(e)
@@ -379,6 +390,8 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 		refresh(e)
 	}, gwu.ETypeWinLoad)
 
+	win.Add(createDevPanel)
+
 	buildDeviceTable(jaz, s, t)
 
 	win.Add(t)
@@ -386,6 +399,80 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 	s.AddWin(win)
 
 	jaz.winHome = win
+}
+
+func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event)) gwu.Panel {
+	createDevPanel := gwu.NewPanel()
+	createPanel := gwu.NewHorizontalPanel()
+	msg := gwu.NewLabel("Message")
+	createDevPanel.Add(createPanel)
+	createDevPanel.Add(msg)
+
+	panelModel := gwu.NewPanel()
+	panelId := gwu.NewPanel()
+	panelHost := gwu.NewPanel()
+	panelTransport := gwu.NewPanel()
+	panelUser := gwu.NewPanel()
+	panelPass := gwu.NewPanel()
+	panelEnable := gwu.NewPanel()
+	button := gwu.NewButton("Create")
+
+	labelModel := gwu.NewLabel("Model")
+	labelId := gwu.NewLabel("Id")
+	labelHost := gwu.NewLabel("Host")
+	labelTransport := gwu.NewLabel("Transports")
+	labelUser := gwu.NewLabel("User")
+	labelPass := gwu.NewLabel("Pass")
+	labelEnable := gwu.NewLabel("Enable")
+
+	textModel := gwu.NewTextBox("cisco-ios")
+	textId := gwu.NewTextBox("auto1")
+	textHost := gwu.NewTextBox("")
+	textTransport := gwu.NewTextBox("ssh,telnet")
+	textUser := gwu.NewTextBox("")
+	textPass := gwu.NewTextBox("")
+	textEnable := gwu.NewTextBox("")
+
+	panelModel.Add(labelModel)
+	panelModel.Add(textModel)
+	panelId.Add(labelId)
+	panelId.Add(textId)
+	panelHost.Add(labelHost)
+	panelHost.Add(textHost)
+	panelTransport.Add(labelTransport)
+	panelTransport.Add(textTransport)
+	panelUser.Add(labelUser)
+	panelUser.Add(textUser)
+	panelPass.Add(labelPass)
+	panelPass.Add(textPass)
+	panelEnable.Add(labelEnable)
+	panelEnable.Add(textEnable)
+
+	createPanel.Add(panelModel)
+	createPanel.Add(panelId)
+	createPanel.Add(panelHost)
+	createPanel.Add(panelTransport)
+	createPanel.Add(panelUser)
+	createPanel.Add(panelPass)
+	createPanel.Add(panelEnable)
+	createPanel.Add(button)
+
+	button.AddEHandlerFunc(func(e gwu.Event) {
+		id := textId.Text()
+		_, err := jaz.table.GetDevice(id)
+		if err == nil {
+			msg.SetText("Device ID already exists: " + id)
+			e.MarkDirty(createDevPanel)
+			return
+		}
+		dev.CreateDevice(jaz.table, jaz.logger, textModel.Text(), id, textHost.Text(), textTransport.Text(), textUser.Text(), textPass.Text(), textEnable.Text(), false)
+		saveConfig(jaz)
+		msg.SetText("Device created: " + id)
+		e.MarkDirty(createDevPanel) // redraw msg
+		refresh(e)                  // redraw device table
+	}, gwu.ETypeClick)
+
+	return createDevPanel
 }
 
 func timestampString(ts time.Time) string {
