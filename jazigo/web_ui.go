@@ -472,6 +472,11 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event)) gwu.P
 
 	button.AddEHandlerFunc(func(e gwu.Event) {
 		id := textId.Text()
+
+		if id == autoIdPrefix {
+			id = jaz.table.FindDeviceFreeId(autoIdPrefix)
+		}
+
 		_, err1 := jaz.table.GetDevice(id)
 		if err1 == nil {
 			msg.SetText("Device ID already exists: " + id)
@@ -487,7 +492,7 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event)) gwu.P
 		}
 		saveConfig(jaz)
 
-		createAutoId()
+		createAutoId() // prepare next auto id
 		e.MarkDirty(textId)
 
 		msg.SetText("Device created: " + id)

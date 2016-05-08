@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -334,6 +335,14 @@ func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
 	if imp {
 		jaz.logf("reading device list from stdin")
 
+		autoId := "auto"
+		nextId := jaz.table.FindDeviceFreeId(autoId)
+		valueStr := nextId[len(autoId):]
+		value, valErr := strconv.Atoi(valueStr)
+		if valErr != nil {
+			return fmt.Errorf("could not get free device id: %v", valErr)
+		}
+
 		reader := bufio.NewReader(os.Stdin)
 	LOOP_ADD:
 		for {
@@ -361,7 +370,13 @@ func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
 				debug = true
 			}
 
-			dev.CreateDevice(jaz.table, jaz.logger, f[0], f[1], f[2], f[3], f[4], f[5], enable, debug)
+			id := f[1]
+			if id == autoId {
+				id += strconv.Itoa(value)
+				value++
+			}
+
+			dev.CreateDevice(jaz.table, jaz.logger, f[0], id, f[2], f[3], f[4], f[5], enable, debug)
 		}
 
 		saveConfig(jaz)
