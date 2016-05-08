@@ -150,16 +150,41 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId string) strin
 	propButtonSave := gwu.NewButton("Save")
 	propMsg := gwu.NewLabel("No error")
 	propText := gwu.NewTextBox("Text Box")
-	propText.SetRows(20)
+	propText.SetRows(40)
 	propText.SetCols(100)
 	propPanel.Add(propButtonReset)
 	propPanel.Add(propButtonSave)
 	propPanel.Add(propMsg)
 	propPanel.Add(propText)
 
+	showPanel := gwu.NewPanel()
+
 	panel.Add(gwu.NewLabel("Files"), filesPanel)
 	panel.Add(gwu.NewLabel("Properties"), propPanel)
+	panel.Add(gwu.NewLabel("View Config"), showPanel)
 	panel.Add(gwu.NewLabel("Error Log"), gwu.NewLabel("Error Log"))
+
+	const TAB_SHOW = 2 // index
+
+	devPrefix := dev.DeviceFullPrefix(jaz.repositoryPath, devId)
+	showFile, lastErr := store.FindLastConfig(devPrefix, jaz.logger)
+	if lastErr != nil {
+		jaz.logger.Printf("buildDeviceWindow: could find last config for device: %v", lastErr)
+	}
+
+	loadView := func(e gwu.Event, show string) {
+		text := "Load from: " + show
+		showPanel.Clear()
+		showPanel.Add(gwu.NewLabel("Config: " + show))
+		showBox := gwu.NewTextBox("")
+		showBox.SetRows(40)
+		showBox.SetCols(100)
+		showBox.SetText(text)
+		showPanel.Add(showBox)
+		e.MarkDirty(panel)
+	}
+
+	loadView(e, showFile) // first run
 
 	win.Add(panel)
 
@@ -176,9 +201,18 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId string) strin
 
 		filesTab.Clear()
 
-		const COLS = 2
+		const COLS = 3
 
-		for i, m := range matches {
+		row := 0
+
+		// header
+		filesTab.Add(gwu.NewLabel("Download"), row, 0)
+		filesTab.Add(gwu.NewLabel("View"), row, 1)
+		filesTab.Add(gwu.NewLabel("Time"), row, 2)
+
+		row++
+
+		for _, m := range matches {
 			path := filepath.Join(dirname, m)
 			timeStr := "unknown"
 			f, openErr := os.Open(path)
@@ -195,13 +229,22 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId string) strin
 			filePath := fmt.Sprintf("/%s/%s/%s/%s", appName, jaz.repoPath, devId, m)
 			devLink := gwu.NewLink(m, filePath)
 
-			filesTab.Add(devLink, i, 0)
-			filesTab.Add(gwu.NewLabel(timeStr), i, 1)
+			buttonView := gwu.NewButton("Open")
+			show := dev.DeviceFullPath(jaz.repoPath, devId, m)
+			buttonView.AddEHandlerFunc(func(e gwu.Event) {
+				loadView(e, show)
+				panel.SetSelected(TAB_SHOW)
+			}, gwu.ETypeClick)
+
+			filesTab.Add(devLink, row, 0)
+			filesTab.Add(buttonView, row, 1)
+			filesTab.Add(gwu.NewLabel(timeStr), row, 2)
 
 			for j := 0; j < COLS; j++ {
-				filesTab.CellFmt(i, j).Style().AddClass("device_files_cell")
+				filesTab.CellFmt(row, j).Style().AddClass("device_files_cell")
 			}
 
+			row++
 		}
 	}
 
@@ -226,22 +269,14 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId string) strin
 	}
 
 	refresh := func(e gwu.Event) {
-		// build file list
-
-		fileList(e)
-
-		// build file properties
-
-		resetProp(e)
-
+		fileList(e)  // build file list
+		resetProp(e) // // build file properties
 		e.MarkDirty(win)
 	}
 
 	refresh(e) // first run
 
-	propButtonReset.AddEHandlerFunc(func(e gwu.Event) {
-		resetProp(e)
-	}, gwu.ETypeClick)
+	propButtonReset.AddEHandlerFunc(resetProp, gwu.ETypeClick)
 
 	propButtonSave.AddEHandlerFunc(func(e gwu.Event) {
 		str := propText.Text()
@@ -274,13 +309,9 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId string) strin
 
 	}, gwu.ETypeClick)
 
-	refreshButton.AddEHandlerFunc(func(e gwu.Event) {
-		refresh(e)
-	}, gwu.ETypeClick)
+	refreshButton.AddEHandlerFunc(refresh, gwu.ETypeClick)
 
-	win.AddEHandlerFunc(func(e gwu.Event) {
-		refresh(e)
-	}, gwu.ETypeWinLoad)
+	win.AddEHandlerFunc(refresh, gwu.ETypeWinLoad)
 
 	s.AddWin(win)
 

@@ -208,6 +208,10 @@ func DeviceFullPrefix(repository, id string) string {
 	return filepath.Join(deviceDirectory(repository, id), id+".")
 }
 
+func DeviceFullPath(repository, id, file string) string {
+	return filepath.Join(repository, id, file)
+}
+
 func (d *Device) DevicePathPrefix(devDir string) string {
 	return filepath.Join(devDir, d.Id+".")
 }
