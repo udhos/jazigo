@@ -44,6 +44,10 @@ type app struct {
 
 	logger hasPrintf
 
+	filterModel string
+	filterId    string
+	filterHost  string
+
 	priority chan string
 }
 

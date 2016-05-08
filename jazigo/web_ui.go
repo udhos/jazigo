@@ -290,19 +290,50 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId string) strin
 func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table) {
 	const COLS = 9
 
-	t.Add(gwu.NewLabel("Model"), 0, 0)
-	t.Add(gwu.NewLabel("Device"), 0, 1)
-	t.Add(gwu.NewLabel("Host"), 0, 2)
-	t.Add(gwu.NewLabel("Transport"), 0, 3)
-	t.Add(gwu.NewLabel("Last Status"), 0, 4)
-	t.Add(gwu.NewLabel("Last Try"), 0, 5)
-	t.Add(gwu.NewLabel("Last Success"), 0, 6)
-	t.Add(gwu.NewLabel("Holdtime"), 0, 7)
-	t.Add(gwu.NewLabel("Run Now"), 0, 8)
+	row := 0 // filter
+	filterModel := gwu.NewTextBox(jaz.filterModel)
+	filterId := gwu.NewTextBox(jaz.filterId)
+	filterHost := gwu.NewTextBox(jaz.filterHost)
 
-	for j := 0; j < COLS; j++ {
-		t.CellFmt(0, j).Style().AddClass("device_table_cell")
-	}
+	filterModel.AddSyncOnETypes(gwu.ETypeKeyUp) // synchronize values during editing (while you type in characters)
+	filterId.AddSyncOnETypes(gwu.ETypeKeyUp)    // synchronize values during editing (while you type in characters)
+	filterHost.AddSyncOnETypes(gwu.ETypeKeyUp)  // synchronize values during editing (while you type in characters)
+
+	filterModel.AddEHandlerFunc(func(e gwu.Event) {
+		jaz.filterModel = filterModel.Text()
+		refreshDeviceTable(jaz, s, t, e)
+	}, gwu.ETypeChange)
+
+	filterId.AddEHandlerFunc(func(e gwu.Event) {
+		jaz.filterId = filterId.Text()
+		refreshDeviceTable(jaz, s, t, e)
+	}, gwu.ETypeChange)
+
+	filterHost.AddEHandlerFunc(func(e gwu.Event) {
+		jaz.filterHost = filterHost.Text()
+		refreshDeviceTable(jaz, s, t, e)
+	}, gwu.ETypeChange)
+
+	t.Add(filterModel, row, 0)
+	t.Add(filterId, row, 1)
+	t.Add(filterHost, row, 2)
+	t.Add(gwu.NewLabel(""), row, 3)
+	t.Add(gwu.NewLabel(""), row, 4)
+	t.Add(gwu.NewLabel(""), row, 5)
+	t.Add(gwu.NewLabel(""), row, 6)
+	t.Add(gwu.NewLabel(""), row, 7)
+	t.Add(gwu.NewLabel(""), row, 8)
+
+	row = 1 // header
+	t.Add(gwu.NewLabel("Model"), row, 0)
+	t.Add(gwu.NewLabel("Device"), row, 1)
+	t.Add(gwu.NewLabel("Host"), row, 2)
+	t.Add(gwu.NewLabel("Transport"), row, 3)
+	t.Add(gwu.NewLabel("Last Status"), row, 4)
+	t.Add(gwu.NewLabel("Last Try"), row, 5)
+	t.Add(gwu.NewLabel("Last Success"), row, 6)
+	t.Add(gwu.NewLabel("Holdtime"), row, 7)
+	t.Add(gwu.NewLabel("Run Now"), row, 8)
 
 	devList := jaz.table.ListDevices()
 	sort.Sort(sortById{data: devList})
@@ -311,8 +342,19 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table) {
 
 	options := jaz.options.Get()
 
-	i := 1
+	row = 2
 	for _, d := range devList {
+
+		if !strings.Contains(d.Model(), filterModel.Text()) {
+			continue
+		}
+		if !strings.Contains(d.Id, filterId.Text()) {
+			continue
+		}
+		if !strings.Contains(d.HostPort, filterHost.Text()) {
+			continue
+		}
+
 		labMod := gwu.NewLabel(d.Model())
 
 		devWin := "device-" + d.Id
@@ -340,27 +382,35 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table) {
 			go runPriority(jaz, id)
 		}, gwu.ETypeClick)
 
-		t.Add(labMod, i, 0)
-		t.Add(labId, i, 1)
-		t.Add(labHost, i, 2)
-		t.Add(labTransport, i, 3)
-		t.Add(labLastStatus, i, 4)
-		t.Add(labLastTry, i, 5)
-		t.Add(labLastSuccess, i, 6)
-		t.Add(labHoldtime, i, 7)
-		t.Add(buttonRun, i, 8)
+		t.Add(labMod, row, 0)
+		t.Add(labId, row, 1)
+		t.Add(labHost, row, 2)
+		t.Add(labTransport, row, 3)
+		t.Add(labLastStatus, row, 4)
+		t.Add(labLastTry, row, 5)
+		t.Add(labLastSuccess, row, 6)
+		t.Add(labHoldtime, row, 7)
+		t.Add(buttonRun, row, 8)
 
+		row++
+	}
+
+	for r := 0; r < row; r++ {
 		for j := 0; j < COLS; j++ {
-			t.CellFmt(i, j).Style().AddClass("device_table_cell")
+			t.CellFmt(r, j).Style().AddClass("device_table_cell")
 		}
-
-		i++
 	}
 }
 
 func runPriority(jaz *app, id string) {
 	jaz.logger.Printf("runPriority: device: %s", id)
 	jaz.priority <- id
+}
+
+func refreshDeviceTable(jaz *app, s gwu.Session, t gwu.Table, e gwu.Event) {
+	t.Clear() // clear out table contents
+	buildDeviceTable(jaz, s, t)
+	e.MarkDirty(t)
 }
 
 func buildHomeWin(jaz *app, s gwu.Session) {
@@ -378,22 +428,16 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 	t.Style().AddClass("device_table")
 
 	refresh := func(e gwu.Event) {
-		t.Clear() // clear out table contents
-		buildDeviceTable(jaz, s, t)
-		e.MarkDirty(t)
+		refreshDeviceTable(jaz, s, t, e)
 	}
 
 	createDevPanel := buildCreateDevPanel(jaz, s, refresh)
 
 	refreshButton := gwu.NewButton("Refresh")
-	refreshButton.AddEHandlerFunc(func(e gwu.Event) {
-		refresh(e)
-	}, gwu.ETypeClick)
+	refreshButton.AddEHandlerFunc(refresh, gwu.ETypeClick)
 	win.Add(refreshButton)
 
-	win.AddEHandlerFunc(func(e gwu.Event) {
-		refresh(e)
-	}, gwu.ETypeWinLoad)
+	win.AddEHandlerFunc(refresh, gwu.ETypeWinLoad)
 
 	win.Add(createDevPanel)
 
