@@ -57,20 +57,25 @@ func RegisterModels(logger hasPrintf, t *DeviceTable) {
 	registerModelHTTP(logger, t)
 }
 
-func CreateDevice(tab *DeviceTable, logger hasPrintf, modelName, id, hostPort, transports, user, pass, enable string, debug bool) {
+func CreateDevice(tab *DeviceTable, logger hasPrintf, modelName, id, hostPort, transports, user, pass, enable string, debug bool) error {
 	logger.Printf("CreateDevice: %s %s %s %s", modelName, id, hostPort, transports)
 
 	mod, getErr := tab.GetModel(modelName)
 	if getErr != nil {
-		logger.Printf("CreateDevice: could not find model '%s': %v", modelName, getErr)
-		return
+		err := fmt.Errorf("CreateDevice: could not find model '%s': %v", modelName, getErr)
+		logger.Printf(err.Error())
+		return err
 	}
 
 	d := NewDevice(logger, mod, id, hostPort, transports, user, pass, enable, debug)
 
 	if newDevErr := tab.SetDevice(d); newDevErr != nil {
-		logger.Printf("CreateDevice: could not add device '%s': %v", id, newDevErr)
+		err := fmt.Errorf("CreateDevice: could not add device '%s': %v", id, newDevErr)
+		logger.Printf(err.Error())
+		return err
 	}
+
+	return nil
 }
 
 func NewDeviceFromConf(tab *DeviceTable, logger hasPrintf, cfg *conf.DevConfig) (*Device, error) {

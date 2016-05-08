@@ -521,19 +521,28 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event)) gwu.P
 			id = jaz.table.FindDeviceFreeId(autoIdPrefix)
 		}
 
-		_, err1 := jaz.table.GetDevice(id)
-		if err1 == nil {
-			msg.SetText("Device ID already exists: " + id)
+		/*
+			_, err1 := jaz.table.GetDevice(id)
+			if err1 == nil {
+				msg.SetText("Device ID already exists: " + id)
+				e.MarkDirty(createDevPanel)
+				return
+			}
+		*/
+		if createErr := dev.CreateDevice(jaz.table, jaz.logger, textModel.Text(), id, textHost.Text(), textTransport.Text(), textUser.Text(), textPass.Text(), textEnable.Text(), false); createErr != nil {
+			msg.SetText("Could not create device: " + createErr.Error())
 			e.MarkDirty(createDevPanel)
 			return
 		}
-		dev.CreateDevice(jaz.table, jaz.logger, textModel.Text(), id, textHost.Text(), textTransport.Text(), textUser.Text(), textPass.Text(), textEnable.Text(), false)
-		_, err2 := jaz.table.GetDevice(id)
-		if err2 != nil {
-			msg.SetText("Could not create device with ID: " + id)
-			e.MarkDirty(createDevPanel)
-			return
-		}
+		/*
+			_, err2 := jaz.table.GetDevice(id)
+			if err2 != nil {
+				msg.SetText("Could not create device with ID: " + id)
+				e.MarkDirty(createDevPanel)
+				return
+			}
+		*/
+
 		saveConfig(jaz)
 
 		createAutoId() // prepare next auto id
