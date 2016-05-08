@@ -6,6 +6,7 @@ import (
 	//"math/rand"
 	//"os"
 	//"strconv"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -173,9 +174,24 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId string) strin
 	}
 
 	loadView := func(e gwu.Event, show string) {
-		text := "Load from: " + show
+
 		showPanel.Clear()
+
 		showPanel.Add(gwu.NewLabel("Config: " + show))
+
+		input, openErr := os.Open(show)
+		if openErr != nil {
+			showPanel.Add(gwu.NewLabel(fmt.Sprintf("Could not open '%s': %v", show, openErr)))
+		}
+
+		jaz.logger.Printf("FIXME web_ui loadView: limit number of lines read from file")
+		b, readErr := ioutil.ReadAll(input)
+		if readErr != nil {
+			showPanel.Add(gwu.NewLabel(fmt.Sprintf("Could not read '%s': %v", show, readErr)))
+		}
+
+		text := string(b)
+
 		showBox := gwu.NewTextBox("")
 		showBox.SetRows(40)
 		showBox.SetCols(100)
@@ -230,7 +246,7 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId string) strin
 			devLink := gwu.NewLink(m, filePath)
 
 			buttonView := gwu.NewButton("Open")
-			show := dev.DeviceFullPath(jaz.repoPath, devId, m)
+			show := dev.DeviceFullPath(jaz.repositoryPath, devId, m)
 			buttonView.AddEHandlerFunc(func(e gwu.Event) {
 				loadView(e, show)
 				panel.SetSelected(TAB_SHOW)

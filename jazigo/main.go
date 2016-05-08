@@ -25,7 +25,7 @@ const appVersion = "0.0"
 
 type app struct {
 	configPathPrefix string
-	repositoryPath   string
+	repositoryPath   string // filesystem
 	configLock       lockfile.Lockfile
 	repositoryLock   lockfile.Lockfile
 
@@ -40,7 +40,7 @@ type app struct {
 	winLogout gwu.Window
 
 	cssPath  string
-	repoPath string
+	repoPath string // www
 
 	logger hasPrintf
 
