@@ -29,6 +29,11 @@ type Device struct {
 	lastSuccess time.Time
 }
 
+func (d *Device) Printf(format string, v ...interface{}) {
+	prefix := fmt.Sprintf("%s %s %s: ", d.DevConfig.Model, d.Id, d.HostPort)
+	d.logger.Printf(prefix+format, v...)
+}
+
 func (d *Device) Model() string {
 	return d.devModel.name
 }
@@ -473,9 +478,9 @@ func (d *Device) enable(logger hasPrintf, t transp, capture *dialog) error {
 
 	switch m0 {
 	case 0:
-		logger.Printf("enable: found disabled command prompt")
+		d.Printf("enable: found disabled command prompt")
 	case 1:
-		logger.Printf("enable: found enabled command prompt")
+		d.Printf("enable: found enabled command prompt")
 		return nil
 	}
 
@@ -514,7 +519,7 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 
 	switch m1 {
 	case 0:
-		logger.Printf("login: found username prompt")
+		d.Printf("login: found username prompt")
 
 		if userErr := d.sendln(logger, t, d.LoginUser); userErr != nil {
 			return false, fmt.Errorf("login: could not send username: %v", userErr)
@@ -526,7 +531,7 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 		}
 
 	case 1:
-		logger.Printf("login: found password prompt")
+		d.Printf("login: found password prompt")
 	}
 
 	if passErr := d.sendln(logger, t, d.LoginPassword); passErr != nil {
@@ -540,9 +545,9 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 
 	switch m {
 	case 0:
-		logger.Printf("login: found disabled command prompt")
+		d.Printf("login: found disabled command prompt")
 	case 1:
-		logger.Printf("login: found enabled command prompt")
+		d.Printf("login: found enabled command prompt")
 	}
 
 	enabled := m == 1
