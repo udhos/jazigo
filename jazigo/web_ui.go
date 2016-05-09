@@ -256,11 +256,13 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId string) strin
 			filesTab.Add(buttonView, row, 1)
 			filesTab.Add(gwu.NewLabel(timeStr), row, 2)
 
-			for j := 0; j < COLS; j++ {
-				filesTab.CellFmt(row, j).Style().AddClass("device_files_cell")
-			}
-
 			row++
+		}
+
+		for r := 0; r < row; r++ {
+			for j := 0; j < COLS; j++ {
+				filesTab.CellFmt(r, j).Style().AddClass("device_files_cell")
+			}
 		}
 	}
 
@@ -487,6 +489,8 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 	win.AddEHandlerFunc(refresh, gwu.ETypeWinLoad)
 
 	win.Add(createDevPanel)
+
+	win.Add(gwu.NewLabel("Hint: fill in texts boxes below with words to pick only subset of devices."))
 
 	buildDeviceTable(jaz, s, t)
 
