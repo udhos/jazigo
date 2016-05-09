@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -100,12 +99,13 @@ func NewDevice(logger hasPrintf, mod *Model, id, hostPort, transports, loginUser
 
 const (
 	FETCH_ERR_NONE     = 0
-	FETCH_ERR_TRANSP   = 1
-	FETCH_ERR_LOGIN    = 2
-	FETCH_ERR_ENABLE   = 3
-	FETCH_ERR_PAGER    = 4
-	FETCH_ERR_COMMANDS = 5
-	FETCH_ERR_SAVE     = 6
+	FETCH_ERR_GETDEV   = 1
+	FETCH_ERR_TRANSP   = 2
+	FETCH_ERR_LOGIN    = 3
+	FETCH_ERR_ENABLE   = 4
+	FETCH_ERR_PAGER    = 5
+	FETCH_ERR_COMMANDS = 6
+	FETCH_ERR_SAVE     = 7
 )
 
 type FetchRequest struct {
@@ -138,8 +138,15 @@ func (d *dialog) record(buf []byte) {
 
 // fetch runs in a per-device goroutine
 func (d *Device) Fetch(logger hasPrintf, resultCh chan FetchResult, delay time.Duration, repository string, maxFiles int) {
+	result := d.fetch(logger, delay, repository, maxFiles)
+	if resultCh != nil {
+		resultCh <- result
+	}
+}
+
+func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string, maxFiles int) FetchResult {
 	modelName := d.devModel.name
-	logger.Printf("fetch: %s %s %s %s delay=%dms", modelName, d.Id, d.HostPort, d.Transports, delay/time.Millisecond)
+	d.Printf("fetch: delay=%dms", delay/time.Millisecond)
 
 	if delay > 0 {
 		time.Sleep(delay)
@@ -149,8 +156,7 @@ func (d *Device) Fetch(logger hasPrintf, resultCh chan FetchResult, delay time.D
 
 	session, transport, logged, err := openTransport(logger, modelName, d.Id, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword)
 	if err != nil {
-		resultCh <- FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch transport: %v", err), Code: FETCH_ERR_TRANSP, Begin: begin}
-		return
+		return FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch transport: %v", err), Code: FETCH_ERR_TRANSP, Begin: begin}
 	}
 
 	defer session.Close()
@@ -164,8 +170,7 @@ func (d *Device) Fetch(logger hasPrintf, resultCh chan FetchResult, delay time.D
 	if d.Attr.NeedLoginChat && !logged {
 		e, loginErr := d.login(logger, session, &capture)
 		if loginErr != nil {
-			resultCh <- FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch login: %v", loginErr), Code: FETCH_ERR_LOGIN, Begin: begin}
-			return
+			return FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch login: %v", loginErr), Code: FETCH_ERR_LOGIN, Begin: begin}
 		}
 		if e {
 			enabled = true
@@ -175,31 +180,27 @@ func (d *Device) Fetch(logger hasPrintf, resultCh chan FetchResult, delay time.D
 	if d.Attr.NeedEnabledMode && !enabled {
 		enableErr := d.enable(logger, session, &capture)
 		if enableErr != nil {
-			resultCh <- FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch enable: %v", enableErr), Code: FETCH_ERR_ENABLE, Begin: begin}
-			return
+			return FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch enable: %v", enableErr), Code: FETCH_ERR_ENABLE, Begin: begin}
 		}
 	}
 
 	if d.Attr.NeedPagingOff {
 		pagingErr := d.pagingOff(logger, session, &capture)
 		if pagingErr != nil {
-			resultCh <- FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch pager off: %v", pagingErr), Code: FETCH_ERR_PAGER, Begin: begin}
-			return
+			return FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch pager off: %v", pagingErr), Code: FETCH_ERR_PAGER, Begin: begin}
 		}
 	}
 
 	if cmdErr := d.sendCommands(logger, session, &capture); cmdErr != nil {
 		d.saveRollback(logger, &capture)
-		resultCh <- FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("commands: %v", cmdErr), Code: FETCH_ERR_COMMANDS, Begin: begin}
-		return
+		return FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("commands: %v", cmdErr), Code: FETCH_ERR_COMMANDS, Begin: begin}
 	}
 
 	if saveErr := d.saveCommit(logger, &capture, repository, maxFiles); saveErr != nil {
-		resultCh <- FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("save commit: %v", saveErr), Code: FETCH_ERR_SAVE, Begin: begin}
-		return
+		return FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("save commit: %v", saveErr), Code: FETCH_ERR_SAVE, Begin: begin}
 	}
 
-	resultCh <- FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Code: FETCH_ERR_NONE, Begin: begin}
+	return FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Code: FETCH_ERR_NONE, Begin: begin}
 }
 
 func (d *Device) saveRollback(logger hasPrintf, capture *dialog) {
@@ -565,119 +566,6 @@ func round(val float64) int {
 		return int(val - 0.5)
 	}
 	return int(val + 0.5)
-}
-
-func Scan(tab DeviceUpdater, devices []*Device, logger hasPrintf, opt *conf.AppConfig) {
-}
-
-func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, maxConcurrency int, delayMin, delayMax time.Duration, repository string, maxFiles int, holdtime time.Duration) (int, int, int) {
-
-	deviceCount := len(devices)
-
-	logger.Printf("ScanDevices: starting devices=%d maxConcurrency=%d", deviceCount, maxConcurrency)
-	if deviceCount < 1 {
-		logger.Printf("ScanDevices: aborting")
-		return 0, 0, 0
-	}
-
-	begin := time.Now()
-	random := rand.New(rand.NewSource(begin.UnixNano()))
-
-	resultCh := make(chan FetchResult)
-
-	logger.Printf("ScanDevices: per-device delay before starting: %d-%d ms", delayMin/time.Millisecond, delayMax/time.Millisecond)
-
-	elapMax := 0 * time.Second
-	elapMin := 24 * time.Hour
-	wait := 0
-	nextDevice := 0
-	success := 0
-	skipped := 0
-	deleted := 0
-
-	for nextDevice < deviceCount || wait > 0 {
-
-		// launch additional devices
-		for ; nextDevice < deviceCount; nextDevice++ {
-			// there are devices to process
-
-			if maxConcurrency > 0 && wait >= maxConcurrency {
-				break // max concurrent limit reached
-			}
-
-			d := devices[nextDevice]
-
-			if d.Deleted {
-				deleted++
-				continue
-			}
-
-			if h := d.Holdtime(time.Now(), holdtime); h > 0 {
-				// do not handle device yet (holdtime not expired)
-				logger.Printf("device: %s skipping due to holdtime=%s", d.Id, h)
-				skipped++
-				continue
-			}
-
-			// launch one additional per-device goroutine
-
-			r := random.Float64()
-			var delay time.Duration
-			if delayMax > 0 {
-				delay = time.Duration(round(r*float64(delayMax-delayMin))) + delayMin
-			}
-			go d.Fetch(logger, resultCh, delay, repository, maxFiles) // per-device goroutine
-			wait++
-		}
-
-		if wait < 1 {
-			continue
-		}
-
-		// wait for one device to finish
-		//logger.Printf("device wait: devices=%d wait=%d remain=%d skipped=%d", deviceCount, wait, deviceCount-nextDevice, skipped)
-		r := <-resultCh
-		wait--
-		end := time.Now()
-		elap := end.Sub(r.Begin)
-		logger.Printf("device result: %s %s %s %s msg=[%s] code=%d wait=%d remain=%d skipped=%d elap=%s", r.Model, r.DevId, r.DevHostPort, r.Transport, r.Msg, r.Code, wait, deviceCount-nextDevice, skipped, elap)
-
-		good := r.Code == FETCH_ERR_NONE
-		updateDeviceStatus(tab, r.DevId, good, end, logger)
-
-		if good {
-			success++
-		}
-		if elap < elapMin {
-			elapMin = elap
-		}
-		if elap > elapMax {
-			elapMax = elap
-		}
-	}
-
-	elapsed := time.Since(begin)
-	average := elapsed / time.Duration(deviceCount)
-
-	logger.Printf("ScanDevices: finished elapsed=%s devices=%d success=%d skipped=%d deleted=%d average=%s min=%s max=%s", elapsed, deviceCount, success, skipped, deleted, average, elapMin, elapMax)
-
-	return success, deviceCount - success, skipped + deleted
-}
-
-func updateDeviceStatus(tab DeviceUpdater, devId string, good bool, last time.Time, logger hasPrintf) {
-	d, getErr := tab.GetDevice(devId)
-	if getErr != nil {
-		logger.Printf("updateDeviceStatus: '%s' not found: %v", getErr)
-		return
-	}
-
-	d.lastTry = last
-	d.lastStatus = good
-	if d.lastStatus {
-		d.lastSuccess = d.lastTry
-	}
-
-	tab.UpdateDevice(d)
 }
 
 // ClearDeviceStatus: forget about last success (expire holdtime).

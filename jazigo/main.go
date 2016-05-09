@@ -63,11 +63,12 @@ func (a *app) logf(fmt string, v ...interface{}) {
 
 func newApp(logger hasPrintf) *app {
 	app := &app{
-		table:    dev.NewDeviceTable(),
-		options:  conf.NewOptions(),
-		logger:   logger,
-		priority: make(chan string),
-		repoPath: "repo",
+		table:       dev.NewDeviceTable(),
+		options:     conf.NewOptions(),
+		logger:      logger,
+		priority:    make(chan string),
+		requestChan: make(chan dev.FetchRequest),
+		repoPath:    "repo",
 	}
 
 	app.logf("%s %s starting", appName, appVersion)
@@ -230,8 +231,11 @@ func main() {
 
 	} else {
 
+		go dev.Spawner(jaz.table, jaz.logger, jaz.requestChan, jaz.repositoryPath, jaz.options)
+
 		if runOnce {
-			dev.Scan(jaz.table, jaz.table.ListDevices(), jaz.logger, jaz.options.Get())
+			dev.Scan(jaz.table, jaz.table.ListDevices(), jaz.logger, jaz.options.Get(), jaz.requestChan)
+			close(jaz.requestChan) // shutdown Spawner
 			jaz.logf("runOnce: exiting after single scan")
 			return
 		}
@@ -252,7 +256,7 @@ func scanLoop(jaz *app) {
 		jaz.logf("scanLoop: starting")
 		opt := jaz.options.Get()
 		begin := time.Now()
-		dev.Scan(jaz.table, jaz.table.ListDevices(), jaz.logger, opt)
+		dev.Scan(jaz.table, jaz.table.ListDevices(), jaz.logger, opt, jaz.requestChan)
 		elap := time.Since(begin)
 		sleep := opt.ScanInterval - elap
 		if sleep < 1 {
@@ -324,6 +328,9 @@ func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
 			}
 
 			id := strings.TrimSpace(text)
+			if id == "" {
+				continue
+			}
 
 			jaz.logf("deleting device [%s]", id)
 
@@ -354,6 +361,9 @@ func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
 			}
 
 			id := strings.TrimSpace(text)
+			if id == "" {
+				continue
+			}
 
 			jaz.logf("purging device [%s]", id)
 
@@ -389,6 +399,11 @@ func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
 			case nil:
 			default:
 				return fmt.Errorf("stdin error: %v", inErr)
+			}
+
+			text = strings.TrimSpace(text)
+			if text == "" {
+				continue
 			}
 
 			f := strings.Fields(text)

@@ -76,8 +76,8 @@ type Config struct {
 func New() *Config {
 	return &Config{
 		Options: AppConfig{
-			Holdtime:       60 * time.Second, // FIXME: 12h (do not collect/save new backup before this timeout)
-			ScanInterval:   10 * time.Second, // FIXME: 30m (interval between full table scan)
+			Holdtime:       300 * time.Second, // FIXME: 12h (do not collect/save new backup before this timeout)
+			ScanInterval:   60 * time.Second,  // FIXME: 30m (interval between full table scan)
 			MaxConcurrency: 20,
 			MaxConfigFiles: 120,
 		},

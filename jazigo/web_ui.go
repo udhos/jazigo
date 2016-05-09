@@ -456,6 +456,13 @@ func runPriority(jaz *app, id string) {
 	if jaz.oldScheduler {
 		jaz.priority <- id
 	} else {
+
+		_, clearErr := dev.ClearDeviceStatus(jaz.table, id, jaz.logger, jaz.options.Get().Holdtime)
+		if clearErr != nil {
+			jaz.logger.Printf("runPriority: clear device %s status error: %v", id, clearErr)
+			return
+		}
+
 		jaz.requestChan <- dev.FetchRequest{Id: id}
 	}
 }
