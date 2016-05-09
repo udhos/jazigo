@@ -48,7 +48,9 @@ type app struct {
 	filterId    string
 	filterHost  string
 
-	priority chan string
+	priority     chan string
+	requestChan  chan dev.FetchRequest
+	oldScheduler bool
 }
 
 type hasPrintf interface {
@@ -109,6 +111,7 @@ func main() {
 	flag.BoolVar(&devicePurge, "devicePurge", false, "purge devices specified in stdin")
 	flag.BoolVar(&deviceImport, "deviceImport", false, "import devices from stdin")
 	flag.BoolVar(&deviceList, "deviceList", false, "list devices from stdout")
+	flag.BoolVar(&jaz.oldScheduler, "oldScheduler", false, "use old scheduler")
 	flag.Parse()
 
 	jaz.configPathPrefix = addTrailingDot(jaz.configPathPrefix)
@@ -184,50 +187,79 @@ func main() {
 	buildHomeWin(jaz, server)
 	buildLoginWin(jaz, server)
 
-	if runOnce {
-		dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, opt.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt.MaxConfigFiles, opt.Holdtime)
-		jaz.logf("runOnce: exiting after single scan")
-		return
-	}
+	if jaz.oldScheduler {
 
-	go func() {
-		for {
-			begin := time.Now()
-			opt := jaz.options.Get()
+		if runOnce {
 			dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, opt.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt.MaxConfigFiles, opt.Holdtime)
+			jaz.logf("runOnce: exiting after single scan")
+			return
+		}
 
-		SLEEP:
+		go func() {
 			for {
-				opt = jaz.options.Get()
-				elap := time.Since(begin)
-				sleep := opt.ScanInterval - elap
-				if sleep < 1 {
-					sleep = 0
-				}
-				jaz.logf("main: sleeping for %s (target: scanInterval=%s)", sleep, opt.ScanInterval)
-				select {
-				case <-time.After(sleep):
-					jaz.logf("main: sleep done")
-					break SLEEP
-				case id := <-jaz.priority:
-					jaz.logf("main: sleep interrupted by priority: device %s", id)
-					d, clearErr := dev.ClearDeviceStatus(jaz.table, id, logger, opt.Holdtime)
-					if clearErr != nil {
-						jaz.logf("main: sleep interrupted by priority: device %s - error: %v", id, clearErr)
-						continue SLEEP
+				begin := time.Now()
+				opt := jaz.options.Get()
+				dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, opt.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt.MaxConfigFiles, opt.Holdtime)
+
+			SLEEP:
+				for {
+					opt = jaz.options.Get()
+					elap := time.Since(begin)
+					sleep := opt.ScanInterval - elap
+					if sleep < 1 {
+						sleep = 0
 					}
-					singleDevice := []*dev.Device{d}
-					dev.ScanDevices(jaz.table, singleDevice, logger, opt.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt.MaxConfigFiles, opt.Holdtime)
+					jaz.logf("main: sleeping for %s (target: scanInterval=%s)", sleep, opt.ScanInterval)
+					select {
+					case <-time.After(sleep):
+						jaz.logf("main: sleep done")
+						break SLEEP
+					case id := <-jaz.priority:
+						jaz.logf("main: sleep interrupted by priority: device %s", id)
+						d, clearErr := dev.ClearDeviceStatus(jaz.table, id, logger, opt.Holdtime)
+						if clearErr != nil {
+							jaz.logf("main: sleep interrupted by priority: device %s - error: %v", id, clearErr)
+							continue SLEEP
+						}
+						singleDevice := []*dev.Device{d}
+						dev.ScanDevices(jaz.table, singleDevice, logger, opt.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt.MaxConfigFiles, opt.Holdtime)
+					}
 				}
 			}
+		}()
+
+	} else {
+
+		if runOnce {
+			dev.Scan(jaz.table, jaz.table.ListDevices(), jaz.logger, jaz.options.Get())
+			jaz.logf("runOnce: exiting after single scan")
+			return
 		}
-	}()
+
+		go scanLoop(jaz)
+	}
 
 	// Start GUI server
 	server.SetLogger(logger)
 	if err := server.Start(); err != nil {
 		jaz.logf("jazigo main: Cound not start GUI server: %s", err)
 		return
+	}
+}
+
+func scanLoop(jaz *app) {
+	for {
+		jaz.logf("scanLoop: starting")
+		opt := jaz.options.Get()
+		begin := time.Now()
+		dev.Scan(jaz.table, jaz.table.ListDevices(), jaz.logger, opt)
+		elap := time.Since(begin)
+		sleep := opt.ScanInterval - elap
+		if sleep < 1 {
+			sleep = 0
+		}
+		jaz.logf("scanLoop: sleeping for %s (target: scanInterval=%s)", sleep, opt.ScanInterval)
+		time.Sleep(sleep)
 	}
 }
 

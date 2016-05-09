@@ -453,7 +453,11 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table) {
 
 func runPriority(jaz *app, id string) {
 	jaz.logger.Printf("runPriority: device: %s", id)
-	jaz.priority <- id
+	if jaz.oldScheduler {
+		jaz.priority <- id
+	} else {
+		jaz.requestChan <- dev.FetchRequest{Id: id}
+	}
 }
 
 func refreshDeviceTable(jaz *app, s gwu.Session, t gwu.Table, e gwu.Event) {

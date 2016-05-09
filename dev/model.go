@@ -108,6 +108,11 @@ const (
 	FETCH_ERR_SAVE     = 6
 )
 
+type FetchRequest struct {
+	Id        string           // fetch this device
+	ReplyChan chan FetchResult // reply on this channel
+}
+
 type FetchResult struct {
 	Model       string
 	DevId       string
@@ -560,6 +565,9 @@ func round(val float64) int {
 		return int(val - 0.5)
 	}
 	return int(val + 0.5)
+}
+
+func Scan(tab DeviceUpdater, devices []*Device, logger hasPrintf, opt *conf.AppConfig) {
 }
 
 func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, maxConcurrency int, delayMin, delayMax time.Duration, repository string, maxFiles int, holdtime time.Duration) (int, int, int) {
