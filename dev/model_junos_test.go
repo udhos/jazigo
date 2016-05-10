@@ -1,12 +1,10 @@
 package dev
 
 import (
-	//"fmt"
 	"io"
 	"net"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/udhos/jazigo/conf"
 	"github.com/udhos/jazigo/temp"
@@ -28,20 +26,24 @@ func TestJuniperJunOS1(t *testing.T) {
 	// run client test
 	logger := &testLogger{t}
 	tab := NewDeviceTable()
-	opt := &conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10}
+	opt := conf.NewOptions()
+	opt.Set(&conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10})
 	RegisterModels(logger, tab)
-
 	CreateDevice(tab, logger, "junos", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 100*time.Millisecond, 200*time.Millisecond, repo, opt)
+	requestCh := make(chan FetchRequest)
+	go Spawner(tab, logger, requestCh, repo, opt)
+	good, bad, skip := Scan(tab, tab.ListDevices(), logger, opt.Get(), requestCh)
 	if good != 1 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}
 
-	s.close()
+	close(requestCh) // shutdown Spawner - we might exit first though
+
+	s.close() // shutdown server
 
 	<-s.done // wait termination of accept loop goroutine
 }
@@ -58,19 +60,24 @@ func TestJuniperJunOS2(t *testing.T) {
 	// run client test
 	logger := &testLogger{t}
 	tab := NewDeviceTable()
-	opt := &conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10}
+	opt := conf.NewOptions()
+	opt.Set(&conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10})
 	RegisterModels(logger, tab)
 	CreateDevice(tab, logger, "junos", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 100*time.Millisecond, 200*time.Millisecond, repo, opt)
+	requestCh := make(chan FetchRequest)
+	go Spawner(tab, logger, requestCh, repo, opt)
+	good, bad, skip := Scan(tab, tab.ListDevices(), logger, opt.Get(), requestCh)
 	if good != 0 || bad != 1 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}
 
-	s.close()
+	close(requestCh) // shutdown Spawner - we might exit first though
+
+	s.close() // shutdown server
 
 	<-s.done // wait termination of accept loop goroutine
 }

@@ -6,7 +6,6 @@ import (
 	"net"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/udhos/jazigo/conf"
 	"github.com/udhos/jazigo/temp"
@@ -85,22 +84,24 @@ func TestCiscoIOS2(t *testing.T) {
 	// run client test
 	logger := &testLogger{t}
 	tab := NewDeviceTable()
-	opt := &conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10}
+	opt := conf.NewOptions()
+	opt.Set(&conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10})
 	RegisterModels(logger, tab)
 	CreateDevice(tab, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 100*time.Millisecond, 200*time.Millisecond, repo, opt)
+	requestCh := make(chan FetchRequest)
+	go Spawner(tab, logger, requestCh, repo, opt)
+	good, bad, skip := Scan(tab, tab.ListDevices(), logger, opt.Get(), requestCh)
 	if good != 1 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}
 
-	//time.Sleep(time.Hour)
+	close(requestCh) // shutdown Spawner - we might exit first though
 
-	// shutdown server
-	s.close()
+	s.close() // shutdown server
 
 	<-s.done // wait termination of accept loop goroutine
 }
@@ -117,20 +118,24 @@ func TestCiscoIOS3(t *testing.T) {
 	// run client test
 	logger := &testLogger{t}
 	tab := NewDeviceTable()
-	opt := &conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10}
+	opt := conf.NewOptions()
+	opt.Set(&conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10})
 	RegisterModels(logger, tab)
 	CreateDevice(tab, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 100*time.Millisecond, 200*time.Millisecond, repo, opt)
+	requestCh := make(chan FetchRequest)
+	go Spawner(tab, logger, requestCh, repo, opt)
+	good, bad, skip := Scan(tab, tab.ListDevices(), logger, opt.Get(), requestCh)
 	if good != 0 || bad != 1 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}
 
-	// shutdown server
-	s.close()
+	close(requestCh) // shutdown Spawner - we might exit first though
+
+	s.close() // shutdown server
 
 	<-s.done // wait termination of accept loop goroutine
 }
@@ -145,13 +150,13 @@ func TestCiscoIOS4(t *testing.T) {
 	}
 	t.Logf("TestCiscoIOS: server running on %s", addr)
 
+	// run client test
 	jobs := 100
 	devices := 10 * jobs
-
-	// run client test
 	logger := &testLogger{t}
 	tab := NewDeviceTable()
-	opt := &conf.AppConfig{MaxConcurrency: jobs, MaxConfigFiles: 10}
+	opt := conf.NewOptions()
+	opt.Set(&conf.AppConfig{MaxConcurrency: jobs, MaxConfigFiles: 10})
 	RegisterModels(logger, tab)
 	for i := 0; i < devices; i++ {
 		CreateDevice(tab, logger, "cisco-ios", fmt.Sprintf("lab%02d", i), "localhost"+addr, "telnet", "lab", "pass", "en", false)
@@ -160,15 +165,16 @@ func TestCiscoIOS4(t *testing.T) {
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 0*time.Millisecond, 0*time.Millisecond, repo, opt)
+	requestCh := make(chan FetchRequest)
+	go Spawner(tab, logger, requestCh, repo, opt)
+	good, bad, skip := Scan(tab, tab.ListDevices(), logger, opt.Get(), requestCh)
 	if good != 1000 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d", good, bad)
 	}
 
-	//time.Sleep(time.Hour)
+	close(requestCh) // shutdown Spawner - we might exit first though
 
-	// shutdown server
-	s.close()
+	s.close() // shutdown server
 
 	<-s.done // wait termination of accept loop goroutine
 }

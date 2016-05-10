@@ -13,6 +13,7 @@ import (
 	//"github.com/udhos/jazigo/store"
 )
 
+// Spawner: launches new goroutines to fetch requests received on channel reqChan
 func Spawner(tab DeviceUpdater, logger hasPrintf, reqChan chan FetchRequest, repository string, options *conf.Options) {
 
 	logger.Printf("Spawner: starting")
@@ -42,6 +43,7 @@ func Spawner(tab DeviceUpdater, logger hasPrintf, reqChan chan FetchRequest, rep
 	logger.Printf("Spawner: exiting")
 }
 
+// Scan: new scheduler
 func Scan(tab DeviceUpdater, devices []*Device, logger hasPrintf, opt *conf.AppConfig, reqChan chan FetchRequest) (int, int, int) {
 
 	begin := time.Now()
@@ -118,6 +120,7 @@ func Scan(tab DeviceUpdater, devices []*Device, logger hasPrintf, opt *conf.AppC
 	return success, deviceCount - success, skipped + deleted
 }
 
+// ScanDevices: old scheduler
 func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, delayMin, delayMax time.Duration, repository string, opt *conf.AppConfig) (int, int, int) {
 
 	deviceCount := len(devices)
