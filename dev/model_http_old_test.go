@@ -1,11 +1,6 @@
 package dev
 
 import (
-	//"fmt"
-	"io"
-	"net"
-	//"strings"
-	"net/http"
 	"testing"
 	"time"
 
@@ -13,9 +8,9 @@ import (
 	"github.com/udhos/jazigo/temp"
 )
 
-func TestHTTP1(t *testing.T) {
+func TestOldHTTP1(t *testing.T) {
 
-	t.Logf("TestHTTP1: starting")
+	t.Logf("TestOldHTTP1: starting")
 
 	// launch bogus test server
 	addr := ":2001"
@@ -23,7 +18,7 @@ func TestHTTP1(t *testing.T) {
 	if listenErr != nil {
 		t.Errorf("could not spawn bogus HTTP server: %v", listenErr)
 	}
-	t.Logf("TestHTTP1: server running on %s", addr)
+	t.Logf("TestOldHTTP1: server running on %s", addr)
 
 	// run client test
 	logger := &testLogger{t}
@@ -43,32 +38,4 @@ func TestHTTP1(t *testing.T) {
 	s.close()
 
 	<-s.done // wait termination of accept loop goroutine
-}
-
-func spawnServerHTTP(t *testing.T, addr string) (*testServer, error) {
-
-	t.Logf("spawnServerHTTP: will listen on %s", addr)
-
-	http.HandleFunc("/", rootHandler) // default handler
-
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		return nil, err
-	}
-
-	t.Logf("spawnServerHTTP: listening on %s", addr)
-
-	s := &testServer{listener: ln, done: make(chan int)}
-
-	go func() {
-		err := http.Serve(ln, nil)
-		t.Logf("spawnServerHTTP: http.Serve: exited: %v", err)
-		close(s.done)
-	}()
-
-	return s, nil
-}
-
-func rootHandler(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, "hello web client\n")
 }
