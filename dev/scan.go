@@ -35,8 +35,8 @@ func Spawner(tab DeviceUpdater, logger hasPrintf, reqChan chan FetchRequest, rep
 			continue
 		}
 
-		opt := options.Get()                                             // get current global data
-		go d.Fetch(logger, replyChan, 0, repository, opt.MaxConfigFiles) // spawn per-request goroutine
+		opt := options.Get()                                   // get current global data
+		go d.Fetch(tab, logger, replyChan, 0, repository, opt) // spawn per-request goroutine
 	}
 
 	logger.Printf("Spawner: exiting")
@@ -98,7 +98,6 @@ func Scan(tab DeviceUpdater, devices []*Device, logger hasPrintf, opt *conf.AppC
 		logger.Printf("Scan: recv %s %s %s %s msg=[%s] code=%d wait=%d remain=%d skipped=%d elap=%s", r.Model, r.DevId, r.DevHostPort, r.Transport, r.Msg, r.Code, wait, deviceCount-nextDevice, skipped, elap)
 
 		good := r.Code == FETCH_ERR_NONE
-		updateDeviceStatus(tab, r.DevId, good, end, logger, holdtime)
 
 		if good {
 			success++
@@ -119,9 +118,10 @@ func Scan(tab DeviceUpdater, devices []*Device, logger hasPrintf, opt *conf.AppC
 	return success, deviceCount - success, skipped + deleted
 }
 
-func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, maxConcurrency int, delayMin, delayMax time.Duration, repository string, maxFiles int, holdtime time.Duration) (int, int, int) {
+func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, delayMin, delayMax time.Duration, repository string, opt *conf.AppConfig) (int, int, int) {
 
 	deviceCount := len(devices)
+	maxConcurrency := opt.MaxConcurrency
 
 	logger.Printf("ScanDevices: starting devices=%d maxConcurrency=%d", deviceCount, maxConcurrency)
 	if deviceCount < 1 {
@@ -161,7 +161,7 @@ func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, maxConc
 				continue
 			}
 
-			if h := d.Holdtime(time.Now(), holdtime); h > 0 {
+			if h := d.Holdtime(time.Now(), opt.Holdtime); h > 0 {
 				// do not handle device yet (holdtime not expired)
 				logger.Printf("device: %s skipping due to holdtime=%s", d.Id, h)
 				skipped++
@@ -175,7 +175,7 @@ func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, maxConc
 			if delayMax > 0 {
 				delay = time.Duration(round(r*float64(delayMax-delayMin))) + delayMin
 			}
-			go d.Fetch(logger, resultCh, delay, repository, maxFiles) // per-device goroutine
+			go d.Fetch(tab, logger, resultCh, delay, repository, opt) // per-device goroutine
 			wait++
 		}
 
@@ -184,7 +184,6 @@ func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, maxConc
 		}
 
 		// wait for one device to finish
-		//logger.Printf("device wait: devices=%d wait=%d remain=%d skipped=%d", deviceCount, wait, deviceCount-nextDevice, skipped)
 		r := <-resultCh
 		wait--
 		end := time.Now()
@@ -192,7 +191,6 @@ func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, maxConc
 		logger.Printf("device result: %s %s %s %s msg=[%s] code=%d wait=%d remain=%d skipped=%d elap=%s", r.Model, r.DevId, r.DevHostPort, r.Transport, r.Msg, r.Code, wait, deviceCount-nextDevice, skipped, elap)
 
 		good := r.Code == FETCH_ERR_NONE
-		updateDeviceStatus(tab, r.DevId, good, end, logger, holdtime)
 
 		if good {
 			success++

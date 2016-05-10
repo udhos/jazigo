@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/udhos/jazigo/conf"
 	"github.com/udhos/jazigo/temp"
 )
 
@@ -49,13 +50,14 @@ func TestCiscoIOS1(t *testing.T) {
 	// run client test
 	logger := &testLogger{t}
 	tab := NewDeviceTable()
+	opt := &conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10}
 	RegisterModels(logger, tab)
 	CreateDevice(tab, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
+	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 100*time.Millisecond, 200*time.Millisecond, repo, opt)
 	if good != 1 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}
@@ -81,13 +83,14 @@ func TestCiscoIOS2(t *testing.T) {
 	// run client test
 	logger := &testLogger{t}
 	tab := NewDeviceTable()
+	opt := &conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10}
 	RegisterModels(logger, tab)
 	CreateDevice(tab, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
+	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 100*time.Millisecond, 200*time.Millisecond, repo, opt)
 	if good != 1 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}
@@ -112,13 +115,14 @@ func TestCiscoIOS3(t *testing.T) {
 	// run client test
 	logger := &testLogger{t}
 	tab := NewDeviceTable()
+	opt := &conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10}
 	RegisterModels(logger, tab)
 	CreateDevice(tab, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
+	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 100*time.Millisecond, 200*time.Millisecond, repo, opt)
 	if good != 0 || bad != 1 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}
@@ -139,18 +143,22 @@ func TestCiscoIOS4(t *testing.T) {
 	}
 	t.Logf("TestCiscoIOS: server running on %s", addr)
 
+	jobs := 100
+	devices := 10 * jobs
+
 	// run client test
 	logger := &testLogger{t}
 	tab := NewDeviceTable()
+	opt := &conf.AppConfig{MaxConcurrency: jobs, MaxConfigFiles: 10}
 	RegisterModels(logger, tab)
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < devices; i++ {
 		CreateDevice(tab, logger, "cisco-ios", fmt.Sprintf("lab%02d", i), "localhost"+addr, "telnet", "lab", "pass", "en", false)
 	}
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 100, 0*time.Millisecond, 0*time.Millisecond, repo, 10, 0)
+	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 0*time.Millisecond, 0*time.Millisecond, repo, opt)
 	if good != 1000 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d", good, bad)
 	}

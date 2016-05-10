@@ -137,8 +137,14 @@ func (d *dialog) record(buf []byte) {
 }
 
 // fetch runs in a per-device goroutine
-func (d *Device) Fetch(logger hasPrintf, resultCh chan FetchResult, delay time.Duration, repository string, maxFiles int) {
-	result := d.fetch(logger, delay, repository, maxFiles)
+func (d *Device) Fetch(tab DeviceUpdater, logger hasPrintf, resultCh chan FetchResult, delay time.Duration, repository string, opt *conf.AppConfig) {
+
+	result := d.fetch(logger, delay, repository, opt.MaxConfigFiles)
+
+	good := result.Code == FETCH_ERR_NONE
+
+	updateDeviceStatus(tab, d.Id, good, time.Now(), logger, opt.Holdtime)
+
 	if resultCh != nil {
 		resultCh <- result
 	}
@@ -589,7 +595,7 @@ func ClearDeviceStatus(tab DeviceUpdater, devId string, logger hasPrintf, holdti
 	return d, nil
 }
 
-// UpdateLastSuccess: get device last sucess from filesystem.
+// UpdateLastSuccess: load device last sucess from filesystem.
 func UpdateLastSuccess(tab *DeviceTable, logger hasPrintf, repository string) {
 	for _, d := range tab.ListDevices() {
 		prefix := d.DevicePathPrefix(d.DeviceDir(repository))

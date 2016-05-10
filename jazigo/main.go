@@ -191,7 +191,7 @@ func main() {
 	if jaz.oldScheduler {
 
 		if runOnce {
-			dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, opt.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt.MaxConfigFiles, opt.Holdtime)
+			dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.options.Get())
 			jaz.logf("runOnce: exiting after single scan")
 			return
 		}
@@ -200,7 +200,7 @@ func main() {
 			for {
 				begin := time.Now()
 				opt := jaz.options.Get()
-				dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, opt.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt.MaxConfigFiles, opt.Holdtime)
+				dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt)
 
 			SLEEP:
 				for {
@@ -223,7 +223,7 @@ func main() {
 							continue SLEEP
 						}
 						singleDevice := []*dev.Device{d}
-						dev.ScanDevices(jaz.table, singleDevice, logger, opt.MaxConcurrency, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt.MaxConfigFiles, opt.Holdtime)
+						dev.ScanDevices(jaz.table, singleDevice, logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt)
 					}
 				}
 			}

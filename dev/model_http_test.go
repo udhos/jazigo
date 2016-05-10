@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/udhos/jazigo/conf"
 	"github.com/udhos/jazigo/temp"
 )
 
@@ -27,13 +28,14 @@ func TestHTTP1(t *testing.T) {
 	// run client test
 	logger := &testLogger{t}
 	tab := NewDeviceTable()
+	opt := &conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10}
 	RegisterModels(logger, tab)
 	CreateDevice(tab, logger, "http", "lab1", "localhost"+addr, "", "", "", "", false)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 3, 100*time.Millisecond, 200*time.Millisecond, repo, 10, 0)
+	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 100*time.Millisecond, 200*time.Millisecond, repo, opt)
 	if good != 1 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}
