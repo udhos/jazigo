@@ -336,7 +336,14 @@ READ_LOOP:
 		lastRead := buf[:n]
 
 		if d.Debug {
-			d.logf("debug recv: [%q]", lastRead)
+			d.logf("debug recv1: [%q]", lastRead)
+		}
+
+		if !d.Attr.KeepControlChars {
+			lastRead = removeControlChars(logger, lastRead, d.Debug)
+			if d.Debug {
+				d.logf("debug recv2: [%q]", lastRead)
+			}
 		}
 
 		matchBuf = append(matchBuf, lastRead...)
@@ -360,6 +367,30 @@ READ_LOOP:
 			return badIndex, matchBuf, io.EOF
 		}
 	}
+}
+
+const BS = 'H' - '@'
+
+func removeControlChars(logger hasPrintf, buf []byte, debug bool) []byte {
+	size := len(buf)
+	for i := 0; i < size; i++ {
+		b := buf[i]
+		switch {
+		case b == 13, b == 10: // CR,LF
+		case b < 32: // control
+			if b != BS {
+				// unexpected control
+				if debug {
+					logger.Printf("removeControlChars: hit control=%d", b)
+				}
+			}
+			copy(buf[i:size], buf[i+1:size])
+			i--
+			size--
+		default: // non-control
+		}
+	}
+	return buf[:size]
 }
 
 func findLastLine(buf []byte) []byte {
@@ -460,8 +491,11 @@ func (d *Device) sendCommands(logger hasPrintf, t transp, capture *dialog) error
 
 func (d *Device) save(logger hasPrintf, capture *dialog, command string, buf []byte) error {
 
-	if command != "" && d.Attr.QuoteSentCommandsFormat != "" {
-		command = fmt.Sprintf(d.Attr.QuoteSentCommandsFormat, command)
+	if command != "" {
+		if d.Attr.QuoteSentCommandsFormat != "" {
+			command = fmt.Sprintf(d.Attr.QuoteSentCommandsFormat, command)
+		}
+		command = "\n" + command + "\n" // prettify
 	}
 
 	capture.save = append(capture.save, []byte(command), buf)

@@ -29,6 +29,7 @@ type DevAttributes struct {
 	DisablePagerCommand         string   // term len 0
 	SupressAutoLF               bool     // do not send auto LF
 	QuoteSentCommandsFormat     string   // !![%s] - empty means omitting
+	KeepControlChars            bool     // enable if you want to capture control chars (backspace, etc)
 
 	// readTimeout: per-read timeout (protection against inactivity)
 	// matchTimeout: full match timeout (protection against slow sender -- think 1 byte per second)

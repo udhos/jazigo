@@ -1,7 +1,6 @@
 package dev
 
 import (
-	//"bytes"
 	"fmt"
 	"golang.org/x/crypto/ssh"
 	"io"
@@ -27,12 +26,18 @@ type transpTelnet struct {
 	logger hasPrintf
 }
 
+type telnetOptions struct {
+	supressGoAhead bool
+	linemode       bool
+}
+
 func (s *transpTelnet) Read(b []byte) (int, error) {
-	n, err := s.Conn.Read(b)
-	if err != nil {
-		return n, err
+	n1, err1 := s.Conn.Read(b)
+	if err1 != nil {
+		return n1, err1
 	}
-	return telnetNegotiation(b, n, s)
+	n2, err2 := telnetNegotiation(b, n1, s)
+	return n2, err2
 }
 
 type transpSSH struct {
@@ -87,7 +92,6 @@ func openTransport(logger hasPrintf, modelName, devId, hostPort, transports, use
 	for _, t := range tList {
 		switch t {
 		case "ssh":
-			//logger.Printf("openTransport: %s %s %s - trying SSH", modelName, devId, hostPort)
 			hp := forceHostPort(hostPort, "22")
 			s, err := openSSH(logger, modelName, devId, hp, timeout, user, pass)
 			if err == nil {
@@ -95,7 +99,6 @@ func openTransport(logger hasPrintf, modelName, devId, hostPort, transports, use
 			}
 			logger.Printf("openTransport: %v", err)
 		case "telnet":
-			//logger.Printf("openTransport: %s %s %s - trying TELNET", modelName, devId, hostPort)
 			hp := forceHostPort(hostPort, "23")
 			s, err := openTelnet(logger, modelName, devId, hp, timeout)
 			if err == nil {
@@ -103,7 +106,6 @@ func openTransport(logger hasPrintf, modelName, devId, hostPort, transports, use
 			}
 			logger.Printf("openTransport: %v", err)
 		default:
-			//logger.Printf("openTransport: %s %s %s - trying TCP", modelName, devId, hostPort)
 			s, err := openTCP(logger, modelName, devId, hostPort, timeout)
 			if err == nil {
 				return s, t, false, nil
