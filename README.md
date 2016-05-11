@@ -33,15 +33,22 @@ Example:
     export GOPATH=~/go
     mkdir $GOPATH
 
-2\. Get source code
+2\. Get dependencies
+
+    go get github.com/icza/gowut/gwu
+    go get github.com/udhos/lockfile
+    go get gopkg.in/yaml.v2
+    go get golang.org/x/crypto/ssh
+
+3\. Get source code
 
 `go get github.com/udhos/jazigo`
 
-3\. Compile and install
+4\. Compile and install
 
 `go install github.com/udhos/jazigo/jazigo`
 
-4\. Decide where to store config and backup files
+5\. Decide where to store config and backup files
 
 Example:
 
@@ -52,16 +59,16 @@ Example:
     export APP_REPO=/var/jazigo/repo      ;# backup repository
     mkdir -p $APP_ETC $APP_REPO
 
-5\. Run jazigo once (see -runOnce option)
+6\. Run jazigo once (see -runOnce option)
 
 `$GOPATH/bin/jazigo -configPathPrefix $APP_CONF -repositoryPath $APP_REPO -runOnce`
 
 Watch messages logged to standard output for errors.
 
-6\. Run jazigo forever
+7\. Run jazigo forever
 
 `$GOPATH/bin/jazigo -configPathPrefix $APP_CONF -repositoryPath $APP_REPO`
 
-7\. Open the web interface
+8\. Open the web interface
 
 Point web browser at: [http://localhost:8080/jazigo](http://localhost:8080/jazigo)

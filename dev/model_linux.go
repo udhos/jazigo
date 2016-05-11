@@ -27,6 +27,7 @@ func registerModelLinux(logger hasPrintf, t *DeviceTable) {
 		SendTimeout:                 5 * time.Second,
 		CommandReadTimeout:          10 * time.Second,
 		CommandMatchTimeout:         10 * time.Second,
+		QuoteSentCommandsFormat:     `##[%s]`,
 	}
 
 	if err := t.SetModel(m, logger); err != nil {

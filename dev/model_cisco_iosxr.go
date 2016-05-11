@@ -26,6 +26,7 @@ func registerModelCiscoIOSXR(logger hasPrintf, t *DeviceTable) {
 		SendTimeout:                 5 * time.Second,
 		CommandReadTimeout:          20 * time.Second, // larger timeout for slow 'sh run'
 		CommandMatchTimeout:         30 * time.Second, // larger timeout for slow 'sh run'
+		QuoteSentCommandsFormat:     `!![%s]`,
 	}
 
 	if err := t.SetModel(m, logger); err != nil {

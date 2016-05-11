@@ -28,6 +28,7 @@ type DevAttributes struct {
 	CommandList                 []string // show run
 	DisablePagerCommand         string   // term len 0
 	SupressAutoLF               bool     // do not send auto LF
+	QuoteSentCommandsFormat     string   // !![%s] - empty means omitting
 
 	// readTimeout: per-read timeout (protection against inactivity)
 	// matchTimeout: full match timeout (protection against slow sender -- think 1 byte per second)

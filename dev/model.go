@@ -459,6 +459,11 @@ func (d *Device) sendCommands(logger hasPrintf, t transp, capture *dialog) error
 }
 
 func (d *Device) save(logger hasPrintf, capture *dialog, command string, buf []byte) error {
+
+	if command != "" && d.Attr.QuoteSentCommandsFormat != "" {
+		command = fmt.Sprintf(d.Attr.QuoteSentCommandsFormat, command)
+	}
+
 	capture.save = append(capture.save, []byte(command), buf)
 	return nil
 }
