@@ -46,8 +46,13 @@ func Spawner(tab DeviceUpdater, logger hasPrintf, reqChan chan FetchRequest, rep
 // Scan: new scheduler
 func Scan(tab DeviceUpdater, devices []*Device, logger hasPrintf, opt *conf.AppConfig, reqChan chan FetchRequest) (int, int, int) {
 
-	begin := time.Now()
 	deviceCount := len(devices)
+	if deviceCount < 1 {
+		logger.Printf("Scan: empty device list, aborting")
+		return 0, 0, 0
+	}
+
+	begin := time.Now()
 	wait := 0       // requests pending
 	nextDevice := 0 // device iterator
 	req := FetchRequest{ReplyChan: make(chan FetchResult)}
