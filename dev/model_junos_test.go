@@ -35,7 +35,7 @@ func TestJuniperJunOS1(t *testing.T) {
 	defer temp.CleanupTempRepo()
 
 	requestCh := make(chan FetchRequest)
-	go Spawner(tab, logger, requestCh, repo, opt)
+	go Spawner(tab, logger, requestCh, repo, opt, NewFilterTable(logger))
 	good, bad, skip := Scan(tab, tab.ListDevices(), logger, opt.Get(), requestCh)
 	if good != 1 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
@@ -69,7 +69,7 @@ func TestJuniperJunOS2(t *testing.T) {
 	defer temp.CleanupTempRepo()
 
 	requestCh := make(chan FetchRequest)
-	go Spawner(tab, logger, requestCh, repo, opt)
+	go Spawner(tab, logger, requestCh, repo, opt, NewFilterTable(logger))
 	good, bad, skip := Scan(tab, tab.ListDevices(), logger, opt.Get(), requestCh)
 	if good != 0 || bad != 1 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)

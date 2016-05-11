@@ -137,9 +137,9 @@ func (d *dialog) record(buf []byte) {
 }
 
 // fetch runs in a per-device goroutine
-func (d *Device) Fetch(tab DeviceUpdater, logger hasPrintf, resultCh chan FetchResult, delay time.Duration, repository string, opt *conf.AppConfig) {
+func (d *Device) Fetch(tab DeviceUpdater, logger hasPrintf, resultCh chan FetchResult, delay time.Duration, repository string, opt *conf.AppConfig, ft *FilterTable) {
 
-	result := d.fetch(logger, delay, repository, opt.MaxConfigFiles)
+	result := d.fetch(logger, delay, repository, opt.MaxConfigFiles, ft)
 
 	good := result.Code == FETCH_ERR_NONE
 
@@ -150,7 +150,7 @@ func (d *Device) Fetch(tab DeviceUpdater, logger hasPrintf, resultCh chan FetchR
 	}
 }
 
-func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string, maxFiles int) FetchResult {
+func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string, maxFiles int, ft *FilterTable) FetchResult {
 	modelName := d.devModel.name
 	d.Printf("fetch: delay=%dms", delay/time.Millisecond)
 
@@ -202,7 +202,7 @@ func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string,
 		return FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("commands: %v", cmdErr), Code: FETCH_ERR_COMMANDS, Begin: begin}
 	}
 
-	if saveErr := d.saveCommit(logger, &capture, repository, maxFiles); saveErr != nil {
+	if saveErr := d.saveCommit(logger, &capture, repository, maxFiles, ft); saveErr != nil {
 		return FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("save commit: %v", saveErr), Code: FETCH_ERR_SAVE, Begin: begin}
 	}
 
@@ -233,7 +233,7 @@ func (d *Device) DevicePathPrefix(devDir string) string {
 	return filepath.Join(devDir, d.Id+".")
 }
 
-func (d *Device) saveCommit(logger hasPrintf, capture *dialog, repository string, maxFiles int) error {
+func (d *Device) saveCommit(logger hasPrintf, capture *dialog, repository string, maxFiles int, ft *FilterTable) error {
 
 	devDir := d.DeviceDir(repository)
 
@@ -245,13 +245,43 @@ func (d *Device) saveCommit(logger hasPrintf, capture *dialog, repository string
 
 	// writeFunc: copy command outputs into file
 	writeFunc := func(w store.HasWrite) error {
-		for _, b := range capture.save {
-			n, writeErr := w.Write(b)
-			if writeErr != nil {
-				return fmt.Errorf("saveCommit: writeFunc: error: %v", writeErr)
+
+		lineFilter, filterFound := ft.table[d.Attr.LineFilter]
+		if filterFound {
+			d.Printf("saveCommit: filter '%s' FOUND", d.Attr.LineFilter)
+		} else {
+			if d.Attr.LineFilter != "" {
+				d.Printf("saveCommit: filter '%s' not found", d.Attr.LineFilter)
 			}
-			if n != len(b) {
-				return fmt.Errorf("saveCommit: writeFunc: partial: wrote=%d size=%d", n, len(b))
+		}
+
+		lineNum := 1
+
+		for _, b := range capture.save {
+
+			var lines [][]byte
+			if filterFound {
+				lines = bytes.Split(b, []byte{'\n'}) // split block into lines
+			} else {
+				lines = [][]byte{b} // use block as single line
+			}
+
+			for _, line := range lines {
+
+				if filterFound {
+					line = lineFilter(ft, line, lineNum) // apply filter
+					line = append(line, '\n')            // restore LF removed by split
+				}
+
+				n, writeErr := w.Write(line)
+				if writeErr != nil {
+					return fmt.Errorf("saveCommit: writeFunc: error: %v", writeErr)
+				}
+				if n != len(line) {
+					return fmt.Errorf("saveCommit: writeFunc: partial: wrote=%d size=%d", n, len(line))
+				}
+
+				lineNum++
 			}
 		}
 		return nil
@@ -369,16 +399,20 @@ READ_LOOP:
 	}
 }
 
-const BS = 'H' - '@'
+const (
+	BS = 'H' - '@'
+	CR = '\r'
+	LF = '\n'
+)
 
 func removeControlChars(logger hasPrintf, buf []byte, debug bool) []byte {
 	size := len(buf)
 	for i := 0; i < size; i++ {
 		b := buf[i]
 		switch {
-		case b == 13, b == 10: // CR,LF
+		case b == LF: // LF
 		case b < 32: // control
-			if b != BS {
+			if b != BS && b != CR {
 				// unexpected control
 				if debug {
 					logger.Printf("removeControlChars: hit control=%d", b)

@@ -28,7 +28,7 @@ func TestOldCiscoIOSXR1(t *testing.T) {
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 100*time.Millisecond, 200*time.Millisecond, repo, opt)
+	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 100*time.Millisecond, 200*time.Millisecond, repo, opt, NewFilterTable(logger))
 	if good != 1 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}
@@ -59,7 +59,7 @@ func TestOldCiscoIOSXR2(t *testing.T) {
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 100*time.Millisecond, 200*time.Millisecond, repo, opt)
+	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 100*time.Millisecond, 200*time.Millisecond, repo, opt, NewFilterTable(logger))
 	if good != 1 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}
@@ -89,7 +89,7 @@ func TestOldCiscoIOSXR3(t *testing.T) {
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
 
-	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 100*time.Millisecond, 200*time.Millisecond, repo, opt)
+	good, bad, skip := ScanDevices(tab, tab.ListDevices(), logger, 100*time.Millisecond, 200*time.Millisecond, repo, opt, NewFilterTable(logger))
 	if good != 0 || bad != 1 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
 	}

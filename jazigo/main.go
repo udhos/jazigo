@@ -51,6 +51,8 @@ type app struct {
 	priority     chan string
 	requestChan  chan dev.FetchRequest
 	oldScheduler bool
+
+	filterTable *dev.FilterTable
 }
 
 type hasPrintf interface {
@@ -72,6 +74,8 @@ func newApp(logger hasPrintf) *app {
 	}
 
 	app.logf("%s %s starting", appName, appVersion)
+
+	app.filterTable = dev.NewFilterTable(logger)
 
 	dev.RegisterModels(app.logger, app.table)
 
@@ -191,7 +195,7 @@ func main() {
 	if jaz.oldScheduler {
 
 		if runOnce {
-			dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.options.Get())
+			dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.options.Get(), jaz.filterTable)
 			jaz.logf("runOnce: exiting after single scan")
 			return
 		}
@@ -200,7 +204,7 @@ func main() {
 			for {
 				begin := time.Now()
 				opt := jaz.options.Get()
-				dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt)
+				dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt, jaz.filterTable)
 
 			SLEEP:
 				for {
@@ -223,7 +227,7 @@ func main() {
 							continue SLEEP
 						}
 						singleDevice := []*dev.Device{d}
-						dev.ScanDevices(jaz.table, singleDevice, logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt)
+						dev.ScanDevices(jaz.table, singleDevice, logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt, jaz.filterTable)
 					}
 				}
 			}
@@ -231,7 +235,7 @@ func main() {
 
 	} else {
 
-		go dev.Spawner(jaz.table, jaz.logger, jaz.requestChan, jaz.repositoryPath, jaz.options)
+		go dev.Spawner(jaz.table, jaz.logger, jaz.requestChan, jaz.repositoryPath, jaz.options, jaz.filterTable)
 
 		if runOnce {
 			dev.Scan(jaz.table, jaz.table.ListDevices(), jaz.logger, jaz.options.Get(), jaz.requestChan)

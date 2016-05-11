@@ -14,7 +14,7 @@ import (
 )
 
 // Spawner: launches new goroutines to fetch requests received on channel reqChan
-func Spawner(tab DeviceUpdater, logger hasPrintf, reqChan chan FetchRequest, repository string, options *conf.Options) {
+func Spawner(tab DeviceUpdater, logger hasPrintf, reqChan chan FetchRequest, repository string, options *conf.Options, ft *FilterTable) {
 
 	logger.Printf("Spawner: starting")
 
@@ -36,8 +36,8 @@ func Spawner(tab DeviceUpdater, logger hasPrintf, reqChan chan FetchRequest, rep
 			continue
 		}
 
-		opt := options.Get()                                   // get current global data
-		go d.Fetch(tab, logger, replyChan, 0, repository, opt) // spawn per-request goroutine
+		opt := options.Get()                                       // get current global data
+		go d.Fetch(tab, logger, replyChan, 0, repository, opt, ft) // spawn per-request goroutine
 	}
 
 	logger.Printf("Spawner: exiting")
@@ -126,7 +126,7 @@ func Scan(tab DeviceUpdater, devices []*Device, logger hasPrintf, opt *conf.AppC
 }
 
 // ScanDevices: old scheduler
-func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, delayMin, delayMax time.Duration, repository string, opt *conf.AppConfig) (int, int, int) {
+func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, delayMin, delayMax time.Duration, repository string, opt *conf.AppConfig, ft *FilterTable) (int, int, int) {
 
 	deviceCount := len(devices)
 	maxConcurrency := opt.MaxConcurrency
@@ -183,7 +183,7 @@ func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, delayMi
 			if delayMax > 0 {
 				delay = time.Duration(round(r*float64(delayMax-delayMin))) + delayMin
 			}
-			go d.Fetch(tab, logger, resultCh, delay, repository, opt) // per-device goroutine
+			go d.Fetch(tab, logger, resultCh, delay, repository, opt, ft) // per-device goroutine
 			wait++
 		}
 
