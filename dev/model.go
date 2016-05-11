@@ -269,8 +269,8 @@ func (d *Device) saveCommit(logger hasPrintf, capture *dialog, repository string
 			for _, line := range lines {
 
 				if filterFound {
-					line = lineFilter(ft, line, lineNum) // apply filter
-					line = append(line, '\n')            // restore LF removed by split
+					line = lineFilter(d, d.Debug, ft, line, lineNum) // apply filter
+					line = append(line, '\n')                        // restore LF removed by split
 				}
 
 				n, writeErr := w.Write(line)
