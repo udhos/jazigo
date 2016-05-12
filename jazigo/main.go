@@ -451,7 +451,7 @@ func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
 			if d.Debug {
 				debug = "debug"
 			}
-			fmt.Printf("%s %s %s %s %s %s %s %s\n", d.DevConfig.Model, d.Id, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword, enable, debug)
+			fmt.Printf("%s %s %s %s %s %s %s %s\n", d.DevConfig.Model, d.DevConfig.Id, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword, enable, debug)
 		}
 	}
 
