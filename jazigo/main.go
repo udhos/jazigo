@@ -26,6 +26,7 @@ const appVersion = "0.0"
 type app struct {
 	configPathPrefix string
 	repositoryPath   string // filesystem
+	logPathPrefix    string
 	configLock       lockfile.Lockfile
 	repositoryLock   lockfile.Lockfile
 
@@ -88,6 +89,14 @@ func defaultStaticDir() string {
 	return filepath.Join(gopath, pkgPath, "www")
 }
 
+func defaultHomeDir() string {
+	home := os.Getenv("JAZIGO_HOME")
+	if home == "" {
+		home = "/var/jazigo"
+	}
+	return home
+}
+
 func addTrailingDot(path string) string {
 	if path[len(path)-1] != '.' {
 		return path + "."
@@ -108,8 +117,14 @@ func main() {
 	var devicePurge bool
 	var deviceList bool
 
-	flag.StringVar(&jaz.configPathPrefix, "configPathPrefix", "/etc/jazigo/jazigo.conf.", "configuration path prefix")
-	flag.StringVar(&jaz.repositoryPath, "repositoryPath", "/var/jazigo", "repository path")
+	defaultHome := defaultHomeDir()
+	defaultConfigPrefix := filepath.Join(defaultHome, "etc", "jazigo.conf.")
+	defaultRepo := filepath.Join(defaultHome, "repo")
+	defaultLogPrefix := filepath.Join(defaultHome, "log", "jazigo.log.")
+
+	flag.StringVar(&jaz.configPathPrefix, "configPathPrefix", defaultConfigPrefix, "configuration path prefix")
+	flag.StringVar(&jaz.repositoryPath, "repositoryPath", defaultRepo, "repository path")
+	flag.StringVar(&jaz.logPathPrefix, "logPathPrefix", defaultLogPrefix, "log path prefix")
 	flag.StringVar(&staticDir, "wwwStaticPath", defaultStaticDir(), "directory for static www content")
 	flag.BoolVar(&runOnce, "runOnce", false, "exit after scanning all devices once")
 	flag.BoolVar(&deviceDelete, "deviceDelete", false, "delete devices specified in stdin")
