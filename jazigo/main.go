@@ -44,7 +44,7 @@ type app struct {
 	cssPath  string
 	repoPath string // www
 
-	logger hasPrintf
+	logger *log.Logger
 
 	filterModel string
 	filterId    string
@@ -65,21 +65,15 @@ func (a *app) logf(fmt string, v ...interface{}) {
 	a.logger.Printf(fmt, v...)
 }
 
-func newApp(logger hasPrintf) *app {
+func newApp() *app {
 	app := &app{
 		table:       dev.NewDeviceTable(),
 		options:     conf.NewOptions(),
-		logger:      logger,
+		logger:      log.New(os.Stdout, "", log.LstdFlags),
 		priority:    make(chan string),
 		requestChan: make(chan dev.FetchRequest),
 		repoPath:    "repo",
 	}
-
-	app.logf("%s %s starting", appName, appVersion)
-
-	app.filterTable = dev.NewFilterTable(logger)
-
-	dev.RegisterModels(app.logger, app.table)
 
 	return app
 }
@@ -107,9 +101,7 @@ func addTrailingDot(path string) string {
 
 func main() {
 
-	logger := log.New(os.Stdout, "", log.LstdFlags)
-
-	jaz := newApp(logger)
+	jaz := newApp()
 
 	var runOnce bool
 	var staticDir string
@@ -117,6 +109,7 @@ func main() {
 	var deviceDelete bool
 	var devicePurge bool
 	var deviceList bool
+	var disableStdoutLog bool
 
 	defaultHome := defaultHomeDir()
 	defaultConfigPrefix := filepath.Join(defaultHome, "etc", "jazigo.conf.")
@@ -133,7 +126,12 @@ func main() {
 	flag.BoolVar(&deviceImport, "deviceImport", false, "import devices from stdin")
 	flag.BoolVar(&deviceList, "deviceList", false, "list devices from stdout")
 	flag.BoolVar(&jaz.oldScheduler, "oldScheduler", false, "use old scheduler")
+	flag.BoolVar(&disableStdoutLog, "disableStdoutLog", false, "disable logging to stdout")
 	flag.Parse()
+
+	jaz.logf("%s %s starting", appName, appVersion)
+	jaz.filterTable = dev.NewFilterTable(jaz.logger)
+	dev.RegisterModels(jaz.logger, jaz.table)
 
 	jaz.configPathPrefix = addTrailingDot(jaz.configPathPrefix)
 
@@ -211,7 +209,7 @@ func main() {
 	if jaz.oldScheduler {
 
 		if runOnce {
-			dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.options.Get(), jaz.filterTable)
+			dev.ScanDevices(jaz.table, jaz.table.ListDevices(), jaz.logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.options.Get(), jaz.filterTable)
 			jaz.logf("runOnce: exiting after single scan")
 			return
 		}
@@ -220,7 +218,7 @@ func main() {
 			for {
 				begin := time.Now()
 				opt := jaz.options.Get()
-				dev.ScanDevices(jaz.table, jaz.table.ListDevices(), logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt, jaz.filterTable)
+				dev.ScanDevices(jaz.table, jaz.table.ListDevices(), jaz.logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt, jaz.filterTable)
 
 			SLEEP:
 				for {
@@ -237,13 +235,13 @@ func main() {
 						break SLEEP
 					case id := <-jaz.priority:
 						jaz.logf("main: sleep interrupted by priority: device %s", id)
-						d, clearErr := dev.ClearDeviceStatus(jaz.table, id, logger, opt.Holdtime)
+						d, clearErr := dev.ClearDeviceStatus(jaz.table, id, jaz.logger, opt.Holdtime)
 						if clearErr != nil {
 							jaz.logf("main: sleep interrupted by priority: device %s - error: %v", id, clearErr)
 							continue SLEEP
 						}
 						singleDevice := []*dev.Device{d}
-						dev.ScanDevices(jaz.table, singleDevice, logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt, jaz.filterTable)
+						dev.ScanDevices(jaz.table, singleDevice, jaz.logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt, jaz.filterTable)
 					}
 				}
 			}
@@ -264,7 +262,7 @@ func main() {
 	}
 
 	// Start GUI server
-	server.SetLogger(logger)
+	server.SetLogger(jaz.logger)
 	if err := server.Start(); err != nil {
 		jaz.logf("jazigo main: Cound not start GUI server: %s", err)
 		return
@@ -498,7 +496,7 @@ func exclusiveLock(jaz *app) error {
 		return fmt.Errorf("exclusiveLock: lock failure: '%s': %v", repositoryLockPath, err)
 	}
 
-	logLockPath := filepath.Join(jaz.logPathPrefix, "lock")
+	logLockPath := fmt.Sprintf("%slock", jaz.logPathPrefix)
 	if jaz.logLock, newErr = lockfile.New(logLockPath); newErr != nil {
 		jaz.configLock.Unlock()
 		jaz.repositoryLock.Unlock()
@@ -524,7 +522,7 @@ func exclusiveUnlock(jaz *app) {
 		jaz.logger.Printf("exclusiveUnlock: '%s': %v", repositoryLockPath, err)
 	}
 
-	logLockPath := filepath.Join(jaz.logPathPrefix, "lock")
+	logLockPath := fmt.Sprintf("%slock", jaz.logPathPrefix)
 	if err := jaz.logLock.Unlock(); err != nil {
 		jaz.logger.Printf("exclusiveUnlock: '%s': %v", logLockPath, err)
 	}
