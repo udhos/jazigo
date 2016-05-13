@@ -29,6 +29,7 @@ type app struct {
 	logPathPrefix    string
 	configLock       lockfile.Lockfile
 	repositoryLock   lockfile.Lockfile
+	logLock          lockfile.Lockfile
 
 	table   *dev.DeviceTable
 	options *conf.Options
@@ -497,6 +498,18 @@ func exclusiveLock(jaz *app) error {
 		return fmt.Errorf("exclusiveLock: lock failure: '%s': %v", repositoryLockPath, err)
 	}
 
+	logLockPath := filepath.Join(jaz.logPathPrefix, "lock")
+	if jaz.logLock, newErr = lockfile.New(logLockPath); newErr != nil {
+		jaz.configLock.Unlock()
+		jaz.repositoryLock.Unlock()
+		return fmt.Errorf("exclusiveLock: new failure: '%s': %v", logLockPath, newErr)
+	}
+	if err := jaz.logLock.TryLock(); err != nil {
+		jaz.configLock.Unlock()
+		jaz.repositoryLock.Unlock()
+		return fmt.Errorf("exclusiveLock: lock failure: '%s': %v", logLockPath, err)
+	}
+
 	return nil
 }
 
@@ -509,6 +522,11 @@ func exclusiveUnlock(jaz *app) {
 	repositoryLockPath := filepath.Join(jaz.repositoryPath, "lock")
 	if err := jaz.repositoryLock.Unlock(); err != nil {
 		jaz.logger.Printf("exclusiveUnlock: '%s': %v", repositoryLockPath, err)
+	}
+
+	logLockPath := filepath.Join(jaz.logPathPrefix, "lock")
+	if err := jaz.logLock.Unlock(); err != nil {
+		jaz.logger.Printf("exclusiveUnlock: '%s': %v", logLockPath, err)
 	}
 }
 
