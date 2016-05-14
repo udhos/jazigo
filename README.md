@@ -52,13 +52,8 @@ Example:
 
 Example:
 
-    # These env vars are not meaningful to jazigo.
-    # They're just handy pointers used in step 5 below.
-    export APP_HOME=/var/jazigo
-    export APP_CONF=$APP_HOME/etc/jazigo.conf. ;# last dot required
-    export APP_REPO=$APP_HOME/repo             ;# backup repository
-    export APP_LOG=$APP_HOME/log/jazigo.log.   ;# last dot required
-    mkdir -p $APP_HOME/etc $APP_REPO $APP_HOME/log
+    export JAZIGO_HOME=/var/jazigo
+    mkdir -p $JAZIGO_HOME/etc $JAZIGO_HOME/repo $JAZIGO_HOME/log
 
 6\. Run jazigo once (see -runOnce option)
 
