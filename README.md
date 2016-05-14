@@ -48,16 +48,17 @@ Example:
 
 `go install github.com/udhos/jazigo/jazigo`
 
-5\. Decide where to store config and backup files
+5\. Decide where to store config, backup and log files
 
 Example:
 
     # These env vars are not meaningful to jazigo.
     # They're just handy pointers used in step 5 below.
-    export APP_ETC=/etc/jazigo            ;# app config dir
-    export APP_CONF=$APP_ETC/jazigo.conf. ;# last dot is required
-    export APP_REPO=/var/jazigo/repo      ;# backup repository
-    mkdir -p $APP_ETC $APP_REPO
+    export APP_HOME=/var/jazigo
+    export APP_CONF=$APP_HOME/etc/jazigo.conf. ;# last dot required
+    export APP_REPO=$APP_HOME/repo             ;# backup repository
+    export APP_LOG=$APP_HOME/log/jazigo.log.   ;# last dot required
+    mkdir -p $APP_HOME/etc $APP_REPO $APP_HOME/log
 
 6\. Run jazigo once (see -runOnce option)
 
