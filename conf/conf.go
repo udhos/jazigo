@@ -51,6 +51,7 @@ type DevConfig struct {
 	LoginUser      string
 	LoginPassword  string
 	EnablePassword string
+	Comment        string // user-defined field
 	Attr           DevAttributes
 }
 

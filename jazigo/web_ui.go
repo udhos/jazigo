@@ -123,8 +123,9 @@ func deviceWinName(id string) string {
 	return "device-" + id
 }
 
-func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId string) string {
+func buildDeviceWindow(jaz *app, e gwu.Event, devId string) string {
 	winName := deviceWinName(devId)
+	s := e.Session()
 	win := s.WinByName(winName)
 	if win != nil {
 		return winName
@@ -287,6 +288,7 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId string) strin
 	}
 
 	refresh := func(e gwu.Event) {
+		propButtonSave.SetEnabled(userIsLogged(e.Session()))
 		fileList(e)  // build file list
 		resetProp(e) // // build file properties
 		e.MarkDirty(win)
@@ -297,9 +299,14 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId string) strin
 	propButtonReset.AddEHandlerFunc(resetProp, gwu.ETypeClick)
 
 	propButtonSave.AddEHandlerFunc(func(e gwu.Event) {
-		str := propText.Text()
 
 		defer e.MarkDirty(propPanel)
+
+		if !userIsLogged(e.Session()) {
+			return // refuse to save
+		}
+
+		str := propText.Text()
 
 		c, parseErr := conf.NewDeviceFromString(str)
 		if parseErr != nil {
@@ -336,7 +343,7 @@ func buildDeviceWindow(jaz *app, s gwu.Session, e gwu.Event, devId string) strin
 	return winName
 }
 
-func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table) {
+func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevWins bool*/) {
 	const COLS = 9
 
 	row := 0 // filter
@@ -350,17 +357,17 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table) {
 
 	filterModel.AddEHandlerFunc(func(e gwu.Event) {
 		jaz.filterModel = filterModel.Text()
-		refreshDeviceTable(jaz, s, t, e)
+		refreshDeviceTable(jaz, t, e)
 	}, gwu.ETypeChange)
 
 	filterId.AddEHandlerFunc(func(e gwu.Event) {
 		jaz.filterId = filterId.Text()
-		refreshDeviceTable(jaz, s, t, e)
+		refreshDeviceTable(jaz, t, e)
 	}, gwu.ETypeChange)
 
 	filterHost.AddEHandlerFunc(func(e gwu.Event) {
 		jaz.filterHost = filterHost.Text()
-		refreshDeviceTable(jaz, s, t, e)
+		refreshDeviceTable(jaz, t, e)
 	}, gwu.ETypeChange)
 
 	t.Add(filterModel, row, 0)
@@ -406,11 +413,21 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table) {
 
 		labMod := gwu.NewLabel(d.Model())
 
-		devWin := "device-" + d.Id
+		devWin := deviceWinName(d.Id)
 		labId := gwu.NewLink(d.Id, "/"+appName+"/"+devWin)
+
+		/*
+			if killExistingDevWins {
+				win := s.WinByName(devWin)
+				if win != nil {
+					s.RemoveWin(win)
+				}
+			}
+		*/
+
 		devId := d.Id // get dev id for closure below
 		labId.AddEHandlerFunc(func(e gwu.Event) {
-			buildDeviceWindow(jaz, s, e, devId)
+			buildDeviceWindow(jaz, e, devId)
 		}, gwu.ETypeClick)
 
 		labHost := gwu.NewLabel(d.HostPort)
@@ -467,9 +484,9 @@ func runPriority(jaz *app, id string) {
 	}
 }
 
-func refreshDeviceTable(jaz *app, s gwu.Session, t gwu.Table, e gwu.Event) {
+func refreshDeviceTable(jaz *app, t gwu.Table, e gwu.Event) {
 	t.Clear() // clear out table contents
-	buildDeviceTable(jaz, s, t)
+	buildDeviceTable(jaz, e.Session(), t /*, false */)
 	e.MarkDirty(t)
 }
 
@@ -488,7 +505,7 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 	t.Style().AddClass("device_table")
 
 	refresh := func(e gwu.Event) {
-		refreshDeviceTable(jaz, s, t, e)
+		refreshDeviceTable(jaz, t, e)
 	}
 
 	createDevPanel := buildCreateDevPanel(jaz, s, refresh)
@@ -501,9 +518,9 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 
 	win.Add(createDevPanel)
 
-	win.Add(gwu.NewLabel("Hint: fill in texts boxes below with words to pick only subset of devices."))
+	win.Add(gwu.NewLabel("Hint: fill in text boxes below to select matching subset of devices."))
 
-	buildDeviceTable(jaz, s, t)
+	buildDeviceTable(jaz, s, t /*, true*/)
 
 	win.Add(t)
 
@@ -695,6 +712,12 @@ func buildLoginWin(jaz *app, s gwu.Session) {
 			errL.SetText("")
 			e.MarkDirty(errL)
 
+			// replace private session, if any
+			if e.Session().Private() {
+				jaz.logger.Printf("removing existing PRIVATE session")
+				e.RemoveSess()
+			}
+
 			newSession := e.NewSession()
 			newSession.SetAttr("username", user)
 
@@ -708,7 +731,7 @@ func buildLoginWin(jaz *app, s gwu.Session) {
 
 			accountPanelUpdateEvent(jaz, user, e)
 
-			e.ReloadWin("admin")
+			e.ReloadWin("home")
 		} else {
 			//e.SetFocusedComp(tb)
 			errL.SetText("Invalid user name or password!")
@@ -734,19 +757,63 @@ func buildLoginWin(jaz *app, s gwu.Session) {
 }
 
 func loginAuth(user, pass string) bool {
+	if user == "" {
+		return false
+	}
 	return user == pass // loginAuth: FIXME WRITEME
 }
 
+func buildPublicWins(jaz *app, s gwu.Session) {
+
+	if s.Private() {
+		jaz.logger.Printf("buildPublicWins: ignoring call within PRIVATE session")
+		return
+	}
+
+	// create account panel
+	jaz.apHome = newAccPanel("")
+	jaz.apAdmin = newAccPanel("")
+	jaz.apLogout = newAccPanel("")
+	accountPanelUpdate(jaz, "")
+
+	buildHomeWin(jaz, s)
+	buildLoginWin(jaz, s)
+}
+
 func buildPrivateWins(jaz *app, s gwu.Session, remoteAddr string) {
-	user := s.Attr("username").(string)
+	if !s.Private() {
+		jaz.logger.Printf("buildPrivateWins: ignoring call within PUBLIC session")
+		return
+	}
+
+	user := sessionUsername(s)
 
 	buildLogoutWin(jaz, s, user, remoteAddr)
 	buildAdminWin(jaz, s, user, remoteAddr)
+	buildHomeWin(jaz, s) // this is needed for access to home win within PRIVATE session
+}
+
+func sessionUsername(s gwu.Session) string {
+	if !s.Private() {
+		return ""
+	}
+	user := s.Attr("username")
+	if user == nil {
+		return ""
+	}
+	str, isStr := user.(string)
+	if !isStr {
+		return ""
+	}
+	return str
+}
+
+func userIsLogged(s gwu.Session) bool {
+	return sessionUsername(s) != ""
 }
 
 func buildLogoutWin(jaz *app, s gwu.Session, user, remoteAddr string) {
 	winName := fmt.Sprintf("%s logout", appName)
-	winHeader := fmt.Sprintf("%s - user=%s - address=%s", winName, user, remoteAddr)
 
 	win := newWin(jaz, "logout", winName)
 
@@ -755,13 +822,18 @@ func buildLogoutWin(jaz *app, s gwu.Session, user, remoteAddr string) {
 
 	win.Add(jaz.apLogout)
 
-	title := gwu.NewLabel(winHeader)
-	win.Add(title)
-
 	p := gwu.NewPanel()
 	p.SetCellPadding(2)
 
 	logoutButton := gwu.NewButton("Logout")
+	logoutButton.AddEHandlerFunc(func(e gwu.Event) {
+		if !e.Session().Private() {
+			return // ignore button for public session
+		}
+
+		e.RemoveSess()
+		e.ReloadWin("/")
+	}, gwu.ETypeClick)
 
 	p.Add(logoutButton)
 

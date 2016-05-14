@@ -215,14 +215,7 @@ func main() {
 	jaz.logf("static dir: path=[%s] mapped to dir=[%s]", repoPathFull, jaz.repositoryPath)
 	server.AddStaticDir(repoPath, jaz.repositoryPath)
 
-	// create account panel
-	jaz.apHome = newAccPanel("")
-	jaz.apAdmin = newAccPanel("")
-	jaz.apLogout = newAccPanel("")
-	accountPanelUpdate(jaz, "")
-
-	buildHomeWin(jaz, server)
-	buildLoginWin(jaz, server)
+	buildPublicWins(jaz, server)
 
 	if jaz.oldScheduler {
 
