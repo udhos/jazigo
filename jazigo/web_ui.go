@@ -508,11 +508,15 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 	t := gwu.NewTable()
 	t.Style().AddClass("device_table")
 
+	createButton := gwu.NewButton("Create")
+
 	refresh := func(e gwu.Event) {
+		createButton.SetEnabled(userIsLogged(e.Session()))
+		e.MarkDirty(createButton)
 		refreshDeviceTable(jaz, t, e)
 	}
 
-	createDevPanel := buildCreateDevPanel(jaz, s, refresh)
+	createDevPanel := buildCreateDevPanel(jaz, s, refresh, createButton)
 
 	refreshButton := gwu.NewButton("Refresh")
 	refreshButton.AddEHandlerFunc(refresh, gwu.ETypeClick)
@@ -533,7 +537,7 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 	jaz.winHome = win
 }
 
-func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event)) gwu.Panel {
+func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), createButton gwu.Button) gwu.Panel {
 	createDevPanel := gwu.NewPanel()
 	createPanel := gwu.NewHorizontalPanel()
 	msg := gwu.NewLabel("Message")
@@ -547,7 +551,7 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event)) gwu.P
 	panelUser := gwu.NewPanel()
 	panelPass := gwu.NewPanel()
 	panelEnable := gwu.NewPanel()
-	button := gwu.NewButton("Create")
+	button := createButton
 
 	labelModel := gwu.NewLabel("Model")
 	labelId := gwu.NewLabel("Id")
@@ -598,6 +602,11 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event)) gwu.P
 	}
 
 	button.AddEHandlerFunc(func(e gwu.Event) {
+
+		if !userIsLogged(e.Session()) {
+			return // refuse to create
+		}
+
 		id := textId.Text()
 
 		if id == autoIdPrefix {
