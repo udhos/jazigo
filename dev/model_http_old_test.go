@@ -25,7 +25,7 @@ func TestOldHTTP1(t *testing.T) {
 	opt := conf.NewOptions()
 	opt.Set(&conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10})
 	RegisterModels(logger, tab)
-	CreateDevice(tab, logger, "http", "lab1", "localhost"+addr, "", "", "", "", false)
+	CreateDevice(tab, logger, "http", "lab1", "localhost"+addr, "", "", "", "", false, nil)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()

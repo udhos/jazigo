@@ -320,6 +320,10 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devId string) string {
 			return
 		}
 
+		c.LastChange.From = eventRemoteAddress(e)
+		c.LastChange.By = sessionUsername(e.Session())
+		c.LastChange.When = time.Now()
+
 		d.DevConfig = *c
 
 		updateErr := jaz.table.UpdateDevice(d)
@@ -328,7 +332,7 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devId string) string {
 			return
 		}
 
-		saveConfig(jaz)
+		saveConfig(jaz, c.LastChange)
 
 		propMsg.SetText("Device updated.")
 
@@ -608,7 +612,14 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event)) gwu.P
 				return
 			}
 		*/
-		if createErr := dev.CreateDevice(jaz.table, jaz.logger, textModel.Text(), id, textHost.Text(), textTransport.Text(), textUser.Text(), textPass.Text(), textEnable.Text(), false); createErr != nil {
+
+		change := conf.Change{
+			From: eventRemoteAddress(e),
+			By:   sessionUsername(e.Session()),
+			When: time.Now(),
+		}
+
+		if createErr := dev.CreateDevice(jaz.table, jaz.logger, textModel.Text(), id, textHost.Text(), textTransport.Text(), textUser.Text(), textPass.Text(), textEnable.Text(), false, &change); createErr != nil {
 			msg.SetText("Could not create device: " + createErr.Error())
 			e.MarkDirty(createDevPanel)
 			return
@@ -622,7 +633,7 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event)) gwu.P
 			}
 		*/
 
-		saveConfig(jaz)
+		saveConfig(jaz, change)
 
 		createAutoId() // prepare next auto id
 		e.MarkDirty(textId)
@@ -721,13 +732,15 @@ func buildLoginWin(jaz *app, s gwu.Session) {
 			newSession := e.NewSession()
 			newSession.SetAttr("username", user)
 
-			remoteAddr := "(remoteAddr?)"
-			if hrr, ok := e.(gwu.HasRequestResponse); ok {
-				req := hrr.Request()
-				remoteAddr = req.RemoteAddr
-			}
+			/*
+				remoteAddr := eventRemoteAddress(e)
+					if hrr, ok := e.(gwu.HasRequestResponse); ok {
+						req := hrr.Request()
+						remoteAddr = req.RemoteAddr
+					}
+			*/
 
-			buildPrivateWins(jaz, newSession, remoteAddr)
+			buildPrivateWins(jaz, newSession)
 
 			accountPanelUpdateEvent(jaz, user, e)
 
@@ -776,21 +789,20 @@ func buildPublicWins(jaz *app, s gwu.Session) {
 	jaz.apLogout = newAccPanel("")
 	accountPanelUpdate(jaz, "")
 
-	buildHomeWin(jaz, s)
 	buildLoginWin(jaz, s)
+	buildAdminWin(jaz, s)
+	buildHomeWin(jaz, s)
 }
 
-func buildPrivateWins(jaz *app, s gwu.Session, remoteAddr string) {
+func buildPrivateWins(jaz *app, s gwu.Session) {
 	if !s.Private() {
 		jaz.logger.Printf("buildPrivateWins: ignoring call within PUBLIC session")
 		return
 	}
 
-	user := sessionUsername(s)
-
-	buildLogoutWin(jaz, s, user, remoteAddr)
-	buildAdminWin(jaz, s, user, remoteAddr)
-	buildHomeWin(jaz, s) // this is needed for access to home win within PRIVATE session
+	buildLogoutWin(jaz, s)
+	buildAdminWin(jaz, s) // this is needed for access to admin win within PRIVATE session
+	buildHomeWin(jaz, s)  // this is needed for access to home win within PRIVATE session
 }
 
 func sessionUsername(s gwu.Session) string {
@@ -808,11 +820,19 @@ func sessionUsername(s gwu.Session) string {
 	return str
 }
 
+func eventRemoteAddress(e gwu.Event) string {
+	if hrr, ok := e.(gwu.HasRequestResponse); ok {
+		req := hrr.Request()
+		return req.RemoteAddr
+	}
+	return "(remoteAddress?)"
+}
+
 func userIsLogged(s gwu.Session) bool {
 	return sessionUsername(s) != ""
 }
 
-func buildLogoutWin(jaz *app, s gwu.Session, user, remoteAddr string) {
+func buildLogoutWin(jaz *app, s gwu.Session) {
 	winName := fmt.Sprintf("%s logout", appName)
 
 	win := newWin(jaz, "logout", winName)
@@ -828,7 +848,7 @@ func buildLogoutWin(jaz *app, s gwu.Session, user, remoteAddr string) {
 	logoutButton := gwu.NewButton("Logout")
 	logoutButton.AddEHandlerFunc(func(e gwu.Event) {
 		if !e.Session().Private() {
-			return // ignore button for public session
+			return // ignore button for public session if any
 		}
 
 		e.RemoveSess()
@@ -843,9 +863,10 @@ func buildLogoutWin(jaz *app, s gwu.Session, user, remoteAddr string) {
 	jaz.winLogout = win
 }
 
-func buildAdminWin(jaz *app, s gwu.Session, user, remoteAddr string) {
+func buildAdminWin(jaz *app, s gwu.Session) {
+
 	winName := fmt.Sprintf("%s admin", appName)
-	winHeader := fmt.Sprintf("%s - user=%s - address=%s", winName, user, remoteAddr)
+	//winHeader := fmt.Sprintf("%s - user=%s - address=%s", winName, user, remoteAddr)
 
 	win := newWin(jaz, "admin", winName)
 
@@ -854,21 +875,23 @@ func buildAdminWin(jaz *app, s gwu.Session, user, remoteAddr string) {
 
 	win.Add(jaz.apAdmin)
 
-	title := gwu.NewLabel(winHeader)
-	win.Add(title)
+	//title := gwu.NewLabel(winHeader)
+	//win.Add(title)
 
-	win.Add(gwu.NewLabel("click on this window to see updates"))
+	/*
+		win.Add(gwu.NewLabel("click on this window to see updates"))
 
-	win.AddEHandlerFunc(func(e gwu.Event) {
+		win.AddEHandlerFunc(func(e gwu.Event) {
 
-		if hrr, ok := e.(gwu.HasRequestResponse); ok {
-			req := hrr.Request()
-			remoteAddr = req.RemoteAddr
-		}
+			if hrr, ok := e.(gwu.HasRequestResponse); ok {
+				req := hrr.Request()
+				remoteAddr = req.RemoteAddr
+			}
 
-		win.Add(gwu.NewLabel(fmt.Sprintf("click - addr=%v", remoteAddr)))
-		e.MarkDirty(win)
-	}, gwu.ETypeClick)
+			win.Add(gwu.NewLabel(fmt.Sprintf("click - addr=%v", remoteAddr)))
+			e.MarkDirty(win)
+		}, gwu.ETypeClick)
+	*/
 
 	s.AddWin(win)
 

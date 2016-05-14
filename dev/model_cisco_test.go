@@ -52,7 +52,7 @@ func TestCiscoIOS1(t *testing.T) {
 	opt := conf.NewOptions()
 	opt.Set(&conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10})
 	RegisterModels(logger, tab)
-	CreateDevice(tab, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
+	CreateDevice(tab, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false, nil)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
@@ -87,7 +87,7 @@ func TestCiscoIOS2(t *testing.T) {
 	opt := conf.NewOptions()
 	opt.Set(&conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10})
 	RegisterModels(logger, tab)
-	CreateDevice(tab, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
+	CreateDevice(tab, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false, nil)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
@@ -121,7 +121,7 @@ func TestCiscoIOS3(t *testing.T) {
 	opt := conf.NewOptions()
 	opt.Set(&conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10})
 	RegisterModels(logger, tab)
-	CreateDevice(tab, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
+	CreateDevice(tab, logger, "cisco-ios", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false, nil)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
@@ -159,7 +159,7 @@ func TestCiscoIOS4(t *testing.T) {
 	opt.Set(&conf.AppConfig{MaxConcurrency: jobs, MaxConfigFiles: 10})
 	RegisterModels(logger, tab)
 	for i := 0; i < devices; i++ {
-		CreateDevice(tab, logger, "cisco-ios", fmt.Sprintf("lab%02d", i), "localhost"+addr, "telnet", "lab", "pass", "en", false)
+		CreateDevice(tab, logger, "cisco-ios", fmt.Sprintf("lab%02d", i), "localhost"+addr, "telnet", "lab", "pass", "en", false, nil)
 	}
 
 	repo := temp.TempRepo()

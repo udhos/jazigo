@@ -61,7 +61,7 @@ func RegisterModels(logger hasPrintf, t *DeviceTable) {
 	registerModelHTTP(logger, t)
 }
 
-func CreateDevice(tab *DeviceTable, logger hasPrintf, modelName, id, hostPort, transports, user, pass, enable string, debug bool) error {
+func CreateDevice(tab *DeviceTable, logger hasPrintf, modelName, id, hostPort, transports, user, pass, enable string, debug bool, change *conf.Change) error {
 	logger.Printf("CreateDevice: %s %s %s %s", modelName, id, hostPort, transports)
 
 	mod, getErr := tab.GetModel(modelName)
@@ -72,6 +72,10 @@ func CreateDevice(tab *DeviceTable, logger hasPrintf, modelName, id, hostPort, t
 	}
 
 	d := NewDevice(logger, mod, id, hostPort, transports, user, pass, enable, debug)
+
+	if change != nil {
+		d.LastChange = *change
+	}
 
 	if newDevErr := tab.SetDevice(d); newDevErr != nil {
 		err := fmt.Errorf("CreateDevice: could not add device '%s': %v", id, newDevErr)

@@ -8,11 +8,18 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type Change struct {
+	When time.Time
+	By   string
+	From string
+}
+
 type AppConfig struct {
 	MaxConfigFiles int
 	Holdtime       time.Duration
 	ScanInterval   time.Duration
 	MaxConcurrency int
+	LastChange     Change
 }
 
 type DevAttributes struct {
@@ -52,6 +59,7 @@ type DevConfig struct {
 	LoginPassword  string
 	EnablePassword string
 	Comment        string // user-defined field
+	LastChange     Change
 	Attr           DevAttributes
 }
 

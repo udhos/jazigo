@@ -371,7 +371,7 @@ func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
 			jaz.table.DeleteDevice(id)
 		}
 
-		saveConfig(jaz)
+		saveConfig(jaz, conf.Change{})
 	}
 
 	if purge {
@@ -404,7 +404,7 @@ func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
 			jaz.table.PurgeDevice(id)
 		}
 
-		saveConfig(jaz)
+		saveConfig(jaz, conf.Change{})
 	}
 
 	if imp {
@@ -456,10 +456,10 @@ func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
 				value++
 			}
 
-			dev.CreateDevice(jaz.table, jaz.logger, f[0], id, f[2], f[3], f[4], f[5], enable, debug)
+			dev.CreateDevice(jaz.table, jaz.logger, f[0], id, f[2], f[3], f[4], f[5], enable, debug, nil)
 		}
 
-		saveConfig(jaz)
+		saveConfig(jaz, conf.Change{})
 	}
 
 	if list {
@@ -539,12 +539,13 @@ func exclusiveUnlock(jaz *app) {
 	}
 }
 
-func saveConfig(jaz *app) {
+func saveConfig(jaz *app, change conf.Change) {
 
 	devices := jaz.table.ListDevices()
 
 	var cfg conf.Config
 	cfg.Options = *jaz.options.Get() // clone
+	cfg.Options.LastChange = change
 	cfg.Devices = make([]conf.DevConfig, len(devices))
 
 	// copy devices from device table

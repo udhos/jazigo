@@ -23,7 +23,7 @@ func TestOldCiscoIOSXR1(t *testing.T) {
 	tab := NewDeviceTable()
 	opt := &conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10}
 	RegisterModels(logger, tab)
-	CreateDevice(tab, logger, "cisco-iosxr", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
+	CreateDevice(tab, logger, "cisco-iosxr", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false, nil)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
@@ -54,7 +54,7 @@ func TestOldCiscoIOSXR2(t *testing.T) {
 	tab := NewDeviceTable()
 	opt := &conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10}
 	RegisterModels(logger, tab)
-	CreateDevice(tab, logger, "cisco-iosxr", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
+	CreateDevice(tab, logger, "cisco-iosxr", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false, nil)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
@@ -84,7 +84,7 @@ func TestOldCiscoIOSXR3(t *testing.T) {
 	tab := NewDeviceTable()
 	opt := &conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10}
 	RegisterModels(logger, tab)
-	CreateDevice(tab, logger, "cisco-iosxr", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false)
+	CreateDevice(tab, logger, "cisco-iosxr", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false, nil)
 
 	repo := temp.TempRepo()
 	defer temp.CleanupTempRepo()
