@@ -17,14 +17,15 @@ type FilterFunc func(hasPrintf, bool, *FilterTable, []byte, int) []byte
 func NewFilterTable(logger hasPrintf) *FilterTable {
 	t := &FilterTable{
 		table: map[string]FilterFunc{},
-		re1:   reCompile(`^\w{3}\s\w{3}\s\d{1,2}\s`), // Fri Feb 11 15:45:43.545 BRST
-		re2:   reCompile(`^Building`),                // Building configuration...
-		re3:   reCompile(`!! Last`),                  // !! Last configuration change at Wed Oct 26 16:40:46 2016 by user
+		re1:   regexp.MustCompile(`^\w{3}\s\w{3}\s\d{1,2}\s`), // Thu Feb 11 15:45:43.545 BRST
+		re2:   regexp.MustCompile(`^Building`),                // Building configuration...
+		re3:   regexp.MustCompile(`!! Last`),                  // !! Last configuration change at Tue Jan 26 16:40:46 2016 by user
 	}
 	registerFilters(logger, t.table)
 	return t
 }
 
+/*
 func reCompile(s string) *regexp.Regexp {
 	re, err := regexp.Compile(s)
 	if err != nil {
@@ -32,6 +33,7 @@ func reCompile(s string) *regexp.Regexp {
 	}
 	return re
 }
+*/
 
 func register(logger hasPrintf, table map[string]FilterFunc, name string, f FilterFunc) {
 	logger.Printf("line filter registered: '%s'", name)
@@ -59,10 +61,10 @@ func filterCountLines(logger hasPrintf, debug bool, table *FilterTable, line []b
 }
 
 /*
-Fri Feb 11 15:45:43.545 BRST
+Thu Feb 11 15:45:43.545 BRST
 Building configuration...
 !! IOS XR Configuration 5.1.3
-!! Last configuration change at Wed Oct 26 16:40:46 2016 by user
+!! Last configuration change at Tue Jan 26 16:40:46 2016 by user
 */
 func filterIOSXR(logger hasPrintf, debug bool, table *FilterTable, line []byte, lineNum int) []byte {
 
