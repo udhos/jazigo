@@ -46,7 +46,6 @@ func (l *logfile) open(path string) (*os.File, error) {
 			output = nil
 		}
 	}
-	//l.logger.Printf("logfile.open: %s (%v,%v)", path, output, openErr)
 	return output, openErr
 }
 
@@ -59,7 +58,9 @@ func touchFunc(w store.HasWrite) error {
 func (l *logfile) rotate() {
 	if l.output != nil {
 		l.output.Close()
+		l.output = nil
 	}
+
 	outputPath, newErr := store.SaveNewConfig(l.logPathPrefix, l.maxFiles, l.logger, touchFunc)
 	if newErr != nil {
 		if l.output != nil {
@@ -94,9 +95,5 @@ func (l *logfile) Write(b []byte) (int, error) {
 		}
 	}
 
-	n, wrErr := l.output.Write(b)
-
-	//l.logger.Printf("logfile.Write: output=[%v] n=%d err=[%v]", l.output, n, wrErr)
-
-	return n, wrErr
+	return l.output.Write(b)
 }
