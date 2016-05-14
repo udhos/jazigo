@@ -110,6 +110,9 @@ func main() {
 	var devicePurge bool
 	var deviceList bool
 	var disableStdoutLog bool
+	var logMaxFiles int
+	var logMaxSize int64
+	var logCheckInterval time.Duration
 
 	defaultHome := defaultHomeDir()
 	defaultConfigPrefix := filepath.Join(defaultHome, "etc", "jazigo.conf.")
@@ -127,9 +130,24 @@ func main() {
 	flag.BoolVar(&deviceList, "deviceList", false, "list devices from stdout")
 	flag.BoolVar(&jaz.oldScheduler, "oldScheduler", false, "use old scheduler")
 	flag.BoolVar(&disableStdoutLog, "disableStdoutLog", false, "disable logging to stdout")
+	flag.IntVar(&logMaxFiles, "logMaxFiles", 10, "number of log files to keep")
+	flag.Int64Var(&logMaxSize, "logMaxSize", 1000000, "size limit for log file")
+	flag.DurationVar(&logCheckInterval, "logCheckInterval", time.Hour, "interval for checking log file size")
 	flag.Parse()
 
+	fileLogger := NewLogfile(jaz.logPathPrefix, logMaxFiles, logMaxSize, logCheckInterval)
+
+	// jaz.logger currently is stdout
+	if disableStdoutLog {
+		jaz.logger = log.New(fileLogger, "", log.LstdFlags)
+		// logging to file only
+	} else {
+		jaz.logger = log.New(io.MultiWriter(os.Stdout, fileLogger), "", log.LstdFlags)
+		// logging both to stdout and file
+	}
+
 	jaz.logf("%s %s starting", appName, appVersion)
+
 	jaz.filterTable = dev.NewFilterTable(jaz.logger)
 	dev.RegisterModels(jaz.logger, jaz.table)
 
