@@ -55,15 +55,17 @@ Example:
     export JAZIGO_HOME=/var/jazigo
     mkdir -p $JAZIGO_HOME/etc $JAZIGO_HOME/repo $JAZIGO_HOME/log
 
+Hint: See command line options to fine tune filesystem locations.
+
 6\. Run jazigo once (see -runOnce option)
 
-`$GOPATH/bin/jazigo -configPathPrefix $APP_CONF -repositoryPath $APP_REPO -runOnce`
+`$GOPATH/bin/jazigo -runOnce`
 
 Watch messages logged to standard output for errors.
 
 7\. Run jazigo forever
 
-`$GOPATH/bin/jazigo -configPathPrefix $APP_CONF -repositoryPath $APP_REPO`
+`$GOPATH/bin/jazigo -disableStdoutLog`
 
 8\. Open the web interface
 

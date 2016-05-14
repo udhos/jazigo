@@ -131,7 +131,7 @@ func main() {
 	flag.BoolVar(&jaz.oldScheduler, "oldScheduler", false, "use old scheduler")
 	flag.BoolVar(&disableStdoutLog, "disableStdoutLog", false, "disable logging to stdout")
 	flag.IntVar(&logMaxFiles, "logMaxFiles", 10, "number of log files to keep")
-	flag.Int64Var(&logMaxSize, "logMaxSize", 1000000, "size limit for log file")
+	flag.Int64Var(&logMaxSize, "logMaxSize", 10000000, "size limit for log file")
 	flag.DurationVar(&logCheckInterval, "logCheckInterval", time.Hour, "interval for checking log file size")
 	flag.Parse()
 
