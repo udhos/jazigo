@@ -135,6 +135,12 @@ func main() {
 	flag.DurationVar(&logCheckInterval, "logCheckInterval", time.Hour, "interval for checking log file size")
 	flag.Parse()
 
+	if lockErr := exclusiveLock(jaz); lockErr != nil {
+		jaz.logf("main: could not get exclusive lock: %v", lockErr)
+		panic("main: refusing to run without exclusive lock")
+	}
+	defer exclusiveUnlock(jaz)
+
 	fileLogger := NewLogfile(jaz.logPathPrefix, logMaxFiles, logMaxSize, logCheckInterval)
 
 	// jaz.logger currently is stdout
@@ -155,12 +161,6 @@ func main() {
 
 	jaz.logf("config path prefix: %s", jaz.configPathPrefix)
 	jaz.logf("repository path: %s", jaz.repositoryPath)
-
-	if lockErr := exclusiveLock(jaz); lockErr != nil {
-		jaz.logf("main: could not get exclusive lock: %v", lockErr)
-		panic("main: refusing to run without exclusive lock")
-	}
-	defer exclusiveUnlock(jaz)
 
 	// load config
 	loadConfig(jaz)
