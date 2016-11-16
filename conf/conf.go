@@ -106,10 +106,10 @@ type Config struct {
 func New() *Config {
 	return &Config{
 		Options: AppConfig{
-			Holdtime:       300 * time.Second, // FIXME: 12h (do not collect/save new backup before this timeout)
-			ScanInterval:   60 * time.Second,  // FIXME: 30m (interval between full table scan)
-			MaxConcurrency: 20,
-			MaxConfigFiles: 120,
+			Holdtime:       12 * time.Hour,   // do not retry a successful device backup before this holdtime
+			ScanInterval:   10 * time.Minute, // interval for scanning device table
+			MaxConcurrency: 20,               // limit for concurrent backup jobs
+			MaxConfigFiles: 120,              // limit for per-device saved files
 		},
 		Devices: []DevConfig{},
 	}

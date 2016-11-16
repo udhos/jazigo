@@ -70,3 +70,21 @@ Watch messages logged to standard output for errors.
 8\. Open the web interface
 
 Point web browser at: [http://localhost:8080/jazigo](http://localhost:8080/jazigo)
+
+Global Settings
+===============
+
+You might want to adjust global settings. See the Jazigo *admin* window under [http://localhost:8080/jazigo/admin](http://localhost:8080/jazigo/admin).
+
+    maxconfigfiles: 120
+    holdtime: 12h0m0s
+    scaninterval: 10m0s
+    maxconcurrency: 20
+
+**maxconfigfiles**: This option limits the amount of files stored per device. When this limit is reached, older files are discarded.
+
+**holdtime**: When a successful backup is saved for a device, the software will only contact that specific device again *after* expiration of the 'holdtime' timer.
+
+**scaninterval**: The interval between two device table scans. If the device table is fully processed before the 'scaninterval' timer, the software will wait idly for the next scan cycle. If the full table scan takes longer than 'scaninterval', the next cycle will start immediately.
+
+**maxconcurrency**: This option limits the number of concurrent backup jobs. You should raise this value if you need faster scanning of all devices. Keep in mind that if your devices use a centralized authentication system (for example, Cisco Secure ACS), the authentication server might become a bottleneck for high concurrency.
