@@ -22,6 +22,14 @@ type AppConfig struct {
 	LastChange     Change
 }
 
+func (a *AppConfig) Dump() ([]byte, error) {
+	b, err := yaml.Marshal(a)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
 type DevAttributes struct {
 	NeedLoginChat               bool     // need login chat
 	NeedEnabledMode             bool     // need enabled mode

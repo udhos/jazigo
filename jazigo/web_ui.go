@@ -290,7 +290,7 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devId string) string {
 	refresh := func(e gwu.Event) {
 		propButtonSave.SetEnabled(userIsLogged(e.Session()))
 		fileList(e)  // build file list
-		resetProp(e) // // build file properties
+		resetProp(e) // build file properties
 		e.MarkDirty(win)
 	}
 
@@ -419,15 +419,6 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevW
 
 		devWin := deviceWinName(d.Id)
 		labId := gwu.NewLink(d.Id, "/"+appName+"/"+devWin)
-
-		/*
-			if killExistingDevWins {
-				win := s.WinByName(devWin)
-				if win != nil {
-					s.RemoveWin(win)
-				}
-			}
-		*/
 
 		devId := d.Id // get dev id for closure below
 		labId.AddEHandlerFunc(func(e gwu.Event) {
@@ -875,7 +866,6 @@ func buildLogoutWin(jaz *app, s gwu.Session) {
 func buildAdminWin(jaz *app, s gwu.Session) {
 
 	winName := fmt.Sprintf("%s admin", appName)
-	//winHeader := fmt.Sprintf("%s - user=%s - address=%s", winName, user, remoteAddr)
 
 	win := newWin(jaz, "admin", winName)
 
@@ -884,23 +874,59 @@ func buildAdminWin(jaz *app, s gwu.Session) {
 
 	win.Add(jaz.apAdmin)
 
-	//title := gwu.NewLabel(winHeader)
-	//win.Add(title)
+	settingsPanel := gwu.NewPanel()
+	settingsButtonRefresh := gwu.NewButton("Refresh")
+	settingsButtonSave := gwu.NewButton("Save")
+	settingsMsg := gwu.NewLabel("No error")
+	settingsText := gwu.NewTextBox("Text Box")
+	settingsText.SetRows(20)
+	settingsText.SetCols(50)
+	settingsPanel.Add(gwu.NewLabel("Global Settings"))
+	settingsPanel.Add(settingsButtonRefresh)
+	settingsPanel.Add(settingsButtonSave)
+	settingsPanel.Add(settingsMsg)
+	settingsPanel.Add(settingsText)
 
-	/*
-		win.Add(gwu.NewLabel("click on this window to see updates"))
+	settingsButtonSave.SetEnabled(userIsLogged(s))
 
-		win.AddEHandlerFunc(func(e gwu.Event) {
+	load := func() {
+		opt := jaz.options.Get()
+		b, dumpErr := opt.Dump()
+		if dumpErr != nil {
+			settingsText.SetText(fmt.Sprintf("Could not get settings: %v", dumpErr))
+			return
+		}
 
-			if hrr, ok := e.(gwu.HasRequestResponse); ok {
-				req := hrr.Request()
-				remoteAddr = req.RemoteAddr
-			}
+		settingsText.SetText(string(b))
+	}
 
-			win.Add(gwu.NewLabel(fmt.Sprintf("click - addr=%v", remoteAddr)))
-			e.MarkDirty(win)
-		}, gwu.ETypeClick)
-	*/
+	load() // first run
+
+	refresh := func(e gwu.Event) {
+		settingsButtonSave.SetEnabled(userIsLogged(e.Session()))
+
+		defer e.MarkDirty(settingsPanel)
+
+		load()
+	}
+
+	settingsButtonRefresh.AddEHandlerFunc(refresh, gwu.ETypeClick)
+
+	settingsButtonSave.AddEHandlerFunc(func(e gwu.Event) {
+
+		if !userIsLogged(e.Session()) {
+			return // refuse to save
+		}
+
+		defer e.MarkDirty(settingsPanel)
+
+		settingsMsg.SetText("Saved.")
+
+	}, gwu.ETypeClick)
+
+	win.Add(settingsPanel)
+
+	win.AddEHandlerFunc(refresh, gwu.ETypeWinLoad)
 
 	s.AddWin(win)
 
