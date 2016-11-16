@@ -78,12 +78,6 @@ func newApp() *app {
 	return app
 }
 
-func defaultStaticDir() string {
-	gopath := os.Getenv("GOPATH")
-	pkgPath := filepath.Join("src", "github.com", "udhos", "jazigo") // from package github.com/udhos/jazigo
-	return filepath.Join(gopath, pkgPath, "www")
-}
-
 func defaultHomeDir() string {
 	home := os.Getenv("JAZIGO_HOME")
 	if home == "" {
@@ -118,11 +112,12 @@ func main() {
 	defaultConfigPrefix := filepath.Join(defaultHome, "etc", "jazigo.conf.")
 	defaultRepo := filepath.Join(defaultHome, "repo")
 	defaultLogPrefix := filepath.Join(defaultHome, "log", "jazigo.log.")
+	defaultStaticDir := filepath.Join(defaultHome, "www")
 
 	flag.StringVar(&jaz.configPathPrefix, "configPathPrefix", defaultConfigPrefix, "configuration path prefix")
 	flag.StringVar(&jaz.repositoryPath, "repositoryPath", defaultRepo, "repository path")
 	flag.StringVar(&jaz.logPathPrefix, "logPathPrefix", defaultLogPrefix, "log path prefix")
-	flag.StringVar(&staticDir, "wwwStaticPath", defaultStaticDir(), "directory for static www content")
+	flag.StringVar(&staticDir, "wwwStaticPath", defaultStaticDir, "directory for static www content")
 	flag.BoolVar(&runOnce, "runOnce", false, "exit after scanning all devices once")
 	flag.BoolVar(&deviceDelete, "deviceDelete", false, "delete devices specified in stdin")
 	flag.BoolVar(&devicePurge, "devicePurge", false, "purge devices specified in stdin")
