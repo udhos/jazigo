@@ -33,12 +33,12 @@ func NewLogfile(prefix string, maxFiles int, maxSize int64, checkInterval time.D
 		return l
 	}
 
-	l.output, _ = l.open(outputPath)
+	l.output, _ = openAppend(outputPath)
 
 	return l
 }
 
-func (l *logfile) open(path string) (*os.File, error) {
+func openAppend(path string) (*os.File, error) {
 	output, openErr := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0600)
 	if openErr != nil {
 		if output != nil {
@@ -67,11 +67,15 @@ func (l *logfile) rotate() {
 			l.output.Close()
 			l.output = nil
 		}
-		l.logger.Printf("logfile.rotate: could not open log: %v", newErr)
+		l.logger.Printf("logfile.rotate: could not find log path: %v", newErr)
 		return
 	}
 
-	l.output, _ = l.open(outputPath)
+	var openErr error
+	l.output, openErr = openAppend(outputPath)
+	if openErr != nil {
+		l.logger.Printf("logfile.rotate: could not open log: %v", openErr)
+	}
 }
 
 func (l *logfile) Write(b []byte) (int, error) {
@@ -79,7 +83,9 @@ func (l *logfile) Write(b []byte) (int, error) {
 	if l.output == nil {
 		l.rotate()
 		if l.output == nil {
-			return 0, fmt.Errorf("log: could not create output file")
+			msg := "log: missing output - could not create output file"
+			l.logger.Printf(msg)
+			return 0, fmt.Errorf(msg)
 		}
 	}
 
@@ -91,6 +97,11 @@ func (l *logfile) Write(b []byte) (int, error) {
 			if info.Size() > l.maxFileSize {
 				l.logger.Printf("log: max file size reached")
 				l.rotate()
+				if l.output == nil {
+					msg := "log: rotate failure - could not create output file"
+					l.logger.Printf(msg)
+					return 0, fmt.Errorf(msg)
+				}
 			}
 		}
 	}
