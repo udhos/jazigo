@@ -167,20 +167,6 @@ func main() {
 	jaz.logf("maximum config files: %d", opt.MaxConfigFiles)
 	jaz.logf("maximum concurrency: %d", opt.MaxConcurrency)
 
-	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en")
-	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-ios", "lab1", "localhost:2001", "telnet", "lab", "pass", "en") // ugh
-	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab2", "localhost:2002", "ssh", "lab", "pass", "en")
-	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab3", "localhost:2003", "telnet,ssh", "lab", "pass", "en")
-	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab4", "localhost:2004", "ssh,telnet", "lab", "pass", "en")
-	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab5", "localhost", "telnet", "lab", "pass", "en")
-	//dev.CreateDevice(jaz, jaz.logger, "cisco-ios", "lab6", "localhost", "ssh", "rat", "lab", "en")
-	//dev.CreateDevice(jaz.table, jaz.logger, "http", "lab7", "localhost:2009", "telnet", "", "", "")
-	//dev.CreateDevice(jaz.table, jaz.logger, "linux", "lab8", "localhost", "ssh", "rat", "lab", "lab", false)
-	//dev.CreateDevice(jaz.table, jaz.logger, "junos", "lab9", "ex4200lab", "ssh", "test", "lab000", "lab", false)
-	//dev.CreateDevice(jaz.table, jaz.logger, "junos", "lab10", "ex4200lab", "telnet", "test", "lab000", "lab", false)
-	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-iosxr", "lab11", "192.168.56.1:2011", "telnet", "user", "pass", "pass", false)
-	//dev.CreateDevice(jaz.table, jaz.logger, "cisco-iosxr", "lab12", "192.168.56.1:2012", "ssh", "user", "pass", "pass", true)
-
 	if exit := manageDeviceList(jaz, deviceImport, deviceDelete, devicePurge, deviceList); exit != nil {
 		jaz.logf("main: %v", exit)
 		return
