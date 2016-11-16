@@ -20,6 +20,16 @@ type AppConfig struct {
 	ScanInterval   time.Duration
 	MaxConcurrency int
 	LastChange     Change
+	Comment        string // free user-defined field
+}
+
+func NewAppConfigFromString(str string) (*AppConfig, error) {
+	b := []byte(str)
+	c := &AppConfig{}
+	if err := yaml.Unmarshal(b, c); err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 func (a *AppConfig) Dump() ([]byte, error) {
@@ -66,7 +76,7 @@ type DevConfig struct {
 	LoginUser      string
 	LoginPassword  string
 	EnablePassword string
-	Comment        string // user-defined field
+	Comment        string // free user-defined field
 	LastChange     Change
 	Attr           DevAttributes
 }

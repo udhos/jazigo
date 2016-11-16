@@ -161,12 +161,12 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devId string) string {
 
 	showPanel := gwu.NewPanel()
 
-	panel.Add(gwu.NewLabel("Files"), filesPanel)
-	panel.Add(gwu.NewLabel("Properties"), propPanel)
-	panel.Add(gwu.NewLabel("View Config"), showPanel)
-	panel.Add(gwu.NewLabel("Error Log"), gwu.NewLabel("Error Log"))
+	panel.Add(gwu.NewLabel("Files"), filesPanel)                    // tab 0
+	panel.Add(gwu.NewLabel("View Config"), showPanel)               // tab 1
+	panel.Add(gwu.NewLabel("Properties"), propPanel)                // tab 2
+	panel.Add(gwu.NewLabel("Error Log"), gwu.NewLabel("Error Log")) // tab 3
 
-	const TAB_SHOW = 2 // index
+	const TAB_SHOW = 1 // index
 
 	devPrefix := dev.DeviceFullPrefix(jaz.repositoryPath, devId)
 	showFile, lastErr := store.FindLastConfig(devPrefix, jaz.logger)
@@ -178,7 +178,7 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devId string) string {
 
 		showPanel.Clear()
 
-		showPanel.Add(gwu.NewLabel("Config: " + show))
+		showPanel.Add(gwu.NewLabel("File: " + show))
 
 		input, openErr := os.Open(show)
 		if openErr != nil {
@@ -878,18 +878,29 @@ func buildAdminWin(jaz *app, s gwu.Session) {
 	settingsButtonRefresh := gwu.NewButton("Refresh")
 	settingsButtonSave := gwu.NewButton("Save")
 	settingsMsg := gwu.NewLabel("No error")
+	settingsFile := gwu.NewLabel("Save file")
 	settingsText := gwu.NewTextBox("Text Box")
 	settingsText.SetRows(20)
-	settingsText.SetCols(50)
+	settingsText.SetCols(70)
 	settingsPanel.Add(gwu.NewLabel("Global Settings"))
 	settingsPanel.Add(settingsButtonRefresh)
 	settingsPanel.Add(settingsButtonSave)
 	settingsPanel.Add(settingsMsg)
+	settingsPanel.Add(settingsFile)
 	settingsPanel.Add(settingsText)
 
 	settingsButtonSave.SetEnabled(userIsLogged(s))
 
 	load := func() {
+
+		showFile, lastErr := store.FindLastConfig(jaz.configPathPrefix, jaz.logger)
+		if lastErr != nil {
+			jaz.logger.Printf("buildAdminWin: could find last config: %v", lastErr)
+			showFile = fmt.Sprintf("Could not find last config file: %v", lastErr)
+		}
+
+		settingsFile.SetText(fmt.Sprintf("File: %s", showFile))
+
 		opt := jaz.options.Get()
 		b, dumpErr := opt.Dump()
 		if dumpErr != nil {
@@ -919,6 +930,22 @@ func buildAdminWin(jaz *app, s gwu.Session) {
 		}
 
 		defer e.MarkDirty(settingsPanel)
+
+		str := settingsText.Text()
+
+		opt, parseErr := conf.NewAppConfigFromString(str)
+		if parseErr != nil {
+			settingsMsg.SetText(fmt.Sprintf("Parsing error: %v", parseErr))
+		}
+
+		opt.LastChange.From = eventRemoteAddress(e)
+		opt.LastChange.By = sessionUsername(e.Session())
+		opt.LastChange.When = time.Now()
+		jaz.options.Set(opt)
+
+		saveConfig(jaz, opt.LastChange)
+
+		refresh(e)
 
 		settingsMsg.SetText("Saved.")
 
