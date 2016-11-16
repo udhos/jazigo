@@ -370,13 +370,32 @@ READ_LOOP:
 		lastRead := buf[:n]
 
 		if d.Debug {
-			d.logf("debug recv1: [%q]", lastRead)
+			d.logf("debug recv1(%d): [%q]", len(lastRead), lastRead)
+		}
+
+		ignoreBackspace := false
+		if !ignoreBackspace {
+			for i := 0; i < len(lastRead); i++ {
+				b := lastRead[i]
+				if b == BS {
+					if i > 0 {
+						// i-1: killed char
+						// i: BS
+						lastRead = append(lastRead[:i-1], lastRead[i+1:]...)
+						i -= 2
+					}
+				}
+			}
+
+			if d.Debug {
+				d.logf("debug recv2(%d): [%q]", len(lastRead), lastRead)
+			}
 		}
 
 		if !d.Attr.KeepControlChars {
 			lastRead = removeControlChars(logger, lastRead, d.Debug)
 			if d.Debug {
-				d.logf("debug recv2: [%q]", lastRead)
+				d.logf("debug recv3(%d): [%q]", len(lastRead), lastRead)
 			}
 		}
 
@@ -392,6 +411,9 @@ READ_LOOP:
 		if expList != nil {
 			for i, exp := range expList {
 				if exp.Match(lastLine) {
+					if d.Debug {
+						d.logf("debug matched: %d/%d [%q]", i, len(expList), lastLine)
+					}
 					return i, matchBuf, nil // pattern found
 				}
 			}
