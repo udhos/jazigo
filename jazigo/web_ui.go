@@ -424,7 +424,13 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevW
 
 		devId := d.Id // get dev id for closure below
 		labId.AddEHandlerFunc(func(e gwu.Event) {
-			buildDeviceWindow(jaz, e, devId)
+			winName := buildDeviceWindow(jaz, e, devId)
+			// This is a click event for a link component.
+			// The reload is automatic.
+			// Explicit reload should not be required.
+			// However sometimes the link is followed before the window is ready.
+			// Then we force reload below, after creation of the window.
+			e.ReloadWin(winName)
 		}, gwu.ETypeClick)
 
 		labHost := gwu.NewLabel(d.HostPort)
