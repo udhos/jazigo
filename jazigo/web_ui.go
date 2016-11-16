@@ -334,6 +334,8 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devId string) string {
 
 		saveConfig(jaz, c.LastChange)
 
+		resetProp(e)
+
 		propMsg.SetText("Device updated.")
 
 	}, gwu.ETypeClick)
