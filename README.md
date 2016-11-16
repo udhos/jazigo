@@ -22,6 +22,12 @@ Features
 - Very easy to add support for new platforms.
 - Configured with [YAML](http://yaml.org).
 - Backup files can be accessed from web UI.
+- Support for SSH and TELNET.
+
+Requirements
+============
+
+- You need a [system with the Go language](https://golang.org/dl/) in order to build the application. There is no special requirement for running it.
 
 Quick Start
 ===========
