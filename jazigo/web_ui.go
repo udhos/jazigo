@@ -2,10 +2,6 @@ package main
 
 import (
 	"fmt"
-	//"log"
-	//"math/rand"
-	//"os"
-	//"strconv"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -608,15 +604,6 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 			id = jaz.table.FindDeviceFreeId(autoIdPrefix)
 		}
 
-		/*
-			_, err1 := jaz.table.GetDevice(id)
-			if err1 == nil {
-				msg.SetText("Device ID already exists: " + id)
-				e.MarkDirty(createDevPanel)
-				return
-			}
-		*/
-
 		change := conf.Change{
 			From: eventRemoteAddress(e),
 			By:   sessionUsername(e.Session()),
@@ -628,14 +615,6 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 			e.MarkDirty(createDevPanel)
 			return
 		}
-		/*
-			_, err2 := jaz.table.GetDevice(id)
-			if err2 != nil {
-				msg.SetText("Could not create device with ID: " + id)
-				e.MarkDirty(createDevPanel)
-				return
-			}
-		*/
 
 		saveConfig(jaz, change)
 
@@ -942,12 +921,14 @@ func buildAdminWin(jaz *app, s gwu.Session) {
 			settingsMsg.SetText(fmt.Sprintf("Parsing error: %v", parseErr))
 		}
 
+		// overwrite change record
 		opt.LastChange.From = eventRemoteAddress(e)
 		opt.LastChange.By = sessionUsername(e.Session())
 		opt.LastChange.When = time.Now()
-		jaz.options.Set(opt)
 
-		saveConfig(jaz, opt.LastChange)
+		jaz.options.Set(opt) // set all options from text field, including change record
+
+		saveConfig(jaz, opt.LastChange) // will also update in-memory change record again
 
 		refresh(e)
 

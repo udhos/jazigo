@@ -482,10 +482,11 @@ func saveConfig(jaz *app, change conf.Change) {
 
 	var cfg conf.Config
 	cfg.Options = *jaz.options.Get() // clone
-	cfg.Options.LastChange = change
-	cfg.Devices = make([]conf.DevConfig, len(devices))
+	cfg.Options.LastChange = change  // record change
+	jaz.options.Set(&cfg.Options)    // update
 
 	// copy devices from device table
+	cfg.Devices = make([]conf.DevConfig, len(devices))
 	for i, d := range devices {
 		cfg.Devices[i] = d.DevConfig
 	}
