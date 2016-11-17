@@ -2,15 +2,9 @@ package dev
 
 import (
 	"fmt"
-	//"io"
-	"math/rand"
-	//"os"
-	//"path/filepath"
-	//"regexp"
 	"time"
 
 	"github.com/udhos/jazigo/conf"
-	//"github.com/udhos/jazigo/store"
 )
 
 // Spawner: launches new goroutines to fetch requests received on channel reqChan
@@ -121,100 +115,6 @@ func Scan(tab DeviceUpdater, devices []*Device, logger hasPrintf, opt *conf.AppC
 	average := elapsed / time.Duration(deviceCount)
 
 	logger.Printf("Scan: finished elapsed=%s devices=%d success=%d skipped=%d deleted=%d average=%s min=%s max=%s", elapsed, deviceCount, success, skipped, deleted, average, elapMin, elapMax)
-
-	return success, deviceCount - success, skipped + deleted
-}
-
-// ScanDevices: old scheduler
-func ScanDevices(tab DeviceUpdater, devices []*Device, logger hasPrintf, delayMin, delayMax time.Duration, repository string, opt *conf.AppConfig, ft *FilterTable) (int, int, int) {
-
-	deviceCount := len(devices)
-	maxConcurrency := opt.MaxConcurrency
-
-	logger.Printf("ScanDevices: starting devices=%d maxConcurrency=%d", deviceCount, maxConcurrency)
-	if deviceCount < 1 {
-		logger.Printf("ScanDevices: aborting")
-		return 0, 0, 0
-	}
-
-	begin := time.Now()
-	random := rand.New(rand.NewSource(begin.UnixNano()))
-
-	resultCh := make(chan FetchResult)
-
-	logger.Printf("ScanDevices: per-device delay before starting: %d-%d ms", delayMin/time.Millisecond, delayMax/time.Millisecond)
-
-	wait := 0
-	nextDevice := 0
-	elapMax := 0 * time.Second
-	elapMin := 24 * time.Hour
-	success := 0
-	skipped := 0
-	deleted := 0
-
-	for nextDevice < deviceCount || wait > 0 {
-
-		// launch additional devices
-		for ; nextDevice < deviceCount; nextDevice++ {
-			// there are devices to process
-
-			if maxConcurrency > 0 && wait >= maxConcurrency {
-				break // max concurrent limit reached
-			}
-
-			d := devices[nextDevice]
-
-			if d.Deleted {
-				deleted++
-				continue
-			}
-
-			if h := d.Holdtime(time.Now(), opt.Holdtime); h > 0 {
-				// do not handle device yet (holdtime not expired)
-				logger.Printf("device: %s skipping due to holdtime=%s", d.Id, h)
-				skipped++
-				continue
-			}
-
-			// launch one additional per-device goroutine
-
-			r := random.Float64()
-			var delay time.Duration
-			if delayMax > 0 {
-				delay = time.Duration(round(r*float64(delayMax-delayMin))) + delayMin
-			}
-			go d.Fetch(tab, logger, resultCh, delay, repository, opt, ft) // per-device goroutine
-			wait++
-		}
-
-		if wait < 1 {
-			continue
-		}
-
-		// wait for one device to finish
-		r := <-resultCh
-		wait--
-		end := time.Now()
-		elap := end.Sub(r.Begin)
-		logger.Printf("device result: %s %s %s %s msg=[%s] code=%d wait=%d remain=%d skipped=%d elap=%s", r.Model, r.DevId, r.DevHostPort, r.Transport, r.Msg, r.Code, wait, deviceCount-nextDevice, skipped, elap)
-
-		good := r.Code == FETCH_ERR_NONE
-
-		if good {
-			success++
-		}
-		if elap < elapMin {
-			elapMin = elap
-		}
-		if elap > elapMax {
-			elapMax = elap
-		}
-	}
-
-	elapsed := time.Since(begin)
-	average := elapsed / time.Duration(deviceCount)
-
-	logger.Printf("ScanDevices: finished elapsed=%s devices=%d success=%d skipped=%d deleted=%d average=%s min=%s max=%s", elapsed, deviceCount, success, skipped, deleted, average, elapMin, elapMax)
 
 	return success, deviceCount - success, skipped + deleted
 }

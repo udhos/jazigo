@@ -198,60 +198,16 @@ func main() {
 
 	buildPublicWins(jaz, server)
 
-	if jaz.oldScheduler {
+	go dev.Spawner(jaz.table, jaz.logger, jaz.requestChan, jaz.repositoryPath, jaz.options, jaz.filterTable)
 
-		if runOnce {
-			dev.ScanDevices(jaz.table, jaz.table.ListDevices(), jaz.logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, jaz.options.Get(), jaz.filterTable)
-			jaz.logf("runOnce: exiting after single scan")
-			return
-		}
-
-		go func() {
-			for {
-				begin := time.Now()
-				opt := jaz.options.Get()
-				dev.ScanDevices(jaz.table, jaz.table.ListDevices(), jaz.logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt, jaz.filterTable)
-
-			SLEEP:
-				for {
-					opt = jaz.options.Get()
-					elap := time.Since(begin)
-					sleep := opt.ScanInterval - elap
-					if sleep < 1 {
-						sleep = 0
-					}
-					jaz.logf("main: sleeping for %s (target: scanInterval=%s)", sleep, opt.ScanInterval)
-					select {
-					case <-time.After(sleep):
-						jaz.logf("main: sleep done")
-						break SLEEP
-					case id := <-jaz.priority:
-						jaz.logf("main: sleep interrupted by priority: device %s", id)
-						d, clearErr := dev.ClearDeviceStatus(jaz.table, id, jaz.logger, opt.Holdtime)
-						if clearErr != nil {
-							jaz.logf("main: sleep interrupted by priority: device %s - error: %v", id, clearErr)
-							continue SLEEP
-						}
-						singleDevice := []*dev.Device{d}
-						dev.ScanDevices(jaz.table, singleDevice, jaz.logger, 50*time.Millisecond, 500*time.Millisecond, jaz.repositoryPath, opt, jaz.filterTable)
-					}
-				}
-			}
-		}()
-
-	} else {
-
-		go dev.Spawner(jaz.table, jaz.logger, jaz.requestChan, jaz.repositoryPath, jaz.options, jaz.filterTable)
-
-		if runOnce {
-			dev.Scan(jaz.table, jaz.table.ListDevices(), jaz.logger, jaz.options.Get(), jaz.requestChan)
-			close(jaz.requestChan) // shutdown Spawner
-			jaz.logf("runOnce: exiting after single scan")
-			return
-		}
-
-		go scanLoop(jaz)
+	if runOnce {
+		dev.Scan(jaz.table, jaz.table.ListDevices(), jaz.logger, jaz.options.Get(), jaz.requestChan)
+		close(jaz.requestChan) // shutdown Spawner
+		jaz.logf("runOnce: exiting after single scan")
+		return
 	}
+
+	go scanLoop(jaz)
 
 	// Start GUI server
 	server.SetLogger(jaz.logger)

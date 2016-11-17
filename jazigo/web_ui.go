@@ -473,18 +473,14 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevW
 
 func runPriority(jaz *app, id string) {
 	jaz.logger.Printf("runPriority: device: %s", id)
-	if jaz.oldScheduler {
-		jaz.priority <- id
-	} else {
 
-		_, clearErr := dev.ClearDeviceStatus(jaz.table, id, jaz.logger, jaz.options.Get().Holdtime)
-		if clearErr != nil {
-			jaz.logger.Printf("runPriority: clear device %s status error: %v", id, clearErr)
-			return
-		}
-
-		jaz.requestChan <- dev.FetchRequest{Id: id}
+	_, clearErr := dev.ClearDeviceStatus(jaz.table, id, jaz.logger, jaz.options.Get().Holdtime)
+	if clearErr != nil {
+		jaz.logger.Printf("runPriority: clear device %s status error: %v", id, clearErr)
+		return
 	}
+
+	jaz.requestChan <- dev.FetchRequest{Id: id}
 }
 
 func refreshDeviceTable(jaz *app, t gwu.Table, e gwu.Event) {
