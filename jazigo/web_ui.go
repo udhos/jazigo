@@ -416,7 +416,8 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevW
 		labMod := gwu.NewLabel(d.Model())
 
 		devWin := deviceWinName(d.Id)
-		labId := gwu.NewLink(d.Id, "/"+appName+"/"+devWin)
+		//labId := gwu.NewLink(d.Id, "/"+appName+"/"+devWin)
+		labId := gwu.NewLink(d.Id, devWin)
 
 		devId := d.Id // get dev id for closure below
 		labId.AddEHandlerFunc(func(e gwu.Event) {
@@ -431,7 +432,12 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevW
 
 		labHost := gwu.NewLabel(d.HostPort)
 		labTransport := gwu.NewLabel(d.Transports)
-		labLastStatus := gwu.NewLabel(fmt.Sprintf("%v", d.LastStatus()))
+		var imageLastStatus gwu.Image
+		if d.LastStatus() {
+			imageLastStatus = gwu.NewImage("Success", fmt.Sprintf("%s/ok-small.png", jaz.staticPath))
+		} else {
+			imageLastStatus = gwu.NewImage("Failure", fmt.Sprintf("%s/fail-small.png", jaz.staticPath))
+		}
 		labLastTry := gwu.NewLabel(timestampString(d.LastTry()))
 		labLastSuccess := gwu.NewLabel(timestampString(d.LastSuccess()))
 		h := d.Holdtime(now, options.Holdtime)
@@ -451,7 +457,7 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevW
 		t.Add(labId, row, 1)
 		t.Add(labHost, row, 2)
 		t.Add(labTransport, row, 3)
-		t.Add(labLastStatus, row, 4)
+		t.Add(imageLastStatus, row, 4)
 		t.Add(labLastTry, row, 5)
 		t.Add(labLastSuccess, row, 6)
 		t.Add(labHoldtime, row, 7)

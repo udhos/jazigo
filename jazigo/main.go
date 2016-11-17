@@ -41,8 +41,9 @@ type app struct {
 	winAdmin  gwu.Window
 	winLogout gwu.Window
 
-	cssPath  string
-	repoPath string // www
+	cssPath    string
+	repoPath   string // www
+	staticPath string // www
 
 	logger *log.Logger
 
@@ -71,7 +72,8 @@ func newApp() *app {
 		logger:      log.New(os.Stdout, "", log.LstdFlags),
 		priority:    make(chan string),
 		requestChan: make(chan dev.FetchRequest),
-		repoPath:    "repo",
+		repoPath:    "repo",   // www
+		staticPath:  "static", // www
 	}
 
 	return app
@@ -181,10 +183,9 @@ func main() {
 	//server := gwu.NewServerTLS(appName, appAddr, folder+"cert.pem", folder+"key.pem")
 	server.SetText(serverName)
 
-	staticPath := "static"
-	staticPathFull := fmt.Sprintf("/%s/%s", appName, staticPath)
+	staticPathFull := fmt.Sprintf("/%s/%s", appName, jaz.staticPath)
 	jaz.logf("static dir: path=[%s] mapped to dir=[%s]", staticPathFull, staticDir)
-	server.AddStaticDir(staticPath, staticDir)
+	server.AddStaticDir(jaz.staticPath, staticDir)
 
 	jaz.cssPath = fmt.Sprintf("%s/jazigo.css", staticPathFull)
 	jaz.logf("css path: %s", jaz.cssPath)
