@@ -1,0 +1,13 @@
+language: go
+
+go:
+  - tip
+
+install:
+  - go get github.com/icza/gowut/gwu
+  - go get github.com/udhos/lockfile
+  - go get gopkg.in/yaml.v2
+  - go get golang.org/x/crypto/ssh
+
+script:
+  - go install github.com/udhos/jazigo/jazigo
