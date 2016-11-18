@@ -1,5 +1,6 @@
 [![GoDoc](https://godoc.org/github.com/udhos/jazigo?status.svg)](http://godoc.org/github.com/udhos/jazigo)
 [![Go Report Card](https://goreportcard.com/badge/github.com/udhos/jazigo)](https://goreportcard.com/report/github.com/udhos/jazigo)
+[![Build Status](https://travis-ci.org/udhos/jazigo.svg?branch=master)](https://travis-ci.org/udhos/jazigo)
 
 About Jazigo
 =============
