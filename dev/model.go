@@ -694,7 +694,7 @@ func ClearDeviceStatus(tab DeviceUpdater, devId string, logger hasPrintf, holdti
 	return d, nil
 }
 
-// UpdateLastSuccess: load device last sucess from filesystem.
+// UpdateLastSuccess: load device last success from filesystem.
 func UpdateLastSuccess(tab *DeviceTable, logger hasPrintf, repository string) {
 	for _, d := range tab.ListDevices() {
 		prefix := d.DevicePathPrefix(d.DeviceDir(repository))
