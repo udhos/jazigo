@@ -66,10 +66,11 @@ func FindLastConfig(configPathPrefix string, logger hasPrintf) (string, error) {
 			_, statErr := os.Stat(path)
 			if statErr == nil {
 				logger.Printf("FindLastConfig: found from shortcut: '%s'", path)
-				return path, nil
-			} else {
-				logger.Printf("FindLastConfig: stat failure '%s': %v", lastIdPath, statErr)
+				return path, nil // found
 			}
+
+			logger.Printf("FindLastConfig: stat failure '%s': %v", lastIdPath, statErr)
+
 		} else {
 			logger.Printf("FindLastConfig: read failure '%s': %v", lastIdPath, readErr)
 		}

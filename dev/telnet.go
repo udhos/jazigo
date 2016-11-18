@@ -23,10 +23,10 @@ func shift(b []byte, size, offset int) int {
 
 type telnetNegotiationOnly struct{}
 
-var TELNET_NEG = telnetNegotiationOnly{}
+var telnetNegOnly = telnetNegotiationOnly{}
 
 func (e telnetNegotiationOnly) Error() string {
-	return "telnetNegotiationOnly"
+	return "telnetNegotiationOnlyError"
 }
 
 func telnetNegotiation(b []byte, n int, t transp) (int, error) {
@@ -63,7 +63,7 @@ func telnetNegotiation(b []byte, n int, t transp) (int, error) {
 	}
 
 	if n == 0 && hitNeg {
-		return 0, TELNET_NEG
+		return 0, telnetNegOnly
 	}
 
 	return n, nil

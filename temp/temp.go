@@ -5,18 +5,20 @@ import (
 	"os"
 )
 
-const TEMP_REPO = "/tmp/tmp-jazigo-repo"
+const tempRepoPrefix = "/tmp/tmp-jazigo-repo"
 
-func TempRepo() string {
-	path := TEMP_REPO
+// MakeTempRepo creates the remporary repository path, for testing.
+func MakeTempRepo() string {
+	path := tempRepoPrefix
 	if err := os.MkdirAll(path, 0700); err != nil {
-		panic(fmt.Sprintf("TempRepo: '%s': %v", path, err))
+		panic(fmt.Sprintf("MakeTempRepo: '%s': %v", path, err))
 	}
 	return path
 }
 
+// CleanupTempRepo erases the remporary repository path.
 func CleanupTempRepo() string {
-	path := TEMP_REPO
+	path := tempRepoPrefix
 	if err := os.RemoveAll(path); err != nil {
 		panic(fmt.Sprintf("CleanupTempRepo: '%s': %v", path, err))
 	}

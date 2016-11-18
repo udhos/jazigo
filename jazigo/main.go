@@ -48,7 +48,7 @@ type app struct {
 	logger *log.Logger
 
 	filterModel string
-	filterId    string
+	filterID    string
 	filterHost  string
 
 	priority    chan string
@@ -346,9 +346,9 @@ func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
 	if imp {
 		jaz.logf("reading device list from stdin")
 
-		autoId := "auto"
-		nextId := jaz.table.FindDeviceFreeId(autoId)
-		valueStr := nextId[len(autoId):]
+		autoID := "auto"
+		nextID := jaz.table.FindDeviceFreeId(autoID)
+		valueStr := nextID[len(autoID):]
 		value, valErr := strconv.Atoi(valueStr)
 		if valErr != nil {
 			return fmt.Errorf("could not get free device id: %v", valErr)
@@ -387,7 +387,7 @@ func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
 			}
 
 			id := f[1]
-			if id == autoId {
+			if id == autoID {
 				id += strconv.Itoa(value)
 				value++
 			}

@@ -31,7 +31,7 @@ func TestJuniperJunOS1(t *testing.T) {
 	RegisterModels(logger, tab)
 	CreateDevice(tab, logger, "junos", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false, nil)
 
-	repo := temp.TempRepo()
+	repo := temp.MakeTempRepo()
 	defer temp.CleanupTempRepo()
 
 	requestCh := make(chan FetchRequest)
@@ -65,7 +65,7 @@ func TestJuniperJunOS2(t *testing.T) {
 	RegisterModels(logger, tab)
 	CreateDevice(tab, logger, "junos", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false, nil)
 
-	repo := temp.TempRepo()
+	repo := temp.MakeTempRepo()
 	defer temp.CleanupTempRepo()
 
 	requestCh := make(chan FetchRequest)

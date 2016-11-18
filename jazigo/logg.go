@@ -19,6 +19,7 @@ type logfile struct {
 	logger            *log.Logger
 }
 
+// NewLogfile creates a new log stream capable of automatically saving to filesystem.
 func NewLogfile(prefix string, maxFiles int, maxSize int64, checkInterval time.Duration) *logfile {
 	l := &logfile{
 		logPathPrefix:     prefix,
@@ -78,6 +79,7 @@ func (l *logfile) rotate() {
 	}
 }
 
+// Write implements io.Writer in order to be attached to log.New().
 func (l *logfile) Write(b []byte) (int, error) {
 
 	if l.output == nil {

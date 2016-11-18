@@ -57,7 +57,7 @@ func storeWrite(t *testing.T, prefix, content, expected string, maxFiles int) er
 
 func TestStore1(t *testing.T) {
 
-	repo := temp.TempRepo()
+	repo := temp.MakeTempRepo()
 	defer temp.CleanupTempRepo()
 
 	prefix := filepath.Join(repo, "store-test.")

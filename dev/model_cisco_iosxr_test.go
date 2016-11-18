@@ -36,7 +36,7 @@ func TestCiscoIOSXR1(t *testing.T) {
 	RegisterModels(logger, tab)
 	CreateDevice(tab, logger, "cisco-iosxr", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false, nil)
 
-	repo := temp.TempRepo()
+	repo := temp.MakeTempRepo()
 	defer temp.CleanupTempRepo()
 
 	requestCh := make(chan FetchRequest)
@@ -71,7 +71,7 @@ func TestCiscoIOSXR2(t *testing.T) {
 	RegisterModels(logger, tab)
 	CreateDevice(tab, logger, "cisco-iosxr", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false, nil)
 
-	repo := temp.TempRepo()
+	repo := temp.MakeTempRepo()
 	defer temp.CleanupTempRepo()
 
 	requestCh := make(chan FetchRequest)
@@ -105,7 +105,7 @@ func TestCiscoIOSXR3(t *testing.T) {
 	RegisterModels(logger, tab)
 	CreateDevice(tab, logger, "cisco-iosxr", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false, nil)
 
-	repo := temp.TempRepo()
+	repo := temp.MakeTempRepo()
 	defer temp.CleanupTempRepo()
 
 	requestCh := make(chan FetchRequest)

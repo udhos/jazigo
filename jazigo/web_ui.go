@@ -101,17 +101,17 @@ func newWin(jaz *app, path, name string) gwu.Window {
 	return win
 }
 
-type sortById struct {
+type sortByID struct {
 	data []*dev.Device
 }
 
-func (s sortById) Len() int {
+func (s sortByID) Len() int {
 	return len(s.data)
 }
-func (s sortById) Swap(i, j int) {
+func (s sortByID) Swap(i, j int) {
 	s.data[i], s.data[j] = s.data[j], s.data[i]
 }
-func (s sortById) Less(i, j int) bool {
+func (s sortByID) Less(i, j int) bool {
 	return s.data[i].Id < s.data[j].Id
 }
 
@@ -119,14 +119,14 @@ func deviceWinName(id string) string {
 	return "device-" + id
 }
 
-func buildDeviceWindow(jaz *app, e gwu.Event, devId string) string {
-	winName := deviceWinName(devId)
+func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
+	winName := deviceWinName(devID)
 	s := e.Session()
 	win := s.WinByName(winName)
 	if win != nil {
 		return winName
 	}
-	winTitle := "Device: " + devId
+	winTitle := "Device: " + devID
 	win = newWin(jaz, winName, winTitle)
 	win.Add(gwu.NewLabel(winTitle))
 
@@ -162,9 +162,9 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devId string) string {
 	panel.Add(gwu.NewLabel("Properties"), propPanel)                // tab 2
 	panel.Add(gwu.NewLabel("Error Log"), gwu.NewLabel("Error Log")) // tab 3
 
-	const TAB_SHOW = 1 // index
+	const tabShow = 1 // index
 
-	devPrefix := dev.DeviceFullPrefix(jaz.repositoryPath, devId)
+	devPrefix := dev.DeviceFullPrefix(jaz.repositoryPath, devID)
 	showFile, lastErr := store.FindLastConfig(devPrefix, jaz.logger)
 	if lastErr != nil {
 		jaz.logger.Printf("buildDeviceWindow: could find last config for device: %v", lastErr)
@@ -202,7 +202,7 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devId string) string {
 	win.Add(panel)
 
 	fileList := func(e gwu.Event) {
-		prefix := dev.DeviceFullPrefix(jaz.repositoryPath, devId)
+		prefix := dev.DeviceFullPrefix(jaz.repositoryPath, devID)
 		dirname, matches, listErr := store.ListConfigSorted(prefix, true, jaz.logger)
 		if listErr != nil {
 			filesMsg.SetText(fmt.Sprintf("List files error: %v", listErr))
@@ -239,14 +239,14 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devId string) string {
 				timeStr += fmt.Sprintf("(could not stat file: %v)", statErr)
 			}
 
-			filePath := fmt.Sprintf("/%s/%s/%s/%s", appName, jaz.repoPath, devId, m)
+			filePath := fmt.Sprintf("/%s/%s/%s/%s", appName, jaz.repoPath, devID, m)
 			devLink := gwu.NewLink(m, filePath)
 
 			buttonView := gwu.NewButton("Open")
-			show := dev.DeviceFullPath(jaz.repositoryPath, devId, m)
+			show := dev.DeviceFullPath(jaz.repositoryPath, devID, m)
 			buttonView.AddEHandlerFunc(func(e gwu.Event) {
 				loadView(e, show)
-				panel.SetSelected(TAB_SHOW)
+				panel.SetSelected(tabShow)
 			}, gwu.ETypeClick)
 
 			filesTab.Add(devLink, row, 0)
@@ -264,7 +264,7 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devId string) string {
 	}
 
 	resetProp := func(e gwu.Event) {
-		d, getErr := jaz.table.GetDevice(devId)
+		d, getErr := jaz.table.GetDevice(devID)
 		if getErr != nil {
 			propMsg.SetText(fmt.Sprintf("Get device error: %v", getErr))
 			e.MarkDirty(propPanel)
@@ -310,7 +310,7 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devId string) string {
 			return
 		}
 
-		d, getErr := jaz.table.GetDevice(devId)
+		d, getErr := jaz.table.GetDevice(devID)
 		if getErr != nil {
 			propMsg.SetText(fmt.Sprintf("Get device error: %v", getErr))
 			return
@@ -350,11 +350,11 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevW
 
 	row := 0 // filter
 	filterModel := gwu.NewTextBox(jaz.filterModel)
-	filterId := gwu.NewTextBox(jaz.filterId)
+	filterID := gwu.NewTextBox(jaz.filterID)
 	filterHost := gwu.NewTextBox(jaz.filterHost)
 
 	filterModel.AddSyncOnETypes(gwu.ETypeKeyUp) // synchronize values during editing (while you type in characters)
-	filterId.AddSyncOnETypes(gwu.ETypeKeyUp)    // synchronize values during editing (while you type in characters)
+	filterID.AddSyncOnETypes(gwu.ETypeKeyUp)    // synchronize values during editing (while you type in characters)
 	filterHost.AddSyncOnETypes(gwu.ETypeKeyUp)  // synchronize values during editing (while you type in characters)
 
 	filterModel.AddEHandlerFunc(func(e gwu.Event) {
@@ -362,8 +362,8 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevW
 		refreshDeviceTable(jaz, t, e)
 	}, gwu.ETypeChange)
 
-	filterId.AddEHandlerFunc(func(e gwu.Event) {
-		jaz.filterId = filterId.Text()
+	filterID.AddEHandlerFunc(func(e gwu.Event) {
+		jaz.filterID = filterID.Text()
 		refreshDeviceTable(jaz, t, e)
 	}, gwu.ETypeChange)
 
@@ -373,7 +373,7 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevW
 	}, gwu.ETypeChange)
 
 	t.Add(filterModel, row, 0)
-	t.Add(filterId, row, 1)
+	t.Add(filterID, row, 1)
 	t.Add(filterHost, row, 2)
 	t.Add(gwu.NewLabel(""), row, 3)
 	t.Add(gwu.NewLabel(""), row, 4)
@@ -394,7 +394,7 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevW
 	t.Add(gwu.NewLabel("Run Now"), row, 8)
 
 	devList := jaz.table.ListDevices()
-	sort.Sort(sortById{data: devList})
+	sort.Sort(sortByID{data: devList})
 
 	now := time.Now()
 
@@ -406,7 +406,7 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevW
 		if !strings.Contains(d.Model(), filterModel.Text()) {
 			continue
 		}
-		if !strings.Contains(d.Id, filterId.Text()) {
+		if !strings.Contains(d.Id, filterID.Text()) {
 			continue
 		}
 		if !strings.Contains(d.HostPort, filterHost.Text()) {
@@ -416,12 +416,12 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevW
 		labMod := gwu.NewLabel(d.Model())
 
 		devWin := deviceWinName(d.Id)
-		//labId := gwu.NewLink(d.Id, "/"+appName+"/"+devWin)
-		labId := gwu.NewLink(d.Id, devWin)
+		//labID := gwu.NewLink(d.Id, "/"+appName+"/"+devWin)
+		labID := gwu.NewLink(d.Id, devWin)
 
-		devId := d.Id // get dev id for closure below
-		labId.AddEHandlerFunc(func(e gwu.Event) {
-			winName := buildDeviceWindow(jaz, e, devId)
+		devID := d.Id // get dev id for closure below
+		labID.AddEHandlerFunc(func(e gwu.Event) {
+			winName := buildDeviceWindow(jaz, e, devID)
 			// This is a click event for a link component.
 			// The reload is automatic.
 			// Explicit reload should not be required.
@@ -454,7 +454,7 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevW
 		}, gwu.ETypeClick)
 
 		t.Add(labMod, row, 0)
-		t.Add(labId, row, 1)
+		t.Add(labID, row, 1)
 		t.Add(labHost, row, 2)
 		t.Add(labTransport, row, 3)
 		t.Add(imageLastStatus, row, 4)

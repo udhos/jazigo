@@ -25,7 +25,7 @@ func Spawner(tab DeviceUpdater, logger hasPrintf, reqChan chan FetchRequest, rep
 		d, getErr := tab.GetDevice(devId)
 		if getErr != nil {
 			if replyChan != nil {
-				replyChan <- FetchResult{DevId: devId, Msg: fmt.Sprintf("Spawner: could not find device: %v", getErr), Code: FETCH_ERR_GETDEV, Begin: time.Now()}
+				replyChan <- FetchResult{DevId: devId, Msg: fmt.Sprintf("Spawner: could not find device: %v", getErr), Code: fetchErrGetDev, Begin: time.Now()}
 			}
 			continue
 		}
@@ -98,7 +98,7 @@ func Scan(tab DeviceUpdater, devices []*Device, logger hasPrintf, opt *conf.AppC
 		elap := end.Sub(r.Begin)
 		logger.Printf("Scan: recv %s %s %s %s msg=[%s] code=%d wait=%d remain=%d skipped=%d elap=%s", r.Model, r.DevId, r.DevHostPort, r.Transport, r.Msg, r.Code, wait, deviceCount-nextDevice, skipped, elap)
 
-		good := r.Code == FETCH_ERR_NONE
+		good := r.Code == fetchErrNone
 
 		if good {
 			success++
@@ -122,7 +122,7 @@ func Scan(tab DeviceUpdater, devices []*Device, logger hasPrintf, opt *conf.AppC
 func updateDeviceStatus(tab DeviceUpdater, devId string, good bool, last time.Time, logger hasPrintf, holdtime time.Duration) {
 	d, getErr := tab.GetDevice(devId)
 	if getErr != nil {
-		logger.Printf("updateDeviceStatus: '%s' not found: %v", getErr)
+		logger.Printf("updateDeviceStatus: '%s' not found: %v", devId, getErr)
 		return
 	}
 
