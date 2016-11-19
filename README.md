@@ -112,9 +112,10 @@ The easiest way to include many devices is by using the command line option **-d
     #
     # model   id   hostport      transports username password enable-password
     #
-    cisco-ios lab1 router1905lab telnet      san     fran     sanjose
-    cisco-ios lab2 router3925lab telnet      san     fran     sanjose
-    junos     auto ex4200lab     ssh,telnet  backup  juniper1 not-used
+    cisco-ios lab1 router1905lab telnet     san      fran     sanjose
+    cisco-ios lab2 router3925lab telnet     san      fran     sanjose
+    junos     auto ex4200lab     ssh,telnet backup   juniper1 not-used
+    junos     auto 1.1.1.1:2222  ssh        backup   juniper1 not-used
     $
 
 Hint: The device id must be unique. You can generate a meaningful device id manually as you like. You can also let Jazigo create id's automatically by specifying the special id **auto**.
