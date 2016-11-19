@@ -296,6 +296,9 @@ func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
 			if id == "" {
 				continue
 			}
+			if strings.HasPrefix(text, "#") {
+				continue
+			}
 
 			jaz.logf("deleting device [%s]", id)
 
@@ -327,6 +330,9 @@ func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
 
 			id := strings.TrimSpace(text)
 			if id == "" {
+				continue
+			}
+			if strings.HasPrefix(text, "#") {
 				continue
 			}
 
@@ -368,6 +374,9 @@ func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
 
 			text = strings.TrimSpace(text)
 			if text == "" {
+				continue
+			}
+			if strings.HasPrefix(text, "#") {
 				continue
 			}
 

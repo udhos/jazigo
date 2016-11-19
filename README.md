@@ -80,7 +80,7 @@ Watch messages logged to standard output for errors.
 8\. Open the web interface
 
 Point web browser at: [http://localhost:8080/jazigo](http://localhost:8080/jazigo)
-
+      
 Global Settings
 ===============
 
@@ -98,3 +98,29 @@ You might want to adjust global settings. See the Jazigo *admin* window under [h
 **scaninterval**: The interval between two device table scans. If the device table is fully processed before the 'scaninterval' timer, the software will wait idly for the next scan cycle. If the full table scan takes longer than 'scaninterval', the next cycle will start immediately.
 
 **maxconcurrency**: This option limits the number of concurrent backup jobs. You should raise this value if you need faster scanning of all devices. Keep in mind that if your devices use a centralized authentication system (for example, Cisco Secure ACS), the authentication server might become a bottleneck for high concurrency.
+
+Importing Many Devices
+======================
+
+You can use the Web UI to add devices, but it is not designed for importing a large number of devices.
+
+The easiest way to include many devices is by using the command line option **-deviceImport**.
+
+1\. Build a device table using this format:
+
+    $ cat table.txt
+    #
+    # model   id   hostport      transports username password enable-password
+    #
+    cisco-ios lab1 router1905lab telnet      san     fran     sanjose
+    cisco-ios lab2 router3925lab telnet      san     fran     sanjose
+    junos     auto ex4200lab     ssh,telnet  backup  juniper1 not-used
+    $
+
+Hint: The device id must be unique. You can generate a meaningful device id manually as you like. You can also let Jazigo create id's automatically by specifying the special id **auto**.
+
+2\. Then load the table with the option -deviceImport:
+
+    $ $GOPATH/bin/jazigo -deviceImport < table.txt
+
+
