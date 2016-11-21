@@ -291,7 +291,7 @@ func (d *Device) saveCommit(logger hasPrintf, capture *dialog, repository string
 		return nil
 	}
 
-	path, writeErr := store.SaveNewConfig(devPathPrefix, maxFiles, logger, writeFunc)
+	path, writeErr := store.SaveNewConfig(devPathPrefix, maxFiles, logger, writeFunc, d.Attr.ChangesOnly)
 	if writeErr != nil {
 		return fmt.Errorf("saveCommit: error: %v", writeErr)
 	}

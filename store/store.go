@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/udhos/equalfile"
 )
 
 type hasPrintf interface {
@@ -172,7 +174,7 @@ func getConfigPath(configPathPrefix, id string) string {
 	return fmt.Sprintf("%s%s", configPathPrefix, id)
 }
 
-func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writeFunc func(HasWrite) error) (string, error) {
+func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writeFunc func(HasWrite) error, changesOnly bool) (string, error) {
 
 	// get tmp file
 
@@ -205,17 +207,39 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 		return "", fmt.Errorf("SaveNewConfig: error closing file: [%s]: %v", tmpPath, err)
 	}
 
-	// get new file
+	// get previous file
 
+	previousFound := true
 	lastConfig, err1 := FindLastConfig(configPathPrefix, logger)
 	if err1 != nil {
 		logger.Printf("SaveNewConfig: error reading config: [%s]: %v", configPathPrefix, err1)
+		previousFound = false
 	}
 
 	id, err2 := ExtractCommitIdFromFilename(lastConfig)
 	if err2 != nil {
 		logger.Printf("SaveNewConfig: error parsing config path: [%s]: %v", lastConfig, err2)
 	}
+
+	if changesOnly && previousFound {
+		equal, equalErr := equalfile.CompareFile(lastConfig, tmpPath)
+		if equalErr == nil {
+			if equal {
+				logger.Printf("SaveNewConfig: refusing to create identical new file: [%s]", tmpPath)
+				if removeErr := os.Remove(tmpPath); removeErr != nil {
+					logger.Printf("SaveNewConfig: error removing temp file=[%s]: %v", tmpPath, removeErr)
+				}
+				return lastConfig, nil // success
+			}
+			// unequal
+			logger.Printf("SaveNewConfig: files differ previous=[%s] new=[%s]", lastConfig, tmpPath)
+		} else {
+			// unable to compare
+			logger.Printf("SaveNewConfig: error comparing previous=[%s] to new=[%s]: %v", lastConfig, tmpPath, equalErr)
+		}
+	}
+
+	// get new file
 
 	newCommitId := id + 1
 	newFilepath := getConfigPath(configPathPrefix, strconv.Itoa(newCommitId))

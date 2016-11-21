@@ -56,6 +56,7 @@ type DevAttributes struct {
 	QuoteSentCommandsFormat     string   // !![%s] - empty means omitting
 	KeepControlChars            bool     // enable if you want to capture control chars (backspace, etc)
 	LineFilter                  string   // line filter name - applied to every saved line
+	ChangesOnly                 bool     // save new file only if it differs from previous one
 
 	// readTimeout: per-read timeout (protection against inactivity)
 	// matchTimeout: full match timeout (protection against slow sender -- think 1 byte per second)

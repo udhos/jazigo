@@ -34,7 +34,7 @@ func storeWrite(t *testing.T, prefix, content, expected string, maxFiles int) er
 
 	logger := &testLogger{t}
 
-	path, writeErr := SaveNewConfig(prefix, maxFiles, logger, writeFunc)
+	path, writeErr := SaveNewConfig(prefix, maxFiles, logger, writeFunc, false)
 	if writeErr != nil {
 		return fmt.Errorf("storeWrite: error: %v", writeErr)
 	}

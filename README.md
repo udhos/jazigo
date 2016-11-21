@@ -47,6 +47,7 @@ Example:
 
     go get github.com/icza/gowut/gwu
     go get github.com/udhos/lockfile
+    go get github.com/udhos/equalfile
     go get gopkg.in/yaml.v2
     go get golang.org/x/crypto/ssh
 
