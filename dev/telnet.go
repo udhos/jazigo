@@ -29,7 +29,7 @@ func (e telnetNegotiationOnly) Error() string {
 	return "telnetNegotiationOnlyError"
 }
 
-func telnetNegotiation(b []byte, n int, t transp) (int, error) {
+func telnetNegotiation(buf []byte, n int, t transp) (int, error) {
 
 	timeout := 5 * time.Second // FIXME??
 	hitNeg := false
@@ -38,24 +38,23 @@ func telnetNegotiation(b []byte, n int, t transp) (int, error) {
 		if n < 3 {
 			break
 		}
-		if b[0] != 255 {
+		if buf[0] != cmdIAC {
 			break // not IAC
 		}
-		if b[1] == 253 {
-			// do
-			opt := b[2]
+		b1 := buf[1]
+		switch b1 {
+		case cmdDo, cmdDont:
+			opt := buf[2]
 			t.SetWriteDeadline(time.Now().Add(timeout)) // FIXME: handle error
-			t.Write([]byte{255, 252, opt})              // IAC WONT opt - FIXME: handle error
-			n = shift(b, n, 3)
+			t.Write([]byte{cmdIAC, cmdWont, opt})       // IAC WONT opt - FIXME: handle error
+			n = shift(buf, n, 3)
 			hitNeg = true
 			continue
-		}
-		if b[1] == 251 {
-			// will
-			opt := b[2]
+		case cmdWill, cmdWont:
+			opt := buf[2]
 			t.SetWriteDeadline(time.Now().Add(timeout)) // FIXME: handle error
-			t.Write([]byte{255, 254, opt})              // IAC DONT opt - FIXME: handle error
-			n = shift(b, n, 3)
+			t.Write([]byte{cmdIAC, cmdDont, opt})       // IAC DONT opt - FIXME: handle error
+			n = shift(buf, n, 3)
 			hitNeg = true
 			continue
 		}

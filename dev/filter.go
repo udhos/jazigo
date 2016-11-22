@@ -10,6 +10,7 @@ type FilterTable struct {
 	re1   *regexp.Regexp
 	re2   *regexp.Regexp
 	re3   *regexp.Regexp
+	re4   *regexp.Regexp
 }
 
 type FilterFunc func(hasPrintf, bool, *FilterTable, []byte, int) []byte
@@ -19,21 +20,12 @@ func NewFilterTable(logger hasPrintf) *FilterTable {
 		table: map[string]FilterFunc{},
 		re1:   regexp.MustCompile(`^\w{3}\s\w{3}\s\d{1,2}\s`), // Thu Feb 11 15:45:43.545 BRST
 		re2:   regexp.MustCompile(`^Building`),                // Building configuration...
-		re3:   regexp.MustCompile(`!! Last`),                  // !! Last configuration change at Tue Jan 26 16:40:46 2016 by user
+		re3:   regexp.MustCompile(`^!! Last`),                 // !! Last configuration change at Tue Jan 26 16:40:46 2016 by user
+		re4:   regexp.MustCompile(`^\w+ uptime is `),          // asr9010 uptime is 9 years, 2 weeks, 5 days, 20 hours, 3 minutes
 	}
 	registerFilters(logger, t.table)
 	return t
 }
-
-/*
-func reCompile(s string) *regexp.Regexp {
-	re, err := regexp.Compile(s)
-	if err != nil {
-		panic(err)
-	}
-	return re
-}
-*/
 
 func register(logger hasPrintf, table map[string]FilterFunc, name string, f FilterFunc) {
 	logger.Printf("line filter registered: '%s'", name)
@@ -65,6 +57,7 @@ Thu Feb 11 15:45:43.545 BRST
 Building configuration...
 !! IOS XR Configuration 5.1.3
 !! Last configuration change at Tue Jan 26 16:40:46 2016 by user
+asr9010 uptime is 9 years, 2 weeks, 5 days, 20 hours, 3 minutes
 */
 func filterIOSXR(logger hasPrintf, debug bool, table *FilterTable, line []byte, lineNum int) []byte {
 
@@ -81,6 +74,12 @@ func filterIOSXR(logger hasPrintf, debug bool, table *FilterTable, line []byte, 
 		return []byte{}
 	}
 	if table.re3.Match(line) {
+		if debug {
+			logger.Printf("filterIOSXR: drop: [%s]", string(line))
+		}
+		return []byte{}
+	}
+	if table.re4.Match(line) {
 		if debug {
 			logger.Printf("filterIOSXR: drop: [%s]", string(line))
 		}
