@@ -184,7 +184,7 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 		return "", fmt.Errorf("SaveNewConfig: tmp file exists: [%s]", tmpPath)
 	}
 
-	f, createErr := os.Create(tmpPath)
+	f, createErr := os.OpenFile(tmpPath, os.O_CREATE|os.O_WRONLY, 0640)
 	if createErr != nil {
 		return "", fmt.Errorf("SaveNewConfig: error creating tmp file: [%s]: %v", tmpPath, createErr)
 	}
@@ -260,7 +260,7 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 
 	// write last id into shortcut file
 	lastIdPath := getLastIdPath(configPathPrefix)
-	if err := ioutil.WriteFile(lastIdPath, []byte(strconv.Itoa(newCommitId)), 0700); err != nil {
+	if err := ioutil.WriteFile(lastIdPath, []byte(strconv.Itoa(newCommitId)), 0640); err != nil {
 		logger.Printf("SaveNewConfig: error writing last id file '%s': %v", lastIdPath, err)
 
 		// since we failed to update the shortcut file,

@@ -40,7 +40,7 @@ func NewLogfile(prefix string, maxFiles int, maxSize int64, checkInterval time.D
 }
 
 func openAppend(path string) (*os.File, error) {
-	output, openErr := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0600)
+	output, openErr := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0640)
 	if openErr != nil {
 		if output != nil {
 			output.Close()
