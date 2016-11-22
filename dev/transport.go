@@ -36,7 +36,7 @@ func (s *transpTelnet) Read(b []byte) (int, error) {
 	if err1 != nil {
 		return n1, err1
 	}
-	n2, err2 := telnetNegotiation(b, n1, s)
+	n2, err2 := telnetNegotiation(b, n1, s, s.logger, false)
 	return n2, err2
 }
 
@@ -47,6 +47,7 @@ type transpSSH struct {
 	session  *ssh.Session
 	writer   io.Writer
 	reader   io.Reader
+	//logger   hasPrintf
 }
 
 func (s *transpSSH) Read(b []byte) (int, error) {
@@ -57,7 +58,6 @@ func (s *transpSSH) Write(b []byte) (int, error) {
 
 	n, err := s.writer.Write(b)
 	if err != nil {
-		//return -1, fmt.Errorf("ssh write(%s): %v out=[%s] err=[%s]", b, err, s.out.Bytes(), s.err.Bytes())
 		return -1, fmt.Errorf("ssh write(%s): %v", b, err)
 	}
 
@@ -152,7 +152,7 @@ func openSSH(logger hasPrintf, modelName, devId, hostPort string, timeout time.D
 
 	cli := ssh.NewClient(c, chans, reqs)
 
-	s := &transpSSH{conn: conn, client: cli, devLabel: fmt.Sprintf("%s %s %s", modelName, devId, hostPort)}
+	s := &transpSSH{conn: conn, client: cli, devLabel: fmt.Sprintf("%s %s %s", modelName, devId, hostPort) /*, logger: logger*/}
 
 	ses, sessionErr := s.client.NewSession()
 	if sessionErr != nil {
@@ -161,7 +161,9 @@ func openSSH(logger hasPrintf, modelName, devId, hostPort string, timeout time.D
 
 	s.session = ses
 
-	modes := ssh.TerminalModes{}
+	modes := ssh.TerminalModes{
+		ssh.ECHO: 0, // disable echoing
+	}
 
 	if ptyErr := ses.RequestPty("xterm", 80, 40, modes); ptyErr != nil {
 		return nil, fmt.Errorf("openSSH: Pty: %s - %v", s.devLabel, ptyErr)

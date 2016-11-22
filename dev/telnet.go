@@ -29,7 +29,7 @@ func (e telnetNegotiationOnly) Error() string {
 	return "telnetNegotiationOnlyError"
 }
 
-func telnetNegotiation(buf []byte, n int, t transp) (int, error) {
+func telnetNegotiation(buf []byte, n int, t transp, logger hasPrintf, debug bool) (int, error) {
 
 	timeout := 5 * time.Second // FIXME??
 	hitNeg := false
@@ -40,6 +40,9 @@ func telnetNegotiation(buf []byte, n int, t transp) (int, error) {
 		}
 		if buf[0] != cmdIAC {
 			break // not IAC
+		}
+		if debug {
+			logger.Printf("telnetNegotiation: debug: FOUND telnet IAC")
 		}
 		b1 := buf[1]
 		switch b1 {
