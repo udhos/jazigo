@@ -373,40 +373,42 @@ READ_LOOP:
 			d.logf("debug recv1(%d): [%q]", len(lastRead), lastRead)
 		}
 
-		ignoreBackspace := false
-		if !ignoreBackspace {
-			for i := 0; i < len(lastRead); i++ {
-				b := lastRead[i]
-				if b == BS {
-					if i > 0 {
-						// i-1: killed char
-						// i: BS
-						lastRead = append(lastRead[:i-1], lastRead[i+1:]...)
-						i -= 2
+		/*
+			ignoreBackspace := false
+			if !ignoreBackspace {
+				for i := 0; i < len(lastRead); i++ {
+					b := lastRead[i]
+					if b == BS {
+						if i > 0 {
+							// i-1: killed char
+							// i: BS
+							lastRead = append(lastRead[:i-1], lastRead[i+1:]...)
+							i -= 2
+						}
 					}
+				}
+
+				if d.Debug {
+					d.logf("debug recv2(%d): [%q]", len(lastRead), lastRead)
 				}
 			}
 
-			if d.Debug {
-				d.logf("debug recv2(%d): [%q]", len(lastRead), lastRead)
+			if !d.Attr.KeepControlChars {
+				lastRead = removeControlChars(d, lastRead, d.Debug)
+				if d.Debug {
+					d.logf("debug recv3(%d): [%q]", len(lastRead), lastRead)
+				}
 			}
-		}
-
-		if !d.Attr.KeepControlChars {
-			lastRead = removeControlChars(logger, lastRead, d.Debug)
-			if d.Debug {
-				d.logf("debug recv3(%d): [%q]", len(lastRead), lastRead)
-			}
-		}
+		*/
 
 		matchBuf = append(matchBuf, lastRead...)
 		capture.record(lastRead) // record full capture (for debbugging, etc)
 
-		//logger.Printf("match: debug: read=%d newsize=%d", n, len(capture.buf))
+		if !d.Attr.KeepControlChars {
+			matchBuf = removeControlChars(d, d.Debug, matchBuf, len(lastRead))
+		}
 
 		lastLine := findLastLine(matchBuf)
-
-		//logger.Printf("match: debug: lastLine[%s]", lastLine)
 
 		if expList != nil {
 			for i, exp := range expList {
@@ -431,6 +433,7 @@ const (
 	LF = '\n'
 )
 
+/*
 func removeControlChars(logger hasPrintf, buf []byte, debug bool) []byte {
 	size := len(buf)
 	for i := 0; i < size; i++ {
@@ -452,6 +455,7 @@ func removeControlChars(logger hasPrintf, buf []byte, debug bool) []byte {
 	}
 	return buf[:size]
 }
+*/
 
 func findLastLine(buf []byte) []byte {
 
