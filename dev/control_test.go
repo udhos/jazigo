@@ -25,6 +25,8 @@ func TestControl1(t *testing.T) {
 	oneCR := []byte{CR}
 	fiveBS := append([]byte("12345"), BS)
 	fiveCR := append([]byte("12345"), CR)
+	BSfive := append([]byte{BS}, []byte("12345")...)
+	CRfive := append([]byte{CR}, []byte("12345")...)
 	middleBS := []byte{'1', '2', '3', BS, '4', '5'}
 	middleCR := []byte{'1', '2', '3', CR, '4', '5'}
 
@@ -36,6 +38,8 @@ func TestControl1(t *testing.T) {
 
 	control(t, debug, logger, "suffix-BS1", empty, oneBS, empty, empty)
 	control(t, debug, logger, "suffix-BS2", five, oneBS, four, empty)
+	control(t, debug, logger, "suffix-BSfive1", empty, BSfive, empty, five)
+	control(t, debug, logger, "suffix-BSfive2", five, BSfive, four, five)
 	control(t, debug, logger, "suffix-fiveBS1", empty, fiveBS, empty, four)
 	control(t, debug, logger, "suffix-fiveBS2", five, fiveBS, five, four)
 	control(t, debug, logger, "suffix-middleBS1", empty, middleBS, empty, []byte("1245"))
@@ -43,6 +47,8 @@ func TestControl1(t *testing.T) {
 
 	control(t, debug, logger, "suffix-CR1", empty, oneCR, empty, empty)
 	control(t, debug, logger, "suffix-CR2", five, oneCR, empty, empty)
+	control(t, debug, logger, "suffix-CRfive1", empty, CRfive, empty, five)
+	control(t, debug, logger, "suffix-CRfive2", five, CRfive, empty, five)
 	control(t, debug, logger, "suffix-fiveCR1", empty, fiveCR, empty, empty)
 	control(t, debug, logger, "suffix-fiveCR2", five, fiveCR, empty, empty)
 	control(t, debug, logger, "suffix-middleCR1", empty, middleCR, empty, []byte("45"))
