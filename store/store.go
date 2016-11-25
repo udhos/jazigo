@@ -54,7 +54,7 @@ func ExtractCommitIdFromFilename(filename string) (int, error) {
 	return id, nil
 }
 
-func FindLastConfig(configPathPrefix string, logger hasPrintf) (string, error) {
+func tryShortcut(configPathPrefix string, logger hasPrintf) string {
 
 	lastIdPath := getLastIdPath(configPathPrefix)
 	f, openErr := os.Open(lastIdPath)
@@ -67,8 +67,8 @@ func FindLastConfig(configPathPrefix string, logger hasPrintf) (string, error) {
 			path := getConfigPath(configPathPrefix, id)
 			_, statErr := os.Stat(path)
 			if statErr == nil {
-				logger.Printf("FindLastConfig: found from shortcut: '%s'", path)
-				return path, nil // found
+				//logger.Printf("FindLastConfig: found from shortcut: '%s'", path)
+				return path // found
 			}
 
 			logger.Printf("FindLastConfig: stat failure '%s': %v", lastIdPath, statErr)
@@ -77,7 +77,16 @@ func FindLastConfig(configPathPrefix string, logger hasPrintf) (string, error) {
 			logger.Printf("FindLastConfig: read failure '%s': %v", lastIdPath, readErr)
 		}
 	}
-	logger.Printf("FindLastConfig: last id file not found '%s': %v", lastIdPath, openErr)
+	//logger.Printf("FindLastConfig: last id file not found '%s': %v", lastIdPath, openErr)
+
+	return "" // not found
+}
+
+func FindLastConfig(configPathPrefix string, logger hasPrintf) (string, error) {
+
+	if path := tryShortcut(configPathPrefix, logger); path != "" {
+		return path, nil // found
+	}
 
 	// search filesystem directory
 
