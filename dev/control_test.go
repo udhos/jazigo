@@ -21,6 +21,7 @@ func TestControl1(t *testing.T) {
 	crlf := []byte{CR, LF}
 	four := []byte("1234")
 	five := []byte("12345")
+	oneLF := []byte{LF}
 	oneBS := []byte{BS}
 	oneCR := []byte{CR}
 	fiveBS := append([]byte("12345"), BS)
@@ -35,6 +36,9 @@ func TestControl1(t *testing.T) {
 	control(t, debug, logger, "suffixCRLF", empty, crlf, empty, crlf)
 	control(t, debug, logger, "bothCRLF", crlf, crlf, crlf, crlf)
 	control(t, debug, logger, "no-control", five, five, five, five)
+	control(t, debug, logger, "LF", oneLF, oneLF, oneLF, oneLF)
+	control(t, debug, logger, "BS", oneBS, oneBS, empty, empty)
+	control(t, debug, logger, "CR", oneCR, oneCR, empty, empty)
 
 	control(t, debug, logger, "suffix-BS1", empty, oneBS, empty, empty)
 	control(t, debug, logger, "suffix-BS2", five, oneBS, four, empty)
