@@ -132,12 +132,7 @@ type hasPrintf interface {
 }
 
 type dialog struct {
-	buf  []byte
 	save [][]byte
-}
-
-func (d *dialog) record(buf []byte) {
-	//d.buf = append(d.buf, buf...) // record full input
 }
 
 // fetch runs in a per-device goroutine
@@ -373,40 +368,15 @@ READ_LOOP:
 			d.logf("debug recv1(%d): [%q]", len(lastRead), lastRead)
 		}
 
-		/*
-			ignoreBackspace := false
-			if !ignoreBackspace {
-				for i := 0; i < len(lastRead); i++ {
-					b := lastRead[i]
-					if b == BS {
-						if i > 0 {
-							// i-1: killed char
-							// i: BS
-							lastRead = append(lastRead[:i-1], lastRead[i+1:]...)
-							i -= 2
-						}
-					}
-				}
+		if !d.Attr.KeepControlChars {
+			matchBuf, lastRead = removeControlChars(d, d.Debug, matchBuf, lastRead)
+		}
 
-				if d.Debug {
-					d.logf("debug recv2(%d): [%q]", len(lastRead), lastRead)
-				}
-			}
-
-			if !d.Attr.KeepControlChars {
-				lastRead = removeControlChars(d, lastRead, d.Debug)
-				if d.Debug {
-					d.logf("debug recv3(%d): [%q]", len(lastRead), lastRead)
-				}
-			}
-		*/
+		if d.Debug {
+			d.logf("debug recv2(%d): [%q]", len(lastRead), lastRead)
+		}
 
 		matchBuf = append(matchBuf, lastRead...)
-		capture.record(lastRead) // record full capture (for debbugging, etc)
-
-		if !d.Attr.KeepControlChars {
-			matchBuf = removeControlChars(d, d.Debug, matchBuf, len(lastRead))
-		}
 
 		lastLine := findLastLine(matchBuf)
 
@@ -432,30 +402,6 @@ const (
 	CR = '\r'
 	LF = '\n'
 )
-
-/*
-func removeControlChars(logger hasPrintf, buf []byte, debug bool) []byte {
-	size := len(buf)
-	for i := 0; i < size; i++ {
-		b := buf[i]
-		switch {
-		case b == LF: // LF
-		case b < 32: // control
-			if b != BS && b != CR {
-				// unexpected control
-				if debug {
-					logger.Printf("removeControlChars: hit control=%d", b)
-				}
-			}
-			copy(buf[i:size], buf[i+1:size])
-			i--
-			size--
-		default: // non-control
-		}
-	}
-	return buf[:size]
-}
-*/
 
 func findLastLine(buf []byte) []byte {
 
