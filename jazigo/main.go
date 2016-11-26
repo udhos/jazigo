@@ -123,7 +123,7 @@ func main() {
 	flag.BoolVar(&deviceDelete, "deviceDelete", false, "delete devices specified in stdin")
 	flag.BoolVar(&devicePurge, "devicePurge", false, "purge devices specified in stdin")
 	flag.BoolVar(&deviceImport, "deviceImport", false, "import devices from stdin")
-	flag.BoolVar(&deviceList, "deviceList", false, "list devices from stdout")
+	flag.BoolVar(&deviceList, "deviceList", false, "list devices to stdout")
 	flag.BoolVar(&disableStdoutLog, "disableStdoutLog", false, "disable logging to stdout")
 	flag.IntVar(&logMaxFiles, "logMaxFiles", 20, "number of log files to keep")
 	flag.Int64Var(&logMaxSize, "logMaxSize", 10000000, "size limit for log file")
