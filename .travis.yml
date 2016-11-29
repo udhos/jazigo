@@ -9,6 +9,7 @@ install:
   - go get github.com/udhos/equalfile
   - go get gopkg.in/yaml.v2
   - go get golang.org/x/crypto/ssh
+  - go get github.com/aws/aws-sdk-go/aws
 
 script:
   - go install github.com/udhos/jazigo/jazigo
