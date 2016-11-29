@@ -109,6 +109,7 @@ func main() {
 	var logMaxSize int64
 	var logCheckInterval time.Duration
 	var webListen string
+	var s3region string
 
 	defaultHome := defaultHomeDir()
 	defaultConfigPrefix := filepath.Join(defaultHome, "etc", "jazigo.conf.")
@@ -121,6 +122,7 @@ func main() {
 	flag.StringVar(&jaz.logPathPrefix, "logPathPrefix", defaultLogPrefix, "log path prefix")
 	flag.StringVar(&staticDir, "wwwStaticPath", defaultStaticDir, "directory for static www content")
 	flag.StringVar(&webListen, "webListen", ":8080", "address:port for web UI")
+	flag.StringVar(&s3region, "s3region", "sa-east-1", "AWS S3 region")
 	flag.BoolVar(&runOnce, "runOnce", false, "exit after scanning all devices once")
 	flag.BoolVar(&deviceDelete, "deviceDelete", false, "delete devices specified in stdin")
 	flag.BoolVar(&devicePurge, "devicePurge", false, "purge devices specified in stdin")
@@ -158,6 +160,8 @@ func main() {
 
 	jaz.logf("config path prefix: %s", jaz.configPathPrefix)
 	jaz.logf("repository path: %s", jaz.repositoryPath)
+
+	store.Init(jaz.logger, s3region)
 
 	// load config
 	loadConfig(jaz)

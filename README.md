@@ -50,6 +50,7 @@ Example:
     go get github.com/udhos/equalfile
     go get gopkg.in/yaml.v2
     go get golang.org/x/crypto/ssh
+    go get github.com/aws/aws-sdk-go
 
 3\. Get source code
 

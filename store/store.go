@@ -2,6 +2,7 @@ package store
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -43,6 +44,13 @@ func (s sortByCommitId) Less(i, j int) bool {
 	return id1 < id2
 }
 
+func Init(logger hasPrintf, region string) {
+	if logger == nil {
+		panic("store.Init: nil logger")
+	}
+	s3init(logger, region)
+}
+
 func ExtractCommitIdFromFilename(filename string) (int, error) {
 	lastDot := strings.LastIndexByte(filename, '.')
 	commitId := filename[lastDot+1:]
@@ -65,19 +73,13 @@ func tryShortcut(configPathPrefix string, logger hasPrintf) string {
 		if readErr == nil {
 			id := string(line[:])
 			path := getConfigPath(configPathPrefix, id)
-			_, statErr := os.Stat(path)
-			if statErr == nil {
-				//logger.Printf("FindLastConfig: found from shortcut: '%s'", path)
+			if fileExists(path) {
 				return path // found
 			}
-
-			logger.Printf("FindLastConfig: stat failure '%s': %v", lastIdPath, statErr)
-
 		} else {
 			logger.Printf("FindLastConfig: read failure '%s': %v", lastIdPath, readErr)
 		}
 	}
-	//logger.Printf("FindLastConfig: last id file not found '%s': %v", lastIdPath, openErr)
 
 	return "" // not found
 }
@@ -183,38 +185,79 @@ func getConfigPath(configPathPrefix, id string) string {
 	return fmt.Sprintf("%s%s", configPathPrefix, id)
 }
 
+func fileExists(path string) bool {
+
+	if s3path(path) {
+		return s3fileExists(path)
+	}
+
+	if _, err := os.Stat(path); err == nil {
+		return true
+	}
+
+	return false
+}
+
+func fileRemove(path string) error {
+
+	if s3path(path) {
+		return fmt.Errorf("fileRemove: FIXME WRITEME remove file from S3: [%s]", path)
+	}
+
+	return os.Remove(path)
+}
+
+func writeFile(path string, writeFunc func(HasWrite) error) error {
+
+	if s3path(path) {
+		w := &bytes.Buffer{}
+
+		if err := writeFunc(w); err != nil {
+			return fmt.Errorf("SaveNewConfig: writeFunc error: [%s]: %v", path, err)
+		}
+
+		return s3fileput(path, w.Bytes())
+	}
+
+	f, createErr := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0640)
+	if createErr != nil {
+		return fmt.Errorf("SaveNewConfig: error creating tmp file: [%s]: %v", path, createErr)
+	}
+
+	w := bufio.NewWriter(f)
+
+	if err := writeFunc(w); err != nil {
+		return fmt.Errorf("SaveNewConfig: writeFunc error: [%s]: %v", path, err)
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("SaveNewConfig: error flushing file: [%s]: %v", path, err)
+	}
+
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("SaveNewConfig: error closing file: [%s]: %v", path, err)
+	}
+
+	return nil
+}
+
 func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writeFunc func(HasWrite) error, changesOnly bool) (string, error) {
 
 	// get tmp file
 
 	tmpPath := getConfigPath(configPathPrefix, "tmp")
-
-	if _, err := os.Stat(tmpPath); err == nil {
+	if fileExists(tmpPath) {
 		return "", fmt.Errorf("SaveNewConfig: tmp file exists: [%s]", tmpPath)
 	}
 
-	f, createErr := os.OpenFile(tmpPath, os.O_CREATE|os.O_WRONLY, 0640)
-	if createErr != nil {
-		return "", fmt.Errorf("SaveNewConfig: error creating tmp file: [%s]: %v", tmpPath, createErr)
-	}
-
-	defer os.Remove(tmpPath)
-
 	// write to tmp file
 
-	w := bufio.NewWriter(f)
-
-	if err := writeFunc(w); err != nil {
-		return "", fmt.Errorf("SaveNewConfig: writeFunc error: [%s]: %v", tmpPath, err)
+	creatErr := writeFile(tmpPath, writeFunc)
+	if creatErr != nil {
+		return "", fmt.Errorf("SaveNewConfig: error creating tmp file: [%s]: %v", tmpPath, creatErr)
 	}
 
-	if err := w.Flush(); err != nil {
-		return "", fmt.Errorf("SaveNewConfig: error flushing file: [%s]: %v", tmpPath, err)
-	}
-
-	if err := f.Close(); err != nil {
-		return "", fmt.Errorf("SaveNewConfig: error closing file: [%s]: %v", tmpPath, err)
-	}
+	defer fileRemove(tmpPath)
 
 	// get previous file
 
@@ -235,7 +278,7 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 		if equalErr == nil {
 			if equal {
 				logger.Printf("SaveNewConfig: refusing to create identical new file: [%s]", tmpPath)
-				if removeErr := os.Remove(tmpPath); removeErr != nil {
+				if removeErr := fileRemove(tmpPath); removeErr != nil {
 					logger.Printf("SaveNewConfig: error removing temp file=[%s]: %v", tmpPath, removeErr)
 				}
 				return lastConfig, nil // success
@@ -255,7 +298,7 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 
 	logger.Printf("SaveNewConfig: newPath=[%s]", newFilepath)
 
-	if _, err := os.Stat(newFilepath); err == nil {
+	if fileExists(newFilepath) {
 		return "", fmt.Errorf("SaveNewConfig: new file exists: [%s]", newFilepath)
 	}
 
@@ -275,7 +318,7 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 		// since we failed to update the shortcut file,
 		// it might be pointing to old backup.
 		// then it's safer to simply remove it.
-		os.Remove(lastIdPath)
+		fileRemove(lastIdPath)
 	}
 
 	// erase old file
@@ -308,7 +351,7 @@ func eraseOldFiles(configPathPrefix string, maxFiles int, logger hasPrintf) {
 	for i := 0; i < toDelete; i++ {
 		path := filepath.Join(dirname, matches[i])
 		logger.Printf("eraseOldFiles: delete: [%s]", path)
-		if err := os.Remove(path); err != nil {
+		if err := fileRemove(path); err != nil {
 			logger.Printf("eraseOldFiles: delete: error: [%s]: %v", path, err)
 		}
 	}
