@@ -134,6 +134,16 @@ func main() {
 	flag.DurationVar(&logCheckInterval, "logCheckInterval", time.Hour, "interval for checking log file size")
 	flag.Parse()
 
+	if store.S3Path(jaz.logPathPrefix) {
+		jaz.logf("logging to Amazon S3 is not supported: %s", jaz.logPathPrefix)
+		return
+	}
+
+	if store.S3Path(staticDir) {
+		jaz.logf("static dir on Amazon S3 is not supported: %s", staticDir)
+		return
+	}
+
 	if lockErr := exclusiveLock(jaz); lockErr != nil {
 		jaz.logf("main: could not get exclusive lock: %v", lockErr)
 		panic("main: refusing to run without exclusive lock")
@@ -439,34 +449,42 @@ func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
 
 func exclusiveLock(jaz *app) error {
 	configLockPath := fmt.Sprintf("%slock", jaz.configPathPrefix)
-	var newErr error
-	if jaz.configLock, newErr = lockfile.New(configLockPath); newErr != nil {
-		return fmt.Errorf("exclusiveLock: new failure: '%s': %v", configLockPath, newErr)
-	}
-	if err := jaz.configLock.TryLock(); err != nil {
-		return fmt.Errorf("exclusiveLock: lock failure: '%s': %v", configLockPath, err)
+	if !store.S3Path(configLockPath) {
+		var newErr error
+		if jaz.configLock, newErr = lockfile.New(configLockPath); newErr != nil {
+			return fmt.Errorf("exclusiveLock: new failure: '%s': %v", configLockPath, newErr)
+		}
+		if err := jaz.configLock.TryLock(); err != nil {
+			return fmt.Errorf("exclusiveLock: lock failure: '%s': %v", configLockPath, err)
+		}
 	}
 
 	repositoryLockPath := filepath.Join(jaz.repositoryPath, "lock")
-	if jaz.repositoryLock, newErr = lockfile.New(repositoryLockPath); newErr != nil {
-		jaz.configLock.Unlock()
-		return fmt.Errorf("exclusiveLock: new failure: '%s': %v", repositoryLockPath, newErr)
-	}
-	if err := jaz.repositoryLock.TryLock(); err != nil {
-		jaz.configLock.Unlock()
-		return fmt.Errorf("exclusiveLock: lock failure: '%s': %v", repositoryLockPath, err)
+	if !store.S3Path(repositoryLockPath) {
+		var newErr error
+		if jaz.repositoryLock, newErr = lockfile.New(repositoryLockPath); newErr != nil {
+			jaz.configLock.Unlock()
+			return fmt.Errorf("exclusiveLock: new failure: '%s': %v", repositoryLockPath, newErr)
+		}
+		if err := jaz.repositoryLock.TryLock(); err != nil {
+			jaz.configLock.Unlock()
+			return fmt.Errorf("exclusiveLock: lock failure: '%s': %v", repositoryLockPath, err)
+		}
 	}
 
 	logLockPath := fmt.Sprintf("%slock", jaz.logPathPrefix)
-	if jaz.logLock, newErr = lockfile.New(logLockPath); newErr != nil {
-		jaz.configLock.Unlock()
-		jaz.repositoryLock.Unlock()
-		return fmt.Errorf("exclusiveLock: new failure: '%s': %v", logLockPath, newErr)
-	}
-	if err := jaz.logLock.TryLock(); err != nil {
-		jaz.configLock.Unlock()
-		jaz.repositoryLock.Unlock()
-		return fmt.Errorf("exclusiveLock: lock failure: '%s': %v", logLockPath, err)
+	if !store.S3Path(logLockPath) {
+		var newErr error
+		if jaz.logLock, newErr = lockfile.New(logLockPath); newErr != nil {
+			jaz.configLock.Unlock()
+			jaz.repositoryLock.Unlock()
+			return fmt.Errorf("exclusiveLock: new failure: '%s': %v", logLockPath, newErr)
+		}
+		if err := jaz.logLock.TryLock(); err != nil {
+			jaz.configLock.Unlock()
+			jaz.repositoryLock.Unlock()
+			return fmt.Errorf("exclusiveLock: lock failure: '%s': %v", logLockPath, err)
+		}
 	}
 
 	return nil
@@ -474,18 +492,24 @@ func exclusiveLock(jaz *app) error {
 
 func exclusiveUnlock(jaz *app) {
 	configLockPath := fmt.Sprintf("%slock", jaz.configPathPrefix)
-	if err := jaz.configLock.Unlock(); err != nil {
-		jaz.logger.Printf("exclusiveUnlock: '%s': %v", configLockPath, err)
+	if !store.S3Path(configLockPath) {
+		if err := jaz.configLock.Unlock(); err != nil {
+			jaz.logger.Printf("exclusiveUnlock: '%s': %v", configLockPath, err)
+		}
 	}
 
 	repositoryLockPath := filepath.Join(jaz.repositoryPath, "lock")
-	if err := jaz.repositoryLock.Unlock(); err != nil {
-		jaz.logger.Printf("exclusiveUnlock: '%s': %v", repositoryLockPath, err)
+	if !store.S3Path(repositoryLockPath) {
+		if err := jaz.repositoryLock.Unlock(); err != nil {
+			jaz.logger.Printf("exclusiveUnlock: '%s': %v", repositoryLockPath, err)
+		}
 	}
 
 	logLockPath := fmt.Sprintf("%slock", jaz.logPathPrefix)
-	if err := jaz.logLock.Unlock(); err != nil {
-		jaz.logger.Printf("exclusiveUnlock: '%s': %v", logLockPath, err)
+	if !store.S3Path(logLockPath) {
+		if err := jaz.logLock.Unlock(); err != nil {
+			jaz.logger.Printf("exclusiveUnlock: '%s': %v", logLockPath, err)
+		}
 	}
 }
 

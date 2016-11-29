@@ -46,10 +46,14 @@ func s3init(logger hasPrintf, region string) {
 
 func s3log(format string, v ...interface{}) {
 	if s3logger == nil {
-		fmt.Printf("s3 store: "+format, v...)
-		panic("s3 store uninitialized")
+		fmt.Printf("s3 store (unitialized): "+format, v...)
+		return
 	}
 	s3logger.Printf("s3 store: "+format, v...)
+}
+
+func S3Path(path string) bool {
+	return s3path(path)
 }
 
 func s3path(path string) bool {
