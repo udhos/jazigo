@@ -108,6 +108,7 @@ func main() {
 	var logMaxFiles int
 	var logMaxSize int64
 	var logCheckInterval time.Duration
+	var webListen string
 
 	defaultHome := defaultHomeDir()
 	defaultConfigPrefix := filepath.Join(defaultHome, "etc", "jazigo.conf.")
@@ -119,6 +120,7 @@ func main() {
 	flag.StringVar(&jaz.repositoryPath, "repositoryPath", defaultRepo, "repository path")
 	flag.StringVar(&jaz.logPathPrefix, "logPathPrefix", defaultLogPrefix, "log path prefix")
 	flag.StringVar(&staticDir, "wwwStaticPath", defaultStaticDir, "directory for static www content")
+	flag.StringVar(&webListen, "webListen", ":8080", "address:port for web UI")
 	flag.BoolVar(&runOnce, "runOnce", false, "exit after scanning all devices once")
 	flag.BoolVar(&deviceDelete, "deviceDelete", false, "delete devices specified in stdin")
 	flag.BoolVar(&devicePurge, "devicePurge", false, "purge devices specified in stdin")
@@ -174,13 +176,12 @@ func main() {
 
 	dev.UpdateLastSuccess(jaz.table, jaz.logger, jaz.repositoryPath)
 
-	appAddr := ":8080"
 	serverName := fmt.Sprintf("%s application", appName)
 
 	// Create GUI server
-	server := gwu.NewServer(appName, appAddr)
+	server := gwu.NewServer(appName, webListen)
 	//folder := "./tls/"
-	//server := gwu.NewServerTLS(appName, appAddr, folder+"cert.pem", folder+"key.pem")
+	//server := gwu.NewServerTLS(appName, webListen, folder+"cert.pem", folder+"key.pem")
 	server.SetText(serverName)
 
 	staticPathFull := fmt.Sprintf("/%s/%s", appName, jaz.staticPath)
