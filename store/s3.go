@@ -134,3 +134,7 @@ func s3fileRemove(path string) error {
 func s3fileRename(p1, p2 string) error {
 	return fmt.Errorf("s3fileRename: FIXME WRITEME [%s,%s]", p1, p2)
 }
+
+func s3dirList(path string) (string, []string, error) {
+	return "", nil, fmt.Errorf("s3dirList: FIXME WRITEME [%s]", path)
+}

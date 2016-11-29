@@ -155,21 +155,38 @@ func ListConfigSorted(configPathPrefix string, reverse bool, logger hasPrintf) (
 	return dirname, matches, nil
 }
 
-func ListConfig(configPathPrefix string, logger hasPrintf) (string, []string, error) {
+func dirList(path string) (string, []string, error) {
 
-	dirname := filepath.Dir(configPathPrefix)
+	if s3path(path) {
+		return s3dirList(path)
+	}
+
+	dirname := filepath.Dir(path)
 
 	dir, err := os.Open(dirname)
 	if err != nil {
-		return "", nil, fmt.Errorf("ListConfig: error opening dir '%s': %v", dirname, err)
+		return dirname, nil, fmt.Errorf("ListConfig: error opening dir '%s': %v", dirname, err)
 	}
 
-	names, e := dir.Readdirnames(0)
-	if e != nil {
-		return "", nil, fmt.Errorf("ListConfig: error reading dir '%s': %v", dirname, e)
+	defer dir.Close()
+
+	names, err2 := dir.Readdirnames(0)
+	if err2 != nil {
+		return dirname, nil, fmt.Errorf("ListConfig: error reading dir '%s': %v", dirname, err2)
 	}
 
-	dir.Close()
+	return dirname, names, nil
+}
+
+func ListConfig(configPathPrefix string, logger hasPrintf) (string, []string, error) {
+
+	var dirname string
+	var names []string
+	var dirErr error
+	dirname, names, dirErr = dirList(configPathPrefix)
+	if dirErr != nil {
+		return dirname, nil, dirErr
+	}
 
 	logger.Printf("ListConfig: prefix=[%s] names=%d", configPathPrefix, len(names))
 
