@@ -207,6 +207,24 @@ func fileRemove(path string) error {
 	return os.Remove(path)
 }
 
+func fileRename(p1, p2 string) error {
+
+	if s3path(p1) {
+		return fmt.Errorf("fileRename: FIXME WRITEME rename file in S3: [%s,%s]", p1, p2)
+	}
+
+	return os.Rename(p1, p2)
+}
+
+func writeFileBuf(path string, buf []byte) error {
+
+	if s3path(path) {
+		return s3fileput(path, buf)
+	}
+
+	return ioutil.WriteFile(path, buf, 0640)
+}
+
 func writeFile(path string, writeFunc func(HasWrite) error) error {
 
 	if s3path(path) {
@@ -304,7 +322,7 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 
 	// rename tmp to new file
 
-	if renameErr := os.Rename(tmpPath, newFilepath); renameErr != nil {
+	if renameErr := fileRename(tmpPath, newFilepath); renameErr != nil {
 		return "", fmt.Errorf("SaveNewConfig: could not rename '%s' to '%s'; %v", tmpPath, newFilepath, renameErr)
 	}
 
@@ -312,7 +330,7 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 
 	// write last id into shortcut file
 	lastIdPath := getLastIdPath(configPathPrefix)
-	if err := ioutil.WriteFile(lastIdPath, []byte(strconv.Itoa(newCommitId)), 0640); err != nil {
+	if err := writeFileBuf(lastIdPath, []byte(strconv.Itoa(newCommitId))); err != nil {
 		logger.Printf("SaveNewConfig: error writing last id file '%s': %v", lastIdPath, err)
 
 		// since we failed to update the shortcut file,
