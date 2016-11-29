@@ -239,7 +239,7 @@ func writeFile(path string, writeFunc func(HasWrite) error) error {
 
 	f, createErr := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0640)
 	if createErr != nil {
-		return fmt.Errorf("SaveNewConfig: error creating tmp file: [%s]: %v", path, createErr)
+		return fmt.Errorf("SaveNewConfig: error creating file: [%s]: %v", path, createErr)
 	}
 
 	w := bufio.NewWriter(f)
