@@ -126,4 +126,12 @@ Hint: The device id must be unique. You can generate a meaningful device id manu
 
     $ $GOPATH/bin/jazigo -deviceImport < table.txt
 
+Using AWS S3
+============
 
+Quick recipe for using S3 bucket:
+
+    export JAZIGO_HOME=arn:aws:s3:::bucketname
+    DIR=$HOME/jazigo
+    mkdir -p $DIR/log $DIR/www
+    $GOPATH/bin/jazigo -logPathPrefix=$DIR/log/jazigo.log. -wwwStaticPath=$DIR/www
