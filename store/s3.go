@@ -122,3 +122,15 @@ func s3fileput(path string, buf []byte) error {
 
 	return err
 }
+
+func s3fileFirstLine(path string) (string, error) {
+	return "", fmt.Errorf("s3fileFirstLine: FIXME WRITEME [%s]", path)
+}
+
+func s3fileRemove(path string) error {
+	return fmt.Errorf("s3fileRemove: FIXME WRITEME [%s]", path)
+}
+
+func s3fileRename(p1, p2 string) error {
+	return fmt.Errorf("s3fileRename: FIXME WRITEME [%s,%s]", p1, p2)
+}

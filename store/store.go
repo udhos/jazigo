@@ -62,23 +62,37 @@ func ExtractCommitIdFromFilename(filename string) (int, error) {
 	return id, nil
 }
 
+func fileFirstLine(path string) (string, error) {
+
+	if s3path(path) {
+		return s3fileFirstLine(path)
+	}
+
+	f, openErr := os.Open(path)
+	if openErr != nil {
+		return "", openErr
+	}
+	defer f.Close()
+
+	r := bufio.NewReader(f)
+	line, _, readErr := r.ReadLine()
+	if readErr != nil {
+		return "", readErr
+	}
+
+	return string(line[:]), nil
+}
+
 func tryShortcut(configPathPrefix string, logger hasPrintf) string {
 
-	lastIdPath := getLastIdPath(configPathPrefix)
-	f, openErr := os.Open(lastIdPath)
-	if openErr == nil {
-		defer f.Close()
-		r := bufio.NewReader(f)
-		line, _, readErr := r.ReadLine()
-		if readErr == nil {
-			id := string(line[:])
-			path := getConfigPath(configPathPrefix, id)
-			if fileExists(path) {
-				return path // found
-			}
-		} else {
-			logger.Printf("FindLastConfig: read failure '%s': %v", lastIdPath, readErr)
-		}
+	id, err := fileFirstLine(configPathPrefix)
+	if err != nil {
+		return "" // not found
+	}
+
+	path := getConfigPath(configPathPrefix, id)
+	if fileExists(path) {
+		return path // found
 	}
 
 	return "" // not found
@@ -201,7 +215,7 @@ func fileExists(path string) bool {
 func fileRemove(path string) error {
 
 	if s3path(path) {
-		return fmt.Errorf("fileRemove: FIXME WRITEME remove file from S3: [%s]", path)
+		return s3fileRemove(path)
 	}
 
 	return os.Remove(path)
@@ -210,7 +224,7 @@ func fileRemove(path string) error {
 func fileRename(p1, p2 string) error {
 
 	if s3path(p1) {
-		return fmt.Errorf("fileRename: FIXME WRITEME rename file in S3: [%s,%s]", p1, p2)
+		return s3fileRename(p1, p2)
 	}
 
 	return os.Rename(p1, p2)
