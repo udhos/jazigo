@@ -5,7 +5,7 @@
 About Jazigo
 =============
 
-Jazigo is a tool written in Go for retrieving configuration for multiple devices, similar to [rancid](http://www.shrubbery.net/rancid/), [fetchconfig](https://github.com/udhos/fetchconfig) and [oxidized](https://github.com/ytti/oxidized).
+Jazigo is a tool written in Go for retrieving configuration for multiple devices, similar to [rancid](http://www.shrubbery.net/rancid/), [fetchconfig](https://github.com/udhos/fetchconfig), [oxidized](https://github.com/ytti/oxidized), [Sweet](https://github.com/AppliedTrust/sweet).
 
 Supported Platforms
 ===================
@@ -21,9 +21,9 @@ Please send pull requests for new plataforms.
 Features
 ========
 
-- Written in [Go](https://golang.org/).
+- Written in [Go](https://golang.org/). Single binary. No runtime dependency.
 - Spawns multiple concurrent lightweight goroutines to quickly handle large number of devices.
-- Very easy to add support for new platforms.
+- Very easy to add support for new platforms. See the [Cisco IOS model](https://github.com/udhos/jazigo/blob/master/dev/model_cisco.go) as example.
 - Configured with [YAML](http://yaml.org).
 - Backup files can be accessed from web UI.
 - Support for SSH and TELNET.
