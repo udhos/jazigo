@@ -148,3 +148,16 @@ func (t *DeviceTable) FindDeviceFreeId(prefix string) string {
 	free := highest + 1
 	return prefix + strconv.Itoa(free)
 }
+
+func (t *DeviceTable) ListModels() []string {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
+	models := make([]string, len(t.models))
+	i := 0
+	for name := range t.models {
+		models[i] = name
+		i++
+	}
+	return models
+}

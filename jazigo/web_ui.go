@@ -521,7 +521,11 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 
 	win.AddEHandlerFunc(refresh, gwu.ETypeWinLoad)
 
-	win.Add(createDevPanel)
+	createDevExpander := gwu.NewExpander()
+	createDevExpander.SetHeader(gwu.NewLabel("Create device"))
+	createDevExpander.SetContent(createDevPanel)
+
+	win.Add(createDevExpander)
 
 	win.Add(gwu.NewLabel("Hint: fill in text boxes below to select matching subset of devices."))
 
@@ -560,7 +564,10 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 
 	autoIdPrefix := "auto"
 
-	textModel := gwu.NewTextBox("cisco-ios")
+	models := jaz.table.ListModels()
+	sort.Strings(models)
+
+	listModel := gwu.NewListBox(models)
 	textId := gwu.NewTextBox(autoIdPrefix)
 	textHost := gwu.NewTextBox("")
 	textTransport := gwu.NewTextBox("ssh,telnet")
@@ -569,7 +576,7 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 	textEnable := gwu.NewTextBox("")
 
 	panelModel.Add(labelModel)
-	panelModel.Add(textModel)
+	panelModel.Add(listModel)
 	panelId.Add(labelId)
 	panelId.Add(textId)
 	panelHost.Add(labelHost)
@@ -616,7 +623,7 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 			When: time.Now(),
 		}
 
-		if createErr := dev.CreateDevice(jaz.table, jaz.logger, textModel.Text(), id, textHost.Text(), textTransport.Text(), textUser.Text(), textPass.Text(), textEnable.Text(), false, &change); createErr != nil {
+		if createErr := dev.CreateDevice(jaz.table, jaz.logger, listModel.SelectedValue(), id, textHost.Text(), textTransport.Text(), textUser.Text(), textPass.Text(), textEnable.Text(), false, &change); createErr != nil {
 			msg.SetText("Could not create device: " + createErr.Error())
 			e.MarkDirty(createDevPanel)
 			return
