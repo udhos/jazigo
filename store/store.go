@@ -336,7 +336,7 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 	}
 
 	if changesOnly && previousFound {
-		equal, equalErr := equalfile.CompareFile(lastConfig, tmpPath)
+		equal, equalErr := fileCompare(lastConfig, tmpPath)
 		if equalErr == nil {
 			if equal {
 				logger.Printf("SaveNewConfig: refusing to create identical new file: [%s]", tmpPath)
@@ -431,4 +431,13 @@ func FileInfo(path string) (time.Time, int64, error) {
 	}
 
 	return info.ModTime(), info.Size(), nil
+}
+
+func fileCompare(p1, p2 string) (bool, error) {
+
+	if s3path(p1) {
+		return s3fileCompare(p1, p2)
+	}
+
+	return equalfile.CompareFile(p1, p2)
 }

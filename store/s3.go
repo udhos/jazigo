@@ -201,7 +201,7 @@ func s3fileRead(path string) ([]byte, error) {
 		return nil, err
 	}
 
-	//s3log("s3fileRead: FIXME limit number of lines read from s3 object")
+	s3log("s3fileRead: FIXME limit number of lines read from s3 object")
 
 	return ioutil.ReadAll(resp.Body)
 }
@@ -343,4 +343,8 @@ func s3fileInfo(path string) (time.Time, int64, error) {
 	size := *resp.ContentLength
 
 	return mod, size, nil
+}
+
+func s3fileCompare(p1, p2 string) (bool, error) {
+	return false, fmt.Errorf("s3fileCompare: FIXME WRITEME cant currently compare files on S3: [%s,%s]", p1, p2)
 }
