@@ -64,14 +64,11 @@ lint() {
 msg test dev
 go test github.com/udhos/jazigo/dev
 
+msg test store
 if [ -z "$JAZIGO_S3_REGION" ]; then
     echo >&2 JAZIGO_S3_REGION undefined -- set JAZIGO_S3_REGION=region
-    exit 1
 fi
 if [ -z "$JAZIGO_S3_FOLDER" ]; then
     echo >&2 JAZIGO_S3_FOLDER undefined -- set JAZIGO_S3_FOLDER=bucket/folder
-    exit 1
 fi
-
-msg test store
 go test github.com/udhos/jazigo/store
