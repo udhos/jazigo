@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -176,13 +175,15 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 
 		showPanel.Add(gwu.NewLabel("File: " + show))
 
-		input, openErr := os.Open(show)
-		if openErr != nil {
-			showPanel.Add(gwu.NewLabel(fmt.Sprintf("Could not open '%s': %v", show, openErr)))
-		}
+		/*
+			input, openErr := os.Open(show)
+			if openErr != nil {
+				showPanel.Add(gwu.NewLabel(fmt.Sprintf("Could not open '%s': %v", show, openErr)))
+			}
+		*/
 
 		jaz.logger.Printf("FIXME web_ui loadView: limit number of lines read from file")
-		b, readErr := ioutil.ReadAll(input)
+		b, readErr := store.FileRead(show)
 		if readErr != nil {
 			showPanel.Add(gwu.NewLabel(fmt.Sprintf("Could not read '%s': %v", show, readErr)))
 		}

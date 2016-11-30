@@ -1,8 +1,10 @@
 package store
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"strings"
 
@@ -53,6 +55,7 @@ func s3log(format string, v ...interface{}) {
 	s3logger.Printf("s3 store: "+format, v...)
 }
 
+// S3Path checks if path is an aws s3 path.
 func S3Path(path string) bool {
 	return s3path(path)
 }
@@ -128,16 +131,102 @@ func s3fileput(path string, buf []byte) error {
 	return err
 }
 
-func s3fileFirstLine(path string) (string, error) {
-	return "", fmt.Errorf("s3fileFirstLine: FIXME WRITEME [%s]", path)
-}
-
 func s3fileRemove(path string) error {
-	return fmt.Errorf("s3fileRemove: FIXME WRITEME [%s]", path)
+
+	s3c := s3client()
+	if s3c == nil {
+		return fmt.Errorf("s3fileRemove: missing s3 client")
+	}
+
+	bucket, key := s3parse(path)
+
+	params := &s3.DeleteObjectInput{
+		Bucket: aws.String(bucket), // Required
+		Key:    aws.String(key),    // Required
+	}
+	_, err := s3c.DeleteObject(params)
+
+	s3log("s3fileRemove: [%s] delete: error: %v", path, err)
+
+	return err
 }
 
 func s3fileRename(p1, p2 string) error {
-	return fmt.Errorf("s3fileRename: FIXME WRITEME [%s,%s]", p1, p2)
+
+	s3c := s3client()
+	if s3c == nil {
+		return fmt.Errorf("s3fileRename: missing s3 client")
+	}
+
+	bucket1, key1 := s3parse(p1)
+	bucket2, key2 := s3parse(p2)
+
+	params := &s3.CopyObjectInput{
+		Bucket:     aws.String(bucket2),              // Required
+		CopySource: aws.String(bucket1 + "/" + key1), // Required
+		Key:        aws.String(key2),                 // Required
+	}
+	_, copyErr := s3c.CopyObject(params)
+	if copyErr != nil {
+		return copyErr
+	}
+
+	if removeErr := s3fileRemove(p1); removeErr != nil {
+		// could not remove old file
+		s3fileRemove(p2) // remove new file (clean up)
+		return removeErr
+	}
+
+	return nil
+}
+
+func s3fileRead(path string) ([]byte, error) {
+
+	s3c := s3client()
+	if s3c == nil {
+		return nil, fmt.Errorf("s3fileRead: missing s3 client")
+	}
+
+	bucket, key := s3parse(path)
+
+	params := &s3.GetObjectInput{
+		Bucket: aws.String(bucket), // Required
+		Key:    aws.String(key),    // Required
+	}
+
+	resp, err := s3c.GetObject(params)
+	if err != nil {
+		return nil, err
+	}
+
+	s3log("s3fileRead: FIXME limit number of lines read from s3 object")
+
+	return ioutil.ReadAll(resp.Body)
+}
+
+func s3fileFirstLine(path string) (string, error) {
+
+	s3c := s3client()
+	if s3c == nil {
+		return "", fmt.Errorf("s3fileFirstLine: missing s3 client")
+	}
+
+	bucket, key := s3parse(path)
+
+	params := &s3.GetObjectInput{
+		Bucket: aws.String(bucket), // Required
+		Key:    aws.String(key),    // Required
+	}
+
+	resp, err := s3c.GetObject(params)
+	if err != nil {
+		return "", err
+	}
+
+	r := bufio.NewReader(resp.Body)
+	line, _, readErr := r.ReadLine()
+
+	return string(line[:]), readErr
 }
 
 func s3dirList(path string) (string, []string, error) {

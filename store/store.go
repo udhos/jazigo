@@ -76,11 +76,8 @@ func fileFirstLine(path string) (string, error) {
 
 	r := bufio.NewReader(f)
 	line, _, readErr := r.ReadLine()
-	if readErr != nil {
-		return "", readErr
-	}
 
-	return string(line[:]), nil
+	return string(line[:]), readErr
 }
 
 func tryShortcut(configPathPrefix string, logger hasPrintf) string {
@@ -245,6 +242,15 @@ func fileRename(p1, p2 string) error {
 	}
 
 	return os.Rename(p1, p2)
+}
+
+func FileRead(path string) ([]byte, error) {
+
+	if s3path(path) {
+		return s3fileRead(path)
+	}
+
+	return ioutil.ReadFile(path)
 }
 
 func writeFileBuf(path string, buf []byte) error {

@@ -1,11 +1,11 @@
 package conf
 
 import (
-	//"fmt"
-	"io/ioutil"
 	"time"
 
 	"gopkg.in/yaml.v2"
+
+	"github.com/udhos/jazigo/store"
 )
 
 type Change struct {
@@ -117,7 +117,7 @@ func New() *Config {
 }
 
 func Load(path string) (*Config, error) {
-	b, readErr := ioutil.ReadFile(path)
+	b, readErr := store.FileRead(path)
 	if readErr != nil {
 		return nil, readErr
 	}
