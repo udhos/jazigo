@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"path/filepath"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -69,6 +70,7 @@ func s3path(path string) bool {
 }
 
 // "arn:aws:s3:::bucket/folder/file.xxx"
+// => "bucket", "folder/file.xxx"
 func s3parse(path string) (string, string) {
 	s := strings.Split(path, ":")
 	if len(s) < 6 {
@@ -87,10 +89,10 @@ func s3parse(path string) (string, string) {
 
 func s3fileExists(path string) bool {
 
-	s3c := s3client()
-	if s3c == nil {
+	svc := s3client()
+	if svc == nil {
 		s3log("s3fileExists: missing s3 client: ugh")
-		return true // ugh
+		return false // ugh
 	}
 
 	bucket, key := s3parse(path)
@@ -99,21 +101,21 @@ func s3fileExists(path string) bool {
 		Bucket: aws.String(bucket), // Required
 		Key:    aws.String(key),    // Required
 	}
-	_, err := s3c.HeadObject(params)
+	_, err := svc.HeadObject(params)
 	if err == nil {
 		s3log("s3fileExists: FOUND [%s]", path)
 		return true // found
 	}
 
-	s3log("s3fileExists: [%s] error: %v", path, err)
+	//s3log("s3fileExists: [%s] error: %v", path, err)
 
 	return false
 }
 
 func s3fileput(path string, buf []byte) error {
 
-	s3c := s3client()
-	if s3c == nil {
+	svc := s3client()
+	if svc == nil {
 		return fmt.Errorf("s3fileput: missing s3 client")
 	}
 
@@ -124,17 +126,17 @@ func s3fileput(path string, buf []byte) error {
 		Key:    aws.String(key),
 		Body:   bytes.NewReader(buf),
 	}
-	_, err := s3c.PutObject(params)
+	_, err := svc.PutObject(params)
 
-	s3log("s3fileput: [%s] upload: error: %v", path, err)
+	//s3log("s3fileput: [%s] upload: error: %v", path, err)
 
 	return err
 }
 
 func s3fileRemove(path string) error {
 
-	s3c := s3client()
-	if s3c == nil {
+	svc := s3client()
+	if svc == nil {
 		return fmt.Errorf("s3fileRemove: missing s3 client")
 	}
 
@@ -144,17 +146,17 @@ func s3fileRemove(path string) error {
 		Bucket: aws.String(bucket), // Required
 		Key:    aws.String(key),    // Required
 	}
-	_, err := s3c.DeleteObject(params)
+	_, err := svc.DeleteObject(params)
 
-	s3log("s3fileRemove: [%s] delete: error: %v", path, err)
+	//s3log("s3fileRemove: [%s] delete: error: %v", path, err)
 
 	return err
 }
 
 func s3fileRename(p1, p2 string) error {
 
-	s3c := s3client()
-	if s3c == nil {
+	svc := s3client()
+	if svc == nil {
 		return fmt.Errorf("s3fileRename: missing s3 client")
 	}
 
@@ -166,7 +168,7 @@ func s3fileRename(p1, p2 string) error {
 		CopySource: aws.String(bucket1 + "/" + key1), // Required
 		Key:        aws.String(key2),                 // Required
 	}
-	_, copyErr := s3c.CopyObject(params)
+	_, copyErr := svc.CopyObject(params)
 	if copyErr != nil {
 		return copyErr
 	}
@@ -182,8 +184,8 @@ func s3fileRename(p1, p2 string) error {
 
 func s3fileRead(path string) ([]byte, error) {
 
-	s3c := s3client()
-	if s3c == nil {
+	svc := s3client()
+	if svc == nil {
 		return nil, fmt.Errorf("s3fileRead: missing s3 client")
 	}
 
@@ -194,20 +196,20 @@ func s3fileRead(path string) ([]byte, error) {
 		Key:    aws.String(key),    // Required
 	}
 
-	resp, err := s3c.GetObject(params)
+	resp, err := svc.GetObject(params)
 	if err != nil {
 		return nil, err
 	}
 
-	s3log("s3fileRead: FIXME limit number of lines read from s3 object")
+	//s3log("s3fileRead: FIXME limit number of lines read from s3 object")
 
 	return ioutil.ReadAll(resp.Body)
 }
 
 func s3fileFirstLine(path string) (string, error) {
 
-	s3c := s3client()
-	if s3c == nil {
+	svc := s3client()
+	if svc == nil {
 		return "", fmt.Errorf("s3fileFirstLine: missing s3 client")
 	}
 
@@ -218,7 +220,7 @@ func s3fileFirstLine(path string) (string, error) {
 		Key:    aws.String(key),    // Required
 	}
 
-	resp, err := s3c.GetObject(params)
+	resp, err := svc.GetObject(params)
 	if err != nil {
 		return "", err
 	}
@@ -230,5 +232,91 @@ func s3fileFirstLine(path string) (string, error) {
 }
 
 func s3dirList(path string) (string, []string, error) {
-	return "", nil, fmt.Errorf("s3dirList: FIXME WRITEME [%s]", path)
+
+	dirname := filepath.Dir(path)
+	var names []string
+
+	svc := s3client()
+	if svc == nil {
+		return dirname, names, fmt.Errorf("s3dirList: missing s3 client")
+	}
+
+	bucket, prefix := s3parse(path)
+
+	params := &s3.ListObjectsV2Input{
+		Bucket: aws.String(bucket), // Required
+		Prefix: aws.String(prefix),
+	}
+
+	for {
+		resp, err := svc.ListObjectsV2(params)
+		if err != nil {
+			return dirname, names, err
+		}
+
+		//s3log("s3dirList: FOUND %d keys [%s]", *resp.KeyCount, path)
+
+		for _, obj := range resp.Contents {
+			key := *obj.Key
+			name := filepath.Base(key)
+			//s3log("s3dirList: [%s] found: dir=[%s] file=[%s]", path, dirname, name)
+			names = append(names, name)
+		}
+
+		if *resp.IsTruncated {
+			params.ContinuationToken = resp.NextContinuationToken
+			continue
+		}
+
+		break
+	}
+
+	//s3log("s3dirList: FOUND %d total keys [%s]", len(names), path)
+
+	return dirname, names, nil
+}
+
+func s3dirClean(path string) error {
+
+	// retrieve object list
+	_, names, listErr := s3dirList(path)
+	if listErr != nil {
+		return listErr
+	}
+
+	if len(names) < 1 {
+		return nil
+	}
+
+	bucket, prefix := s3parse(path)
+	folder := filepath.Dir(prefix)
+
+	svc := s3client()
+	if svc == nil {
+		return fmt.Errorf("s3dirClean: missing s3 client")
+	}
+
+	// build object list
+	list := []*s3.ObjectIdentifier{}
+	for _, filename := range names {
+		key := folder + "/" + filename
+		s3log("s3dirClean: [%s] bucket=[%s] key=[%s]", path, bucket, key)
+		obj := &s3.ObjectIdentifier{
+			Key: aws.String(key), // Required
+		}
+		list = append(list, obj)
+	}
+
+	// query parameters
+	params := &s3.DeleteObjectsInput{
+		Bucket: aws.String(bucket), // Required
+		Delete: &s3.Delete{ // Required
+			Objects: list, // Required
+		},
+	}
+
+	// send
+	_, err := svc.DeleteObjects(params)
+
+	return err
 }
