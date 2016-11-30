@@ -3,6 +3,7 @@ package store
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -41,12 +42,12 @@ func s3init(logger hasPrintf, region string) {
 	}
 	s3region = region
 	s3logger = logger
-	s3log("initialized")
+	s3log("initialized: region: " + s3region)
 }
 
 func s3log(format string, v ...interface{}) {
 	if s3logger == nil {
-		fmt.Printf("s3 store (unitialized): "+format, v...)
+		log.Printf("s3 store (unitialized): "+format, v...)
 		return
 	}
 	s3logger.Printf("s3 store: "+format, v...)
