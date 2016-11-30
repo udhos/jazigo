@@ -1,9 +1,17 @@
 #!/bin/sh
 
+step=0
+
+msg() {
+    step=$((step+1))
+    echo >&2 $step. $*
+}
+
 get() {
     i=$1
-    echo 2>&1 fetching $i
+    msg fetching $i
     go get $i
+    msg fetching $i - done
 }
 
 get github.com/icza/gowut/gwu
@@ -16,15 +24,21 @@ get honnef.co/go/simple/cmd/gosimple
 
 src=`find . -type f | egrep '\.go$'`
 
+msg fmt
 gofmt -s -w $src
+msg fix
 go tool fix $src
+msg vet
 go tool vet .
+
+msg install
 pkg=github.com/udhos/jazigo
 go install $pkg/jazigo
 
 # go get honnef.co/go/simple/cmd/gosimple
 s=$GOPATH/bin/gosimple
 simple() {
+    msg simple - this is slow, please standby
     # gosimple cant handle source files from multiple packages
     $s jazigo/*.go
     $s conf/*.go
@@ -37,6 +51,7 @@ simple() {
 # go get github.com/golang/lint/golint
 l=$GOPATH/bin/golint
 lint() {
+    msg lint
     # golint cant handle source files from multiple packages
     $l jazigo/*.go
     $l conf/*.go
@@ -46,6 +61,7 @@ lint() {
 }
 [ -x "$l" ] && lint
 
+msg test dev
 go test github.com/udhos/jazigo/dev
 
 if [ -z "$JAZIGO_S3_REGION" ]; then
@@ -57,4 +73,5 @@ if [ -z "$JAZIGO_S3_FOLDER" ]; then
     exit 1
 fi
 
+msg test store
 go test github.com/udhos/jazigo/store

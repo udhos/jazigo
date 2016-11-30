@@ -28,10 +28,12 @@ func s3client() *s3.S3 {
 			s3log("s3client: could not create session: %v", err)
 			return nil
 		}
+		s3log("s3client: session created")
 	}
 
 	if s3Session == nil {
 		s3Session = s3.New(awsSession, aws.NewConfig().WithRegion(s3region))
+		s3log("s3client: client created for region: [%s]", s3region)
 	}
 
 	return s3Session
@@ -84,7 +86,7 @@ func s3parse(path string) (string, string) {
 	}
 	bucket := file[:slash]
 	key := file[slash+1:]
-	s3log("s3parse: [%s] => bucket=[%s] key=[%s]", path, bucket, key)
+	//s3log("s3parse: [%s] => bucket=[%s] key=[%s]", path, bucket, key)
 	return bucket, key
 }
 
@@ -102,13 +104,10 @@ func s3fileExists(path string) bool {
 		Bucket: aws.String(bucket), // Required
 		Key:    aws.String(key),    // Required
 	}
-	_, err := svc.HeadObject(params)
-	if err == nil {
-		s3log("s3fileExists: FOUND [%s]", path)
+	if _, err := svc.HeadObject(params); err == nil {
+		//s3log("s3fileExists: FOUND [%s]", path)
 		return true // found
 	}
-
-	//s3log("s3fileExists: [%s] error: %v", path, err)
 
 	return false
 }

@@ -83,8 +83,10 @@ func fileFirstLine(path string) (string, error) {
 
 func tryShortcut(configPathPrefix string, logger hasPrintf) string {
 
-	id, err := fileFirstLine(configPathPrefix)
+	lastIdPath := getLastIdPath(configPathPrefix)
+	id, err := fileFirstLine(lastIdPath)
 	if err != nil {
+		//logger.Printf("tryShortcut: [%s] error: %v", lastIdPath, err)
 		return "" // not found
 	}
 
@@ -93,14 +95,18 @@ func tryShortcut(configPathPrefix string, logger hasPrintf) string {
 		return path // found
 	}
 
+	//logger.Printf("tryShortcut: [%s] file not found", path)
+
 	return "" // not found
 }
 
 func FindLastConfig(configPathPrefix string, logger hasPrintf) (string, error) {
 
 	if path := tryShortcut(configPathPrefix, logger); path != "" {
+		//logger.Printf("FindLastConfig: found from shortcut: [%s] => [%s]", configPathPrefix, path)
 		return path, nil // found
 	}
+	logger.Printf("FindLastConfig: NOT FOUND from shortcut: [%s]", configPathPrefix)
 
 	// search filesystem directory
 
