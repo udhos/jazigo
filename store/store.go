@@ -419,16 +419,16 @@ func eraseOldFiles(configPathPrefix string, maxFiles int, logger hasPrintf) {
 	}
 }
 
-func FileModTime(path string) (time.Time, error) {
+func FileInfo(path string) (time.Time, int64, error) {
 
 	if s3path(path) {
-		return s3fileModTime(path)
+		return s3fileInfo(path)
 	}
 
 	info, statErr := os.Stat(path)
 	if statErr != nil {
-		return time.Time{}, statErr
+		return time.Time{}, 0, statErr
 	}
 
-	return info.ModTime(), nil
+	return info.ModTime(), info.Size(), nil
 }

@@ -321,11 +321,11 @@ func s3dirClean(path string) error {
 	return err
 }
 
-func s3fileModTime(path string) (time.Time, error) {
+func s3fileInfo(path string) (time.Time, int64, error) {
 
 	svc := s3client()
 	if svc == nil {
-		return time.Time{}, fmt.Errorf("s3fileModTime: missing s3 client")
+		return time.Time{}, 0, fmt.Errorf("s3fileInfo: missing s3 client")
 	}
 
 	bucket, key := s3parse(path)
@@ -336,10 +336,11 @@ func s3fileModTime(path string) (time.Time, error) {
 	}
 	resp, err := svc.HeadObject(params)
 	if err != nil {
-		return time.Time{}, err
+		return time.Time{}, 0, err
 	}
 
 	mod := *resp.LastModified
+	size := *resp.ContentLength
 
-	return mod, nil
+	return mod, size, nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -174,13 +175,6 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 
 		showPanel.Add(gwu.NewLabel("File: " + show))
 
-		/*
-			input, openErr := os.Open(show)
-			if openErr != nil {
-				showPanel.Add(gwu.NewLabel(fmt.Sprintf("Could not open '%s': %v", show, openErr)))
-			}
-		*/
-
 		jaz.logger.Printf("FIXME web_ui loadView: limit number of lines read from file")
 		b, readErr := store.FileRead(show)
 		if readErr != nil {
@@ -214,14 +208,15 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 
 		filesTab.Clear()
 
-		const COLS = 3
+		const COLS = 4
 
 		row := 0
 
 		// header
 		filesTab.Add(gwu.NewLabel("Download"), row, 0)
 		filesTab.Add(gwu.NewLabel("View"), row, 1)
-		filesTab.Add(gwu.NewLabel("Time"), row, 2)
+		filesTab.Add(gwu.NewLabel("Size"), row, 2)
+		filesTab.Add(gwu.NewLabel("Time"), row, 3)
 
 		row++
 
@@ -229,19 +224,11 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 			path := filepath.Join(dirname, m)
 			timeStr := "unknown"
 
-			/*
-				f, openErr := os.Open(path)
-				if openErr != nil {
-					timeStr += fmt.Sprintf("(could not open file: %v)", openErr)
-				}
-				info, statErr := f.Stat()
-			*/
-
-			modTime, modErr := store.FileModTime(path)
-			if modErr == nil {
+			modTime, size, infoErr := store.FileInfo(path)
+			if infoErr == nil {
 				timeStr = modTime.String()
 			} else {
-				timeStr += fmt.Sprintf("(could not get mod time: %v)", modErr)
+				timeStr += fmt.Sprintf("(could not get file info: %v)", infoErr)
 			}
 
 			filePath := fmt.Sprintf("/%s/%s/%s/%s", appName, jaz.repoPath, devID, m)
@@ -256,7 +243,8 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 
 			filesTab.Add(devLink, row, 0)
 			filesTab.Add(buttonView, row, 1)
-			filesTab.Add(gwu.NewLabel(timeStr), row, 2)
+			filesTab.Add(gwu.NewLabel(strconv.FormatInt(size, 10)), row, 2)
+			filesTab.Add(gwu.NewLabel(timeStr), row, 3)
 
 			row++
 		}
