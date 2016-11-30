@@ -27,6 +27,7 @@ Features
 - Configured with [YAML](http://yaml.org).
 - Backup files can be accessed from web UI.
 - Support for SSH and TELNET.
+- Can directly store backup files into AWS S3 bucket.
 
 Requirements
 ============
