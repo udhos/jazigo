@@ -8,6 +8,7 @@ import (
 	"log"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -319,4 +320,27 @@ func s3dirClean(path string) error {
 	_, err := svc.DeleteObjects(params)
 
 	return err
+}
+
+func s3fileModTime(path string) (time.Time, error) {
+
+	svc := s3client()
+	if svc == nil {
+		return time.Time{}, fmt.Errorf("s3fileModTime: missing s3 client")
+	}
+
+	bucket, key := s3parse(path)
+
+	params := &s3.HeadObjectInput{
+		Bucket: aws.String(bucket), // Required
+		Key:    aws.String(key),    // Required
+	}
+	resp, err := svc.HeadObject(params)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	mod := *resp.LastModified
+
+	return mod, nil
 }

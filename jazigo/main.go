@@ -134,6 +134,8 @@ func main() {
 	flag.DurationVar(&logCheckInterval, "logCheckInterval", time.Hour, "interval for checking log file size")
 	flag.Parse()
 
+	jaz.logPathPrefix = addTrailingDot(jaz.logPathPrefix)
+
 	if store.S3Path(jaz.logPathPrefix) {
 		jaz.logf("logging to Amazon S3 is not supported: %s", jaz.logPathPrefix)
 		return

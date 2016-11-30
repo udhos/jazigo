@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -229,15 +228,20 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 		for _, m := range matches {
 			path := filepath.Join(dirname, m)
 			timeStr := "unknown"
-			f, openErr := os.Open(path)
-			if openErr != nil {
-				timeStr += fmt.Sprintf("(could not open file: %v)", openErr)
-			}
-			info, statErr := f.Stat()
-			if statErr == nil {
-				timeStr = info.ModTime().String()
+
+			/*
+				f, openErr := os.Open(path)
+				if openErr != nil {
+					timeStr += fmt.Sprintf("(could not open file: %v)", openErr)
+				}
+				info, statErr := f.Stat()
+			*/
+
+			modTime, modErr := store.FileModTime(path)
+			if modErr == nil {
+				timeStr = modTime.String()
 			} else {
-				timeStr += fmt.Sprintf("(could not stat file: %v)", statErr)
+				timeStr += fmt.Sprintf("(could not get mod time: %v)", modErr)
 			}
 
 			filePath := fmt.Sprintf("/%s/%s/%s/%s", appName, jaz.repoPath, devID, m)

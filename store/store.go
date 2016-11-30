@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/udhos/equalfile"
@@ -410,4 +411,18 @@ func eraseOldFiles(configPathPrefix string, maxFiles int, logger hasPrintf) {
 			logger.Printf("eraseOldFiles: delete: error: [%s]: %v", path, err)
 		}
 	}
+}
+
+func FileModTime(path string) (time.Time, error) {
+
+	if s3path(path) {
+		return s3fileModTime(path)
+	}
+
+	info, statErr := os.Stat(path)
+	if statErr != nil {
+		return time.Time{}, statErr
+	}
+
+	return info.ModTime(), nil
 }
