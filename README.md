@@ -136,8 +136,8 @@ Quick recipe for using S3 bucket:
 
 2. Authorize the client to access the bucket
 
-    # An usual way is to create an IAM user, add key/secret, and put those credentials into ~/.aws/credentials:
-    
+An usual way is to create an IAM user, add key/secret, and put those credentials into ~/.aws/credentials:
+
     $ cat ~/.aws/credentials
     [default]
     aws_access_key_id = key
