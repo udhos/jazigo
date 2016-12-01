@@ -35,18 +35,18 @@ func s3session() *session.Session {
 
 func s3client(region string) *s3.S3 {
 
+	if region == "" {
+		region = s3region // fallback to default region
+		if region == "" {
+			s3log("s3client: could not find region")
+			return nil
+		}
+	}
+
 	svc, ok := s3SvcTable[region]
 	if !ok {
 		sess := s3session()
 		if sess == nil {
-			return nil
-		}
-
-		if region == "" {
-			region = s3region // fallback to default region
-		}
-		if region == "" {
-			s3log("s3client: could not find region")
 			return nil
 		}
 
