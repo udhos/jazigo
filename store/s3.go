@@ -368,3 +368,17 @@ func s3fileInfo(path string) (time.Time, int64, error) {
 func s3fileCompare(p1, p2 string) (bool, error) {
 	return false, fmt.Errorf("s3fileCompare: FIXME WRITEME cant currently compare files on S3: [%s,%s]", p1, p2)
 }
+
+func S3URL(path string) string {
+	region, bucket, key := s3parse(path)
+
+	if region == "" {
+		region = s3region // fallback to default region
+	}
+	if region == "" {
+		s3log("S3URL: could not find region: [%s]", path)
+		return ""
+	}
+
+	return fmt.Sprintf("https://s3-%s.amazonaws.com/%s/%s", region, bucket, key)
+}

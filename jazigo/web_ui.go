@@ -231,7 +231,14 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 				timeStr += fmt.Sprintf("(could not get file info: %v)", infoErr)
 			}
 
-			filePath := fmt.Sprintf("/%s/%s/%s/%s", appName, jaz.repoPath, devID, m)
+			var filePath string
+
+			if store.S3Path(path) {
+				filePath = store.S3URL(path)
+			} else {
+				//filePath = fmt.Sprintf("/%s/%s/%s/%s", appName, jaz.repoPath, devID, m)
+				filePath = fmt.Sprintf("%s/%s/%s", jaz.repoPath, devID, m)
+			}
 			devLink := gwu.NewLink(m, filePath)
 
 			buttonView := gwu.NewButton("Open")
