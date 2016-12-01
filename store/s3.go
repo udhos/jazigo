@@ -16,11 +16,11 @@ import (
 )
 
 var awsSession *session.Session
-var s3Session *s3.S3
+var s3SessionTable = map[string]*s3.S3{} // region => session
 var s3logger hasPrintf
-var s3region string
+var s3region string // default region
 
-func s3client() *s3.S3 {
+func s3client(region string) *s3.S3 {
 	if awsSession == nil {
 		var err error
 		awsSession, err = session.NewSession()
@@ -31,9 +31,19 @@ func s3client() *s3.S3 {
 		s3log("s3client: session created")
 	}
 
-	if s3Session == nil {
-		s3Session = s3.New(awsSession, aws.NewConfig().WithRegion(s3region))
-		s3log("s3client: client created for region: [%s]", s3region)
+	if region == "" {
+		region = s3region // fallback to default region
+	}
+	if region == "" {
+		s3log("s3client: could not find region")
+		return nil
+	}
+
+	s3Session, ok := s3SessionTable[region]
+	if !ok {
+		s3Session = s3.New(awsSession, aws.NewConfig().WithRegion(region))
+		s3SessionTable[region] = s3Session
+		s3log("s3client: client created: region=[%s]", region)
 	}
 
 	return s3Session
@@ -48,7 +58,7 @@ func s3init(logger hasPrintf, region string) {
 	}
 	s3region = region
 	s3logger = logger
-	s3log("initialized: region: " + s3region)
+	s3log("initialized: default region=[%s]", s3region)
 }
 
 func s3log(format string, v ...interface{}) {
@@ -72,33 +82,33 @@ func s3path(path string) bool {
 	return s3match
 }
 
-// "arn:aws:s3:::bucket/folder/file.xxx"
-// => "bucket", "folder/file.xxx"
-func s3parse(path string) (string, string) {
+//  Input: "arn:aws:s3:region::bucket/folder/file.xxx"
+// Output: "region", "bucket", "folder/file.xxx"
+func s3parse(path string) (string, string, string) {
 	s := strings.Split(path, ":")
 	if len(s) < 6 {
-		return "", ""
+		return "", "", ""
 	}
+	region := s[3]
 	file := s[5]
 	slash := strings.IndexByte(file, '/')
 	if slash < 1 {
-		return "", ""
+		return "", "", ""
 	}
 	bucket := file[:slash]
 	key := file[slash+1:]
-	//s3log("s3parse: [%s] => bucket=[%s] key=[%s]", path, bucket, key)
-	return bucket, key
+	return region, bucket, key
 }
 
 func s3fileExists(path string) bool {
 
-	svc := s3client()
+	region, bucket, key := s3parse(path)
+
+	svc := s3client(region)
 	if svc == nil {
 		s3log("s3fileExists: missing s3 client: ugh")
 		return false // ugh
 	}
-
-	bucket, key := s3parse(path)
 
 	params := &s3.HeadObjectInput{
 		Bucket: aws.String(bucket), // Required
@@ -114,12 +124,12 @@ func s3fileExists(path string) bool {
 
 func s3fileput(path string, buf []byte) error {
 
-	svc := s3client()
+	region, bucket, key := s3parse(path)
+
+	svc := s3client(region)
 	if svc == nil {
 		return fmt.Errorf("s3fileput: missing s3 client")
 	}
-
-	bucket, key := s3parse(path)
 
 	params := &s3.PutObjectInput{
 		Bucket: aws.String(bucket),
@@ -135,12 +145,12 @@ func s3fileput(path string, buf []byte) error {
 
 func s3fileRemove(path string) error {
 
-	svc := s3client()
+	region, bucket, key := s3parse(path)
+
+	svc := s3client(region)
 	if svc == nil {
 		return fmt.Errorf("s3fileRemove: missing s3 client")
 	}
-
-	bucket, key := s3parse(path)
 
 	params := &s3.DeleteObjectInput{
 		Bucket: aws.String(bucket), // Required
@@ -155,13 +165,14 @@ func s3fileRemove(path string) error {
 
 func s3fileRename(p1, p2 string) error {
 
-	svc := s3client()
+	region, bucket1, key1 := s3parse(p1)
+
+	svc := s3client(region)
 	if svc == nil {
 		return fmt.Errorf("s3fileRename: missing s3 client")
 	}
 
-	bucket1, key1 := s3parse(p1)
-	bucket2, key2 := s3parse(p2)
+	_, bucket2, key2 := s3parse(p2)
 
 	params := &s3.CopyObjectInput{
 		Bucket:     aws.String(bucket2),              // Required
@@ -184,12 +195,12 @@ func s3fileRename(p1, p2 string) error {
 
 func s3fileRead(path string) ([]byte, error) {
 
-	svc := s3client()
+	region, bucket, key := s3parse(path)
+
+	svc := s3client(region)
 	if svc == nil {
 		return nil, fmt.Errorf("s3fileRead: missing s3 client")
 	}
-
-	bucket, key := s3parse(path)
 
 	params := &s3.GetObjectInput{
 		Bucket: aws.String(bucket), // Required
@@ -208,12 +219,12 @@ func s3fileRead(path string) ([]byte, error) {
 
 func s3fileFirstLine(path string) (string, error) {
 
-	svc := s3client()
+	region, bucket, key := s3parse(path)
+
+	svc := s3client(region)
 	if svc == nil {
 		return "", fmt.Errorf("s3fileFirstLine: missing s3 client")
 	}
-
-	bucket, key := s3parse(path)
 
 	params := &s3.GetObjectInput{
 		Bucket: aws.String(bucket), // Required
@@ -236,12 +247,12 @@ func s3dirList(path string) (string, []string, error) {
 	dirname := filepath.Dir(path)
 	var names []string
 
-	svc := s3client()
+	region, bucket, prefix := s3parse(path)
+
+	svc := s3client(region)
 	if svc == nil {
 		return dirname, names, fmt.Errorf("s3dirList: missing s3 client")
 	}
-
-	bucket, prefix := s3parse(path)
 
 	params := &s3.ListObjectsV2Input{
 		Bucket: aws.String(bucket), // Required
@@ -288,15 +299,15 @@ func s3dirClean(path string) error {
 		return nil
 	}
 
-	bucket, prefix := s3parse(path)
-	folder := filepath.Dir(prefix)
+	region, bucket, prefix := s3parse(path)
 
-	svc := s3client()
+	svc := s3client(region)
 	if svc == nil {
 		return fmt.Errorf("s3dirClean: missing s3 client")
 	}
 
 	// build object list
+	folder := filepath.Dir(prefix)
 	list := []*s3.ObjectIdentifier{}
 	for _, filename := range names {
 		key := folder + "/" + filename
@@ -323,12 +334,12 @@ func s3dirClean(path string) error {
 
 func s3fileInfo(path string) (time.Time, int64, error) {
 
-	svc := s3client()
+	region, bucket, key := s3parse(path)
+
+	svc := s3client(region)
 	if svc == nil {
 		return time.Time{}, 0, fmt.Errorf("s3fileInfo: missing s3 client")
 	}
-
-	bucket, key := s3parse(path)
 
 	params := &s3.HeadObjectInput{
 		Bucket: aws.String(bucket), // Required

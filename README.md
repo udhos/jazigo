@@ -132,9 +132,24 @@ Using AWS S3
 
 Quick recipe for using S3 bucket:
 
-    export JAZIGO_HOME=arn:aws:s3:::bucketname/folder
-    DIR=$HOME/jazigo
-    mkdir -p $DIR/log $DIR/www
-    $GOPATH/bin/jazigo -s3region=region -logPathPrefix=$DIR/log/jazigo.log. -wwwStaticPath=$DIR/www
+1. Create a bucket 'bucketname' on AWS region 'regionname'.
 
-Hint: You should copy jazigo static files (*.css, *.png, etc) to the directory pointed by -wwwStaticPath.
+2. Authorize the client to access the bucket
+
+    # An usual way is to create an IAM user, add key/secret, and put those credentials into ~/.aws/credentials:
+    
+    $ cat ~/.aws/credentials
+    [default]
+    aws_access_key_id = key
+    aws_secret_access_key = secret
+
+3. Run jazigo with pointing config and repository paths to S3 bucket ARN:
+
+**S3 bucket ARN**: arn:aws:s3:regionname::bucketname/foldername
+
+    # Example
+    ARN=arn:aws:s3:regionname::bucketname/foldername
+    $GOPATH/bin/jazigo -configPathPrefix=$ARN/etc/jazigo.conf. -repositoryPath=$ARN/repo
+
+Hint: You could point config and repository to distinct buckets.
+

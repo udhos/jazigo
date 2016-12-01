@@ -20,7 +20,7 @@ get github.com/udhos/equalfile
 get gopkg.in/yaml.v2
 get golang.org/x/crypto/ssh
 get github.com/aws/aws-sdk-go
-get honnef.co/go/simple/cmd/gosimple
+#get honnef.co/go/simple/cmd/gosimple
 
 src=`find . -type f | egrep '\.go$'`
 

@@ -87,6 +87,14 @@ func defaultHomeDir() string {
 	return home
 }
 
+func defaultRegionName() string {
+	region := os.Getenv("AWS_REGION")
+	if region == "" {
+		region = "sa-east-1"
+	}
+	return region
+}
+
 func addTrailingDot(path string) string {
 	if path[len(path)-1] != '.' {
 		return path + "."
@@ -122,7 +130,7 @@ func main() {
 	flag.StringVar(&jaz.logPathPrefix, "logPathPrefix", defaultLogPrefix, "log path prefix")
 	flag.StringVar(&staticDir, "wwwStaticPath", defaultStaticDir, "directory for static www content")
 	flag.StringVar(&webListen, "webListen", ":8080", "address:port for web UI")
-	flag.StringVar(&s3region, "s3region", "sa-east-1", "AWS S3 region")
+	flag.StringVar(&s3region, "s3region", defaultRegionName(), "AWS S3 region")
 	flag.BoolVar(&runOnce, "runOnce", false, "exit after scanning all devices once")
 	flag.BoolVar(&deviceDelete, "deviceDelete", false, "delete devices specified in stdin")
 	flag.BoolVar(&devicePurge, "devicePurge", false, "purge devices specified in stdin")

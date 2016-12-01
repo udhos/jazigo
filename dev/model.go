@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"regexp"
 	"time"
@@ -236,7 +235,7 @@ func (d *Device) saveCommit(logger hasPrintf, capture *dialog, repository string
 
 	devDir := d.DeviceDir(repository)
 
-	if mkdirErr := os.MkdirAll(devDir, 0750); mkdirErr != nil {
+	if mkdirErr := store.MkDir(devDir); mkdirErr != nil {
 		return fmt.Errorf("saveCommit: mkdir: error: %v", mkdirErr)
 	}
 

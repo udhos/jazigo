@@ -441,3 +441,13 @@ func fileCompare(p1, p2 string) (bool, error) {
 
 	return equalfile.CompareFile(p1, p2)
 }
+
+func MkDir(path string) error {
+
+	if s3path(path) {
+		s3log("store.mkDir: silenty refusing to create unneeded dir path on S3: [%s]", path)
+		return nil
+	}
+
+	return os.MkdirAll(path, 0750)
+}
