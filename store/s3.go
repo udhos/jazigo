@@ -16,11 +16,11 @@ import (
 )
 
 var awsSession *session.Session
-var s3SessionTable = map[string]*s3.S3{} // region => session
+var s3SvcTable = map[string]*s3.S3{} // region => session
 var s3logger hasPrintf
 var s3region string // default region
 
-func s3client(region string) *s3.S3 {
+func s3session() *session.Session {
 	if awsSession == nil {
 		var err error
 		awsSession, err = session.NewSession()
@@ -28,25 +28,34 @@ func s3client(region string) *s3.S3 {
 			s3log("s3client: could not create session: %v", err)
 			return nil
 		}
-		s3log("s3client: session created")
+		s3log("s3session: new session created")
 	}
+	return awsSession
+}
 
-	if region == "" {
-		region = s3region // fallback to default region
-	}
-	if region == "" {
-		s3log("s3client: could not find region")
-		return nil
-	}
+func s3client(region string) *s3.S3 {
 
-	s3Session, ok := s3SessionTable[region]
+	svc, ok := s3SvcTable[region]
 	if !ok {
-		s3Session = s3.New(awsSession, aws.NewConfig().WithRegion(region))
-		s3SessionTable[region] = s3Session
+		sess := s3session()
+		if sess == nil {
+			return nil
+		}
+
+		if region == "" {
+			region = s3region // fallback to default region
+		}
+		if region == "" {
+			s3log("s3client: could not find region")
+			return nil
+		}
+
+		svc = s3.New(sess, aws.NewConfig().WithRegion(region))
+		s3SvcTable[region] = svc
 		s3log("s3client: client created: region=[%s]", region)
 	}
 
-	return s3Session
+	return svc
 }
 
 func s3init(logger hasPrintf, region string) {
