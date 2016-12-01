@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
@@ -131,7 +132,7 @@ func s3fileExists(path string) bool {
 	return false
 }
 
-func s3fileput(path string, buf []byte) error {
+func s3fileput(path string, buf []byte, contentType string) error {
 
 	region, bucket, key := s3parse(path)
 
@@ -145,6 +146,15 @@ func s3fileput(path string, buf []byte) error {
 		Key:    aws.String(key),
 		Body:   bytes.NewReader(buf),
 	}
+
+	switch contentType {
+	case "": // none
+	case "detect": // detect
+		params.ContentType = aws.String(http.DetectContentType(buf))
+	default: // use literal
+		params.ContentType = aws.String(contentType)
+	}
+
 	_, err := svc.PutObject(params)
 
 	//s3log("s3fileput: [%s] upload: error: %v", path, err)

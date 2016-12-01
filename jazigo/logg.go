@@ -62,7 +62,7 @@ func (l *logfile) rotate() {
 		l.output = nil
 	}
 
-	outputPath, newErr := store.SaveNewConfig(l.logPathPrefix, l.maxFiles, l.logger, touchFunc, false)
+	outputPath, newErr := store.SaveNewConfig(l.logPathPrefix, l.maxFiles, l.logger, touchFunc, false, "")
 	if newErr != nil {
 		if l.output != nil {
 			l.output.Close()

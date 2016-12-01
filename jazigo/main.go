@@ -554,7 +554,7 @@ func saveConfig(jaz *app, change conf.Change) {
 	}
 
 	// save
-	_, saveErr := store.SaveNewConfig(jaz.configPathPrefix, cfg.Options.MaxConfigFiles, jaz.logger, confWriteFunc, true)
+	_, saveErr := store.SaveNewConfig(jaz.configPathPrefix, cfg.Options.MaxConfigFiles, jaz.logger, confWriteFunc, true, "detect")
 	if saveErr != nil {
 		jaz.logger.Printf("main: could not save config: %v", saveErr)
 	}

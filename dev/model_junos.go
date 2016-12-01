@@ -28,6 +28,7 @@ func registerModelJunOS(logger hasPrintf, t *DeviceTable) {
 		CommandReadTimeout:          20 * time.Second, // larger timeout for slow 'sh run'
 		CommandMatchTimeout:         30 * time.Second, // larger timeout for slow 'sh run'
 		QuoteSentCommandsFormat:     `##[%s]`,
+		S3ContentType:               "detect",
 	}
 
 	if err := t.SetModel(m, logger); err != nil {

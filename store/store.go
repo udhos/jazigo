@@ -260,16 +260,16 @@ func FileRead(path string) ([]byte, error) {
 	return ioutil.ReadFile(path)
 }
 
-func writeFileBuf(path string, buf []byte) error {
+func writeFileBuf(path string, buf []byte, contentType string) error {
 
 	if s3path(path) {
-		return s3fileput(path, buf)
+		return s3fileput(path, buf, contentType)
 	}
 
 	return ioutil.WriteFile(path, buf, 0640)
 }
 
-func writeFile(path string, writeFunc func(HasWrite) error) error {
+func writeFile(path string, writeFunc func(HasWrite) error, contentType string) error {
 
 	if s3path(path) {
 		w := &bytes.Buffer{}
@@ -278,7 +278,7 @@ func writeFile(path string, writeFunc func(HasWrite) error) error {
 			return fmt.Errorf("SaveNewConfig: writeFunc error: [%s]: %v", path, err)
 		}
 
-		return s3fileput(path, w.Bytes())
+		return s3fileput(path, w.Bytes(), contentType)
 	}
 
 	f, createErr := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0640)
@@ -303,7 +303,7 @@ func writeFile(path string, writeFunc func(HasWrite) error) error {
 	return nil
 }
 
-func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writeFunc func(HasWrite) error, changesOnly bool) (string, error) {
+func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writeFunc func(HasWrite) error, changesOnly bool, contentType string) (string, error) {
 
 	// get tmp file
 
@@ -314,7 +314,7 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 
 	// write to tmp file
 
-	creatErr := writeFile(tmpPath, writeFunc)
+	creatErr := writeFile(tmpPath, writeFunc, contentType)
 	if creatErr != nil {
 		return "", fmt.Errorf("SaveNewConfig: error creating tmp file: [%s]: %v", tmpPath, creatErr)
 	}
@@ -374,7 +374,7 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 
 	// write last id into shortcut file
 	lastIdPath := getLastIdPath(configPathPrefix)
-	if err := writeFileBuf(lastIdPath, []byte(strconv.Itoa(newCommitId))); err != nil {
+	if err := writeFileBuf(lastIdPath, []byte(strconv.Itoa(newCommitId)), contentType); err != nil {
 		logger.Printf("SaveNewConfig: error writing last id file '%s': %v", lastIdPath, err)
 
 		// since we failed to update the shortcut file,

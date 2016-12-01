@@ -56,24 +56,24 @@ func TestStore1(t *testing.T) {
 }
 
 func storeBatch(t *testing.T, prefix string, maxFiles int, logger hasPrintf) {
-	if err := storeWrite(t, prefix, "a", fmt.Sprintf("%s0", prefix), maxFiles, logger); err != nil {
+	if err := storeWrite(t, prefix, "a", fmt.Sprintf("%s0", prefix), maxFiles, logger, ""); err != nil {
 		t.Errorf("TestStore1: %v", err)
 	}
 
-	if err := storeWrite(t, prefix, "b", fmt.Sprintf("%s1", prefix), maxFiles, logger); err != nil {
+	if err := storeWrite(t, prefix, "b", fmt.Sprintf("%s1", prefix), maxFiles, logger, ""); err != nil {
 		t.Errorf("TestStore1: %v", err)
 	}
 
-	if err := storeWrite(t, prefix, "c", fmt.Sprintf("%s2", prefix), maxFiles, logger); err != nil {
+	if err := storeWrite(t, prefix, "c", fmt.Sprintf("%s2", prefix), maxFiles, logger, "detect"); err != nil {
 		t.Errorf("TestStore1: %v", err)
 	}
 
-	if err := storeWrite(t, prefix, "d", fmt.Sprintf("%s3", prefix), maxFiles, logger); err != nil {
+	if err := storeWrite(t, prefix, "d", fmt.Sprintf("%s3", prefix), maxFiles, logger, "text/plain"); err != nil {
 		t.Errorf("TestStore1: %v", err)
 	}
 }
 
-func storeWrite(t *testing.T, prefix, content, expected string, maxFiles int, logger hasPrintf) error {
+func storeWrite(t *testing.T, prefix, content, expected string, maxFiles int, logger hasPrintf, contentType string) error {
 
 	c := []byte(content)
 
@@ -88,7 +88,7 @@ func storeWrite(t *testing.T, prefix, content, expected string, maxFiles int, lo
 		return nil
 	}
 
-	path, writeErr := SaveNewConfig(prefix, maxFiles, logger, writeFunc, false)
+	path, writeErr := SaveNewConfig(prefix, maxFiles, logger, writeFunc, false, contentType)
 	if writeErr != nil {
 		return fmt.Errorf("storeWrite: error: %v", writeErr)
 	}

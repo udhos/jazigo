@@ -57,6 +57,7 @@ type DevAttributes struct {
 	KeepControlChars            bool     // enable if you want to capture control chars (backspace, etc)
 	LineFilter                  string   // line filter name - applied to every saved line
 	ChangesOnly                 bool     // save new file only if it differs from previous one
+	S3ContentType               string   // ""=none "detect"=http.Detect "text/plain" etc
 
 	// readTimeout: per-read timeout (protection against inactivity)
 	// matchTimeout: full match timeout (protection against slow sender -- think 1 byte per second)
