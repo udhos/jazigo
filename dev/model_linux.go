@@ -20,7 +20,7 @@ func registerModelLinux(logger hasPrintf, t *DeviceTable) {
 		EnablePasswordPromptPattern: "",
 		DisabledPromptPattern:       `\$\s*$`,
 		EnabledPromptPattern:        `\$\s*$`,
-		CommandList:                 []string{"", "/bin/uname -a", "/usr/bin/uptime", "/bin/ls"},
+		CommandList:                 []string{"", "/bin/uname -a", "/usr/bin/uptime", "/bin/ls"}, // "" = dont send, wait for command prompt
 		DisablePagerCommand:         "",
 		ReadTimeout:                 5 * time.Second,
 		MatchTimeout:                10 * time.Second,

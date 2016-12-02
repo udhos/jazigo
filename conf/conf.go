@@ -49,8 +49,8 @@ type DevAttributes struct {
 	PasswordPromptPattern       string   // Password:
 	EnablePasswordPromptPattern string   // Password:
 	DisabledPromptPattern       string   // >
-	EnabledPromptPattern        string   // #
-	CommandList                 []string // show run
+	EnabledPromptPattern        string   // # ("" --> look for EOF)
+	CommandList                 []string // "show version", "show run"
 	DisablePagerCommand         string   // term len 0
 	SupressAutoLF               bool     // do not send auto LF
 	QuoteSentCommandsFormat     string   // !![%s] - empty means omitting
@@ -58,6 +58,7 @@ type DevAttributes struct {
 	LineFilter                  string   // line filter name - applied to every saved line
 	ChangesOnly                 bool     // save new file only if it differs from previous one
 	S3ContentType               string   // ""=none "detect"=http.Detect "text/plain" etc
+	Run                         []string // "/path/to/external/command", "arg1", "arg2" for the run model
 
 	// readTimeout: per-read timeout (protection against inactivity)
 	// matchTimeout: full match timeout (protection against slow sender -- think 1 byte per second)

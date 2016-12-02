@@ -5,6 +5,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"io"
 	"net"
+	"os/exec"
 	"strings"
 	"time"
 )
@@ -38,6 +39,52 @@ func (s *transpTelnet) Read(b []byte) (int, error) {
 	}
 	n2, err2 := telnetNegotiation(b, n1, s, s.logger, false)
 	return n2, err2
+}
+
+type transpPipe struct {
+	proc     *exec.Cmd
+	stdout   io.ReadCloser
+	stderr   io.ReadCloser
+	reader   io.Reader
+	writer   io.WriteCloser
+	logger   hasPrintf
+	devLabel string
+	debug    bool
+}
+
+func (s *transpPipe) Read(b []byte) (int, error) {
+	return s.reader.Read(b)
+}
+
+func (s *transpPipe) Write(b []byte) (int, error) {
+	return s.writer.Write(b)
+}
+
+func (s *transpPipe) SetDeadline(t time.Time) error {
+	s.logger.Printf("transpPipe.SetDeadline: FIXME WRITEME")
+	return nil
+}
+
+func (s *transpPipe) SetWriteDeadline(t time.Time) error {
+	s.logger.Printf("transpPipe.SetWriteDeadline: FIXME WRITEME")
+	return nil
+}
+
+func (s *transpPipe) Close() error {
+
+	if s.debug {
+		s.logger.Printf("transpPipe.Close: %s", s.devLabel)
+	}
+
+	err1 := s.stdout.Close()
+	err2 := s.stderr.Close()
+	err3 := s.writer.Close()
+
+	if err1 != nil || err2 != nil || err3 != nil {
+		return fmt.Errorf("transpPipe: close error: out=[%v] err=[%v] writer=[%v]", err1, err2, err3)
+	}
+
+	return nil
 }
 
 type transpSSH struct {
@@ -79,6 +126,52 @@ func (s *transpSSH) Close() error {
 		return fmt.Errorf("close error: session=[%v] conn=[%v]", err1, err2)
 	}
 	return nil
+}
+
+func openTransportPipe(logger hasPrintf, modelName, devId, hostPort, transports, user, pass string, args []string, debug bool) (transp, string, bool, error) {
+	s, err := openPipe(logger, modelName, devId, hostPort, transports, user, pass, args, debug)
+	return s, "pipe", true, err
+}
+
+func openPipe(logger hasPrintf, modelName, devId, hostPort, transports, user, pass string, args []string, debug bool) (transp, error) {
+
+	devLabel := fmt.Sprintf("%s %s %s", modelName, devId, hostPort)
+
+	logger.Printf("openPipe: %s - opening", devLabel)
+
+	c := exec.Command(args[0], args[1:]...)
+
+	pipeOut, outErr := c.StdoutPipe()
+	if outErr != nil {
+		return nil, fmt.Errorf("openPipe: StdoutPipe: %s - %v", devLabel, outErr)
+	}
+
+	pipeErr, errErr := c.StderrPipe()
+	if errErr != nil {
+		return nil, fmt.Errorf("openPipe: StderrPipe: %s - %v", devLabel, errErr)
+	}
+
+	writer, wrErr := c.StdinPipe()
+	if wrErr != nil {
+		return nil, fmt.Errorf("openPipe: StdinPipe: %s - %v", devLabel, wrErr)
+	}
+
+	s := &transpPipe{proc: c, logger: logger, devLabel: devLabel, debug: debug}
+	s.reader = io.MultiReader(pipeOut, pipeErr)
+	s.stdout = pipeOut
+	s.stderr = pipeErr
+	s.writer = writer
+
+	logger.Printf("openPipe: %s - starting", devLabel)
+
+	if startErr := s.proc.Start(); startErr != nil {
+		s.Close()
+		return nil, fmt.Errorf("openPipe: error: %v", startErr)
+	}
+
+	logger.Printf("openPipe: %s - started", devLabel)
+
+	return s, nil
 }
 
 func openTransport(logger hasPrintf, modelName, devId, hostPort, transports, user, pass string) (transp, string, bool, error) {
