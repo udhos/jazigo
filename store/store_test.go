@@ -33,12 +33,12 @@ func TestStore1(t *testing.T) {
 	storeBatch(t, prefix, maxFiles, logger)
 
 	if region == "" {
-		t.Logf("TestStore1: JAZIGO_S3_REGION undefined: skipping S3 tests")
+		t.Logf("TestStore1: JAZIGO_S3_REGION=region undefined: skipping S3 tests")
 		return
 	}
 	s3folder := os.Getenv("JAZIGO_S3_FOLDER")
 	if s3folder == "" {
-		t.Logf("TestStore1: JAZIGO_S3_FOLDER undefined: skipping S3 tests")
+		t.Logf("TestStore1: JAZIGO_S3_FOLDER=bucket/folder undefined: skipping S3 tests")
 		return
 	}
 

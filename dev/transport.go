@@ -2,12 +2,14 @@ package dev
 
 import (
 	"fmt"
-	"golang.org/x/crypto/ssh"
 	"io"
 	"net"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/ssh"
 )
 
 type transp interface {
@@ -163,6 +165,11 @@ func openPipe(logger hasPrintf, modelName, devId, hostPort, transports, user, pa
 	s.writer = writer
 
 	logger.Printf("openPipe: %s - starting", devLabel)
+
+	os.Setenv("JAZIGO_DEV_ID", devId)
+	os.Setenv("JAZIGO_DEV_HOSTPORT", hostPort)
+	os.Setenv("JAZIGO_DEV_USER", user)
+	os.Setenv("JAZIGO_DEV_PASS", pass)
 
 	if startErr := s.proc.Start(); startErr != nil {
 		s.Close()
