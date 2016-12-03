@@ -154,8 +154,9 @@ func (d *Device) createTransport(logger hasPrintf) (transp, string, bool, error)
 
 	if modelName == "run" {
 		d.debugf("createTransport: %q", d.Attr.Run)
-
-		return openTransportPipe(logger, modelName, d.Id, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword, d.Attr.Run, d.Debug)
+		timeout := 30 * time.Second
+		d.logf("createTransport: FIXME exec timeout=%v", timeout)
+		return openTransportPipe(logger, modelName, d.Id, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword, d.Attr.Run, d.Debug, timeout)
 	}
 
 	return openTransport(logger, modelName, d.Id, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword)

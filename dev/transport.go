@@ -1,6 +1,7 @@
 package dev
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -52,14 +53,30 @@ type transpPipe struct {
 	logger   hasPrintf
 	devLabel string
 	debug    bool
+	ctx      context.Context
+	cancel   context.CancelFunc
 }
 
 func (s *transpPipe) Read(b []byte) (int, error) {
-	return s.reader.Read(b)
+	n, err := s.reader.Read(b)
+	if err != nil && err != io.EOF {
+		return n, err
+	}
+	if ctxErr := s.ctx.Err(); ctxErr != nil {
+		return n, ctxErr
+	}
+	return n, err
 }
 
 func (s *transpPipe) Write(b []byte) (int, error) {
-	return s.writer.Write(b)
+	n, err := s.writer.Write(b)
+	if err != nil && err != io.EOF {
+		return n, err
+	}
+	if ctxErr := s.ctx.Err(); ctxErr != nil {
+		return n, ctxErr
+	}
+	return n, err
 }
 
 func (s *transpPipe) SetDeadline(t time.Time) error {
@@ -75,8 +92,10 @@ func (s *transpPipe) SetWriteDeadline(t time.Time) error {
 func (s *transpPipe) Close() error {
 
 	if s.debug {
-		s.logger.Printf("transpPipe.Close: %s", s.devLabel)
+		s.logger.Printf("transpPipe.Close: %s contextErr=[%v]", s.devLabel, s.ctx.Err())
 	}
+
+	s.cancel()
 
 	err1 := s.stdout.Close()
 	err2 := s.stderr.Close()
@@ -96,7 +115,6 @@ type transpSSH struct {
 	session  *ssh.Session
 	writer   io.Writer
 	reader   io.Reader
-	//logger   hasPrintf
 }
 
 func (s *transpSSH) Read(b []byte) (int, error) {
@@ -130,31 +148,36 @@ func (s *transpSSH) Close() error {
 	return nil
 }
 
-func openTransportPipe(logger hasPrintf, modelName, devId, hostPort, transports, user, pass string, args []string, debug bool) (transp, string, bool, error) {
-	s, err := openPipe(logger, modelName, devId, hostPort, transports, user, pass, args, debug)
+func openTransportPipe(logger hasPrintf, modelName, devId, hostPort, transports, user, pass string, args []string, debug bool, timeout time.Duration) (transp, string, bool, error) {
+	s, err := openPipe(logger, modelName, devId, hostPort, transports, user, pass, args, debug, timeout)
 	return s, "pipe", true, err
 }
 
-func openPipe(logger hasPrintf, modelName, devId, hostPort, transports, user, pass string, args []string, debug bool) (transp, error) {
+func openPipe(logger hasPrintf, modelName, devId, hostPort, transports, user, pass string, args []string, debug bool, timeout time.Duration) (transp, error) {
 
 	devLabel := fmt.Sprintf("%s %s %s", modelName, devId, hostPort)
 
 	logger.Printf("openPipe: %s - opening", devLabel)
 
-	c := exec.Command(args[0], args[1:]...)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+
+	c := exec.CommandContext(ctx, args[0], args[1:]...)
 
 	pipeOut, outErr := c.StdoutPipe()
 	if outErr != nil {
+		cancel()
 		return nil, fmt.Errorf("openPipe: StdoutPipe: %s - %v", devLabel, outErr)
 	}
 
 	pipeErr, errErr := c.StderrPipe()
 	if errErr != nil {
+		cancel()
 		return nil, fmt.Errorf("openPipe: StderrPipe: %s - %v", devLabel, errErr)
 	}
 
 	writer, wrErr := c.StdinPipe()
 	if wrErr != nil {
+		cancel()
 		return nil, fmt.Errorf("openPipe: StdinPipe: %s - %v", devLabel, wrErr)
 	}
 
@@ -163,6 +186,8 @@ func openPipe(logger hasPrintf, modelName, devId, hostPort, transports, user, pa
 	s.stdout = pipeOut
 	s.stderr = pipeErr
 	s.writer = writer
+	s.ctx = ctx
+	s.cancel = cancel
 
 	logger.Printf("openPipe: %s - starting", devLabel)
 
