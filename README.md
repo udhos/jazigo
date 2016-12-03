@@ -29,6 +29,7 @@ Features
 - Backup files can be accessed from web UI.
 - Support for SSH and TELNET.
 - Can directly store backup files into AWS S3 bucket.
+- Can call an external program and collect its output.
 
 Requirements
 ============
