@@ -134,9 +134,9 @@ Using AWS S3
 
 Quick recipe for using S3 bucket:
 
-1. Create a bucket 'bucketname' on AWS region 'regionname'.
+1\. Create a bucket 'bucketname' on AWS region 'regionname'.
 
-2. Authorize the client to access the bucket
+2\. Authorize the client to access the bucket
 
 An usual way is to create an IAM user, add key/secret, and put those credentials into ~/.aws/credentials:
 
@@ -145,7 +145,7 @@ An usual way is to create an IAM user, add key/secret, and put those credentials
     aws_access_key_id = key
     aws_secret_access_key = secret
 
-3. Run jazigo with pointing config and repository paths to S3 bucket ARN:
+3\. Run jazigo pointing its config and repository paths to S3 bucket ARN:
 
 **S3 bucket ARN**: arn:aws:s3:regionname::bucketname/foldername
 
@@ -155,3 +155,24 @@ An usual way is to create an IAM user, add key/secret, and put those credentials
 
 Hint: You could point config and repository to distinct buckets.
 
+Calling an external program
+===========================
+
+You can use the pseudo model **run** to call an external program to collect custom configuration.
+
+Create a device using the model **run**, then specify the program arguments in the attribute **runprog**:
+
+Example:
+
+    # This example calls: /bin/bash -c "env | egrep ^JAZIGO_"
+    runprog:
+    - /bin/bash
+    - -c
+    - env | egrep ^JAZIGO_
+
+The external program invoked by the model **run** will receive its device authentication credentials as environment variables:
+
+    JAZIGO_DEV_ID=deviceid
+    JAZIGO_DEV_HOSTPORT=host[:port] -- port is optional
+    JAZIGO_DEV_USER=username
+    JAZIGO_DEV_PASS=password

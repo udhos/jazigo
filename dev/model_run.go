@@ -10,8 +10,6 @@ func registerModelRun(logger hasPrintf, t *DeviceTable) {
 	m := &Model{name: "run"}
 
 	m.defaultAttr = conf.DevAttributes{
-		//Run:                  []string{"/usr/bin/printf", "hello\nworld\n"},
-		//Run:                  []string{"/usr/bin/env"},
 		RunProg:              []string{"/bin/bash", "-c", "env | egrep ^JAZIGO_"},
 		RunTimeout:           60 * time.Second,
 		EnabledPromptPattern: "",           // "" --> look for EOF
