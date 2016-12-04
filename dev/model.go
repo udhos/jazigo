@@ -153,10 +153,8 @@ func (d *Device) createTransport(logger hasPrintf) (transp, string, bool, error)
 	modelName := d.devModel.name
 
 	if modelName == "run" {
-		d.debugf("createTransport: %q", d.Attr.Run)
-		timeout := 30 * time.Second
-		d.logf("createTransport: FIXME exec timeout=%v", timeout)
-		return openTransportPipe(logger, modelName, d.Id, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword, d.Attr.Run, d.Debug, timeout)
+		d.debugf("createTransport: %q", d.Attr.RunProg)
+		return openTransportPipe(logger, modelName, d.Id, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword, d.Attr.RunProg, d.Debug, d.Attr.RunTimeout)
 	}
 
 	return openTransport(logger, modelName, d.Id, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword)
@@ -372,7 +370,7 @@ READ_LOOP:
 		if readErr != nil {
 			if te, ok := readErr.(hasTimeout); ok {
 				if te.Timeout() {
-					return badIndex, matchBuf, fmt.Errorf("match: read timed out (%s): %v", d.Attr.ReadTimeout, readErr)
+					return badIndex, matchBuf, fmt.Errorf("match: read timed out: %v", readErr)
 				}
 			}
 			switch readErr {

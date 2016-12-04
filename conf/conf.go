@@ -41,24 +41,25 @@ func (a *AppConfig) Dump() ([]byte, error) {
 }
 
 type DevAttributes struct {
-	NeedLoginChat               bool     // need login chat
-	NeedEnabledMode             bool     // need enabled mode
-	NeedPagingOff               bool     // need disabled pager
-	EnableCommand               string   // enable
-	UsernamePromptPattern       string   // Username:
-	PasswordPromptPattern       string   // Password:
-	EnablePasswordPromptPattern string   // Password:
-	DisabledPromptPattern       string   // >
-	EnabledPromptPattern        string   // # ("" --> look for EOF)
-	CommandList                 []string // "show version", "show run"
-	DisablePagerCommand         string   // term len 0
-	SupressAutoLF               bool     // do not send auto LF
-	QuoteSentCommandsFormat     string   // !![%s] - empty means omitting
-	KeepControlChars            bool     // enable if you want to capture control chars (backspace, etc)
-	LineFilter                  string   // line filter name - applied to every saved line
-	ChangesOnly                 bool     // save new file only if it differs from previous one
-	S3ContentType               string   // ""=none "detect"=http.Detect "text/plain" etc
-	Run                         []string // "/path/to/external/command", "arg1", "arg2" for the run model
+	NeedLoginChat               bool          // need login chat
+	NeedEnabledMode             bool          // need enabled mode
+	NeedPagingOff               bool          // need disabled pager
+	EnableCommand               string        // enable
+	UsernamePromptPattern       string        // Username:
+	PasswordPromptPattern       string        // Password:
+	EnablePasswordPromptPattern string        // Password:
+	DisabledPromptPattern       string        // >
+	EnabledPromptPattern        string        // # ("" --> look for EOF)
+	CommandList                 []string      // "show version", "show run"
+	DisablePagerCommand         string        // term len 0
+	SupressAutoLF               bool          // do not send auto LF
+	QuoteSentCommandsFormat     string        // !![%s] - empty means omitting
+	KeepControlChars            bool          // enable if you want to capture control chars (backspace, etc)
+	LineFilter                  string        // line filter name - applied to every saved line
+	ChangesOnly                 bool          // save new file only if it differs from previous one
+	S3ContentType               string        // ""=none "detect"=http.Detect "text/plain" etc
+	RunProg                     []string      // "/path/to/external/command", "arg1", "arg2" for the run model
+	RunTimeout                  time.Duration // 60s - time allowed for external program to complete
 
 	// readTimeout: per-read timeout (protection against inactivity)
 	// matchTimeout: full match timeout (protection against slow sender -- think 1 byte per second)

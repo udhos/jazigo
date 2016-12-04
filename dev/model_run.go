@@ -12,7 +12,8 @@ func registerModelRun(logger hasPrintf, t *DeviceTable) {
 	m.defaultAttr = conf.DevAttributes{
 		//Run:                  []string{"/usr/bin/printf", "hello\nworld\n"},
 		//Run:                  []string{"/usr/bin/env"},
-		Run:                  []string{"/bin/bash", "-c", "env | egrep ^JAZIGO_"},
+		RunProg:              []string{"/bin/bash", "-c", "env | egrep ^JAZIGO_"},
+		RunTimeout:           60 * time.Second,
 		EnabledPromptPattern: "",           // "" --> look for EOF
 		CommandList:          []string{""}, // "" = dont send, wait for command prompt
 		ReadTimeout:          5 * time.Second,

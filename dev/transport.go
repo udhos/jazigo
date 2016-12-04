@@ -57,26 +57,29 @@ type transpPipe struct {
 	cancel   context.CancelFunc
 }
 
+func (s *transpPipe) result(n int, err error) (int, error) {
+	var waitErr error
+	if err != nil {
+		waitErr = s.proc.Wait()
+	}
+
+	ctxErr := s.ctx.Err()
+
+	if ctxErr != nil || waitErr != nil {
+		return n, fmt.Errorf("transPipe result error: error=[%v] context=[%v] wait=[%v]", err, ctxErr, waitErr)
+	}
+
+	return n, err
+}
+
 func (s *transpPipe) Read(b []byte) (int, error) {
 	n, err := s.reader.Read(b)
-	if err != nil && err != io.EOF {
-		return n, err
-	}
-	if ctxErr := s.ctx.Err(); ctxErr != nil {
-		return n, ctxErr
-	}
-	return n, err
+	return s.result(n, err)
 }
 
 func (s *transpPipe) Write(b []byte) (int, error) {
 	n, err := s.writer.Write(b)
-	if err != nil && err != io.EOF {
-		return n, err
-	}
-	if ctxErr := s.ctx.Err(); ctxErr != nil {
-		return n, ctxErr
-	}
-	return n, err
+	return s.result(n, err)
 }
 
 func (s *transpPipe) SetDeadline(t time.Time) error {
