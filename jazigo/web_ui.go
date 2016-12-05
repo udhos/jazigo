@@ -415,18 +415,13 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevW
 
 		labMod := gwu.NewLabel(d.Model())
 
-		devWin := deviceWinName(d.Id)
-		//labID := gwu.NewLink(d.Id, "/"+appName+"/"+devWin)
-		labID := gwu.NewLink(d.Id, devWin)
+		//devWin := deviceWinName(d.Id)
+		//labID := gwu.NewLink(d.Id, devWin)
+		buttonID := gwu.NewButton(d.Id)
 
 		devID := d.Id // get dev id for closure below
-		labID.AddEHandlerFunc(func(e gwu.Event) {
+		buttonID.AddEHandlerFunc(func(e gwu.Event) {
 			winName := buildDeviceWindow(jaz, e, devID)
-			// This is a click event for a link component.
-			// The reload is automatic.
-			// Explicit reload should not be required.
-			// However sometimes the link is followed before the window is ready.
-			// Then we force reload below, after creation of the window.
 			e.ReloadWin(winName)
 		}, gwu.ETypeClick)
 
@@ -454,7 +449,7 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevW
 		}, gwu.ETypeClick)
 
 		t.Add(labMod, row, 0)
-		t.Add(labID, row, 1)
+		t.Add(buttonID, row, 1)
 		t.Add(labHost, row, 2)
 		t.Add(labTransport, row, 3)
 		t.Add(imageLastStatus, row, 4)

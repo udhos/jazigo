@@ -414,6 +414,9 @@ READ_LOOP:
 		if eof {
 			return badIndex, matchBuf, io.EOF
 		}
+
+		lineCount := bytes.Count(matchBuf, []byte{'\n'})
+		d.debugf("match: FIXME limit input size: total size=%d lines=%d", len(matchBuf), lineCount)
 	}
 }
 

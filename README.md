@@ -176,3 +176,5 @@ The external program invoked by the model **run** will receive its device authen
     JAZIGO_DEV_HOSTPORT=host[:port] -- port is optional
     JAZIGO_DEV_USER=username
     JAZIGO_DEV_PASS=password
+
+The external program is expected to issue captured configuration to stdout and then to exit with zero exit status.
