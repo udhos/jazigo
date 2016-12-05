@@ -345,7 +345,7 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 	return winName
 }
 
-func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevWins bool*/) {
+func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table, tabSumm gwu.Panel) {
 	const COLS = 9
 
 	row := 0 // filter
@@ -353,23 +353,28 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevW
 	filterID := gwu.NewTextBox(jaz.filterID)
 	filterHost := gwu.NewTextBox(jaz.filterHost)
 
+	inputCols := 10
+	filterModel.SetCols(inputCols)
+	filterID.SetCols(inputCols)
+	filterHost.SetCols(inputCols)
+
 	filterModel.AddSyncOnETypes(gwu.ETypeKeyUp) // synchronize values during editing (while you type in characters)
 	filterID.AddSyncOnETypes(gwu.ETypeKeyUp)    // synchronize values during editing (while you type in characters)
 	filterHost.AddSyncOnETypes(gwu.ETypeKeyUp)  // synchronize values during editing (while you type in characters)
 
 	filterModel.AddEHandlerFunc(func(e gwu.Event) {
 		jaz.filterModel = filterModel.Text()
-		refreshDeviceTable(jaz, t, e)
+		refreshDeviceTable(jaz, t, tabSumm, e)
 	}, gwu.ETypeChange)
 
 	filterID.AddEHandlerFunc(func(e gwu.Event) {
 		jaz.filterID = filterID.Text()
-		refreshDeviceTable(jaz, t, e)
+		refreshDeviceTable(jaz, t, tabSumm, e)
 	}, gwu.ETypeChange)
 
 	filterHost.AddEHandlerFunc(func(e gwu.Event) {
 		jaz.filterHost = filterHost.Text()
-		refreshDeviceTable(jaz, t, e)
+		refreshDeviceTable(jaz, t, tabSumm, e)
 	}, gwu.ETypeChange)
 
 	t.Add(filterModel, row, 0)
@@ -466,6 +471,9 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table /* , killExistingDevW
 			t.CellFmt(r, j).Style().AddClass("device_table_cell")
 		}
 	}
+
+	tabSumm.Clear()
+	tabSumm.Add(gwu.NewLabel(fmt.Sprintf("Filter: %d selected from %d total devices", row-2, len(devList))))
 }
 
 func runPriority(jaz *app, id string) {
@@ -480,10 +488,11 @@ func runPriority(jaz *app, id string) {
 	jaz.requestChan <- dev.FetchRequest{Id: id}
 }
 
-func refreshDeviceTable(jaz *app, t gwu.Table, e gwu.Event) {
+func refreshDeviceTable(jaz *app, t gwu.Table, tabSumm gwu.Panel, e gwu.Event) {
 	t.Clear() // clear out table contents
-	buildDeviceTable(jaz, e.Session(), t /*, false */)
+	buildDeviceTable(jaz, e.Session(), t, tabSumm)
 	e.MarkDirty(t)
+	e.MarkDirty(tabSumm)
 }
 
 func buildHomeWin(jaz *app, s gwu.Session) {
@@ -497,6 +506,8 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 	l.Style().SetFontWeight(gwu.FontWeightBold).SetFontSize("130%")
 	win.Add(l)
 
+	tableSumm := gwu.NewPanel()
+	tableSumm.Add(gwu.NewLabel("table summary"))
 	t := gwu.NewTable()
 	t.Style().AddClass("device_table")
 
@@ -505,7 +516,7 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 	refresh := func(e gwu.Event) {
 		createButton.SetEnabled(userIsLogged(e.Session()))
 		e.MarkDirty(createButton)
-		refreshDeviceTable(jaz, t, e)
+		refreshDeviceTable(jaz, t, tableSumm, e)
 	}
 
 	createDevPanel := buildCreateDevPanel(jaz, s, refresh, createButton)
@@ -524,8 +535,9 @@ func buildHomeWin(jaz *app, s gwu.Session) {
 
 	win.Add(gwu.NewLabel("Hint: fill in text boxes below to select matching subset of devices."))
 
-	buildDeviceTable(jaz, s, t /*, true*/)
+	buildDeviceTable(jaz, s, t, tableSumm)
 
+	win.Add(tableSumm)
 	win.Add(t)
 
 	s.AddWin(win)
@@ -569,6 +581,14 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 	textUser := gwu.NewTextBox("")
 	textPass := gwu.NewTextBox("")
 	textEnable := gwu.NewTextBox("")
+
+	inputCols := 15
+	textId.SetCols(inputCols)
+	textHost.SetCols(inputCols)
+	textTransport.SetCols(inputCols)
+	textUser.SetCols(inputCols)
+	textPass.SetCols(inputCols)
+	textEnable.SetCols(inputCols)
 
 	panelModel.Add(labelModel)
 	panelModel.Add(listModel)
