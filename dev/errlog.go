@@ -2,11 +2,11 @@ package dev
 
 import (
 	"bufio"
-	//"bytes"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 func ErrlogPath(pathPrefix, id string) string {
@@ -16,6 +16,9 @@ func ErrlogPath(pathPrefix, id string) string {
 }
 
 func errlog(logger hasPrintf, result FetchResult, pathPrefix string, debug bool) {
+
+	now := time.Now()
+
 	path := ErrlogPath(pathPrefix, result.DevId)
 
 	f, openErr := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0640)
@@ -50,7 +53,8 @@ func errlog(logger hasPrintf, result FetchResult, pathPrefix string, debug bool)
 
 	// push result
 	w := bufio.NewWriter(f)
-	msg := fmt.Sprintf("success=%v model=%s dev=%s host=%s transport=%s code=%d message=[%s]",
+	msg := fmt.Sprintf("%s success=%v model=%s dev=%s host=%s transport=%s code=%d message=[%s]",
+		now.String(),
 		result.Code == fetchErrNone, result.Model, result.DevId, result.DevHostPort, result.Transport, result.Code, result.Msg)
 
 	if debug {
