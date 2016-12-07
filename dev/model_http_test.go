@@ -4,6 +4,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"path/filepath"
 	"testing"
 
 	"github.com/udhos/jazigo/conf"
@@ -34,7 +35,8 @@ func TestHTTP1(t *testing.T) {
 	defer temp.CleanupTempRepo()
 
 	requestCh := make(chan FetchRequest)
-	go Spawner(tab, logger, requestCh, repo, repo, opt, NewFilterTable(logger))
+	errlogPrefix := filepath.Join(repo, "errlog_test.")
+	go Spawner(tab, logger, requestCh, repo, errlogPrefix, opt, NewFilterTable(logger))
 	good, bad, skip := Scan(tab, tab.ListDevices(), logger, opt.Get(), requestCh)
 	if good != 1 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
