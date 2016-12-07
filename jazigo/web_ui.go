@@ -155,11 +155,12 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 	propPanel.Add(propText)
 
 	showPanel := gwu.NewPanel()
+	logPanel := gwu.NewPanel()
 
-	panel.Add(gwu.NewLabel("Files"), filesPanel)                    // tab 0
-	panel.Add(gwu.NewLabel("View Config"), showPanel)               // tab 1
-	panel.Add(gwu.NewLabel("Properties"), propPanel)                // tab 2
-	panel.Add(gwu.NewLabel("Error Log"), gwu.NewLabel("Error Log")) // tab 3
+	panel.Add(gwu.NewLabel("Files"), filesPanel)      // tab 0
+	panel.Add(gwu.NewLabel("View Config"), showPanel) // tab 1
+	panel.Add(gwu.NewLabel("Properties"), propPanel)  // tab 2
+	panel.Add(gwu.NewLabel("Error Log"), logPanel)    // tab 3
 
 	const tabShow = 1 // index
 
@@ -169,10 +170,29 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 		jaz.logger.Printf("buildDeviceWindow: could find last config for device: %v", lastErr)
 	}
 
+	loadLog := func(e gwu.Event) {
+
+		logPath := dev.ErrlogPath(jaz.logPathPrefix, devID)
+		logPanel.Clear()
+		logPanel.Add(gwu.NewLabel("File: " + logPath))
+
+		b, readErr := store.FileRead(logPath)
+		if readErr != nil {
+			logPanel.Add(gwu.NewLabel(fmt.Sprintf("Could not read '%s': %v", logPath, readErr)))
+		}
+
+		text := string(b)
+
+		logBox := gwu.NewTextBox("")
+		logBox.SetRows(30)
+		logBox.SetCols(100)
+		logBox.SetText(text)
+		logPanel.Add(logBox)
+		e.MarkDirty(logPanel)
+	}
+
 	loadView := func(e gwu.Event, show string) {
-
 		showPanel.Clear()
-
 		showPanel.Add(gwu.NewLabel("File: " + show))
 
 		jaz.logger.Printf("FIXME web_ui loadView: limit number of lines read from file")
@@ -287,6 +307,7 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 		propButtonSave.SetEnabled(userIsLogged(e.Session()))
 		fileList(e)  // build file list
 		resetProp(e) // build file properties
+		loadLog(e)   // load log
 		e.MarkDirty(win)
 	}
 

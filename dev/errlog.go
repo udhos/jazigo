@@ -30,7 +30,7 @@ func errlog(logger hasPrintf, result FetchResult, pathPrefix string, debug bool)
 	defer f.Close()
 
 	// load lines
-	lines, lineErr := loadLines(f, 5)
+	lines, lineErr := loadLines(f, 9)
 	if openErr != nil {
 		logger.Printf("errlog: could not load lines: '%s': %v", path, lineErr)
 		return
