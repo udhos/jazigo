@@ -58,7 +58,7 @@ func TestCiscoIOS1(t *testing.T) {
 	defer temp.CleanupTempRepo()
 
 	requestCh := make(chan FetchRequest)
-	go Spawner(tab, logger, requestCh, repo, opt, NewFilterTable(logger))
+	go Spawner(tab, logger, requestCh, repo, repo, opt, NewFilterTable(logger))
 	good, bad, skip := Scan(tab, tab.ListDevices(), logger, opt.Get(), requestCh)
 	if good != 1 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
@@ -93,7 +93,7 @@ func TestCiscoIOS2(t *testing.T) {
 	defer temp.CleanupTempRepo()
 
 	requestCh := make(chan FetchRequest)
-	go Spawner(tab, logger, requestCh, repo, opt, NewFilterTable(logger))
+	go Spawner(tab, logger, requestCh, repo, repo, opt, NewFilterTable(logger))
 	good, bad, skip := Scan(tab, tab.ListDevices(), logger, opt.Get(), requestCh)
 	if good != 1 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
@@ -127,7 +127,7 @@ func TestCiscoIOS3(t *testing.T) {
 	defer temp.CleanupTempRepo()
 
 	requestCh := make(chan FetchRequest)
-	go Spawner(tab, logger, requestCh, repo, opt, NewFilterTable(logger))
+	go Spawner(tab, logger, requestCh, repo, repo, opt, NewFilterTable(logger))
 	good, bad, skip := Scan(tab, tab.ListDevices(), logger, opt.Get(), requestCh)
 	if good != 0 || bad != 1 || skip != 0 {
 		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
@@ -166,7 +166,7 @@ func TestCiscoIOS4(t *testing.T) {
 	defer temp.CleanupTempRepo()
 
 	requestCh := make(chan FetchRequest)
-	go Spawner(tab, logger, requestCh, repo, opt, NewFilterTable(logger))
+	go Spawner(tab, logger, requestCh, repo, repo, opt, NewFilterTable(logger))
 	good, bad, skip := Scan(tab, tab.ListDevices(), logger, opt.Get(), requestCh)
 	if good != 1000 || bad != 0 || skip != 0 {
 		t.Errorf("good=%d bad=%d", good, bad)

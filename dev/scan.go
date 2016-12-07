@@ -8,7 +8,7 @@ import (
 )
 
 // Spawner: launches new goroutines to fetch requests received on channel reqChan
-func Spawner(tab DeviceUpdater, logger hasPrintf, reqChan chan FetchRequest, repository string, options *conf.Options, ft *FilterTable) {
+func Spawner(tab DeviceUpdater, logger hasPrintf, reqChan chan FetchRequest, repository, logPathPrefix string, options *conf.Options, ft *FilterTable) {
 
 	logger.Printf("Spawner: starting")
 
@@ -30,8 +30,8 @@ func Spawner(tab DeviceUpdater, logger hasPrintf, reqChan chan FetchRequest, rep
 			continue
 		}
 
-		opt := options.Get()                                       // get current global data
-		go d.Fetch(tab, logger, replyChan, 0, repository, opt, ft) // spawn per-request goroutine
+		opt := options.Get()                                                      // get current global data
+		go d.Fetch(tab, logger, replyChan, 0, repository, logPathPrefix, opt, ft) // spawn per-request goroutine
 	}
 
 	logger.Printf("Spawner: exiting")

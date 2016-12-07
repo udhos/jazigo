@@ -215,6 +215,8 @@ func openTransport(logger hasPrintf, modelName, devId, hostPort, transports, use
 		return nil, transports, false, fmt.Errorf("openTransport: missing transports: [%s]", transports)
 	}
 
+	var lastErr error
+
 	timeout := 10 * time.Second
 
 	for _, t := range tList {
@@ -226,6 +228,7 @@ func openTransport(logger hasPrintf, modelName, devId, hostPort, transports, use
 				return s, t, true, nil
 			}
 			logger.Printf("openTransport: %v", err)
+			lastErr = err
 		case "telnet":
 			hp := forceHostPort(hostPort, "23")
 			s, err := openTelnet(logger, modelName, devId, hp, timeout)
@@ -233,16 +236,18 @@ func openTransport(logger hasPrintf, modelName, devId, hostPort, transports, use
 				return s, t, false, nil
 			}
 			logger.Printf("openTransport: %v", err)
+			lastErr = err
 		default:
 			s, err := openTCP(logger, modelName, devId, hostPort, timeout)
 			if err == nil {
 				return s, t, false, nil
 			}
 			logger.Printf("openTransport: %v", err)
+			lastErr = err
 		}
 	}
 
-	return nil, transports, false, fmt.Errorf("openTransport: %s %s %s %s - unable to open transport", modelName, devId, hostPort, transports)
+	return nil, transports, false, fmt.Errorf("openTransport: %s %s %s %s - unable to open transport: last error: %v", modelName, devId, hostPort, transports, lastErr)
 }
 
 func forceHostPort(hostPort, defaultPort string) string {

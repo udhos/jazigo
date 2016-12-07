@@ -136,13 +136,15 @@ type dialog struct {
 }
 
 // fetch runs in a per-device goroutine
-func (d *Device) Fetch(tab DeviceUpdater, logger hasPrintf, resultCh chan FetchResult, delay time.Duration, repository string, opt *conf.AppConfig, ft *FilterTable) {
+func (d *Device) Fetch(tab DeviceUpdater, logger hasPrintf, resultCh chan FetchResult, delay time.Duration, repository, logPathPrefix string, opt *conf.AppConfig, ft *FilterTable) {
 
 	result := d.fetch(logger, delay, repository, opt.MaxConfigFiles, ft)
 
 	good := result.Code == fetchErrNone
 
 	updateDeviceStatus(tab, d.Id, good, time.Now(), logger, opt.Holdtime)
+
+	errlog(logger, result, logPathPrefix, d.Debug)
 
 	if resultCh != nil {
 		resultCh <- result

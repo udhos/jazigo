@@ -222,7 +222,7 @@ func main() {
 
 	buildPublicWins(jaz, server)
 
-	go dev.Spawner(jaz.table, jaz.logger, jaz.requestChan, jaz.repositoryPath, jaz.options, jaz.filterTable)
+	go dev.Spawner(jaz.table, jaz.logger, jaz.requestChan, jaz.repositoryPath, jaz.logPathPrefix, jaz.options, jaz.filterTable)
 
 	if runOnce {
 		dev.Scan(jaz.table, jaz.table.ListDevices(), jaz.logger, jaz.options.Get(), jaz.requestChan)

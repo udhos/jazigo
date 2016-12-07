@@ -582,7 +582,7 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 	textPass := gwu.NewTextBox("")
 	textEnable := gwu.NewTextBox("")
 
-	inputCols := 15
+	inputCols := 10
 	textId.SetCols(inputCols)
 	textHost.SetCols(inputCols)
 	textTransport.SetCols(inputCols)
