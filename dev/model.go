@@ -167,7 +167,7 @@ func (d *Device) createTransport(logger hasPrintf) (transp, string, bool, error)
 		return openTransportPipe(logger, modelName, d.Id, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword, d.Attr.RunProg, d.Debug, d.Attr.RunTimeout)
 	}
 
-	return openTransport(logger, modelName, d.Id, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword)
+	return openTransport(logger, modelName, d.Id, d.HostPort, d.Transports, d.Username(), d.LoginPassword)
 }
 
 func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string, maxFiles int, ft *FilterTable) FetchResult {
@@ -660,22 +660,21 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 
 	d.debugf("login: sent password")
 
-	if d.Attr.SendExtraPostPasswordNewline {
+	if d.Attr.PostLoginPromptPattern != "" {
 
-		d.debugf("login: will send post-password newline")
+		d.debugf("post-login-prompt: looking for pattern=[%s]", d.Attr.PostLoginPromptPattern)
 
-		pattern := `Please press "Enter" to continue!`
-		d.debugf("login: waiting: [%s]", pattern)
-
-		if _, _, mismatch := d.match(logger, t, capture, []string{pattern}); mismatch != nil {
-			return false, fmt.Errorf("afterPasswordNL: match: %v", mismatch)
+		if _, _, mismatch := d.match(logger, t, capture, []string{d.Attr.PostLoginPromptPattern}); mismatch != nil {
+			return false, fmt.Errorf("post-login-prompt: match: %v", mismatch)
 		}
 
-		d.debugf("afterPasswordNL: prompt FOUND")
-		if nlErr := d.send(logger, t, "\n"); nlErr != nil {
-			return false, fmt.Errorf("afterPasswordNL: error: %v", nlErr)
+		d.debugf("post-login-prompt: prompt FOUND")
+
+		if nlErr := d.send(logger, t, d.Attr.PostLoginPromptResponse); nlErr != nil {
+			return false, fmt.Errorf("post-login-prompt: error: %v", nlErr)
 		}
-		d.debugf("afterPasswordNL: extra newline sent")
+
+		d.debugf("post-login-prompt: response sent: [%q]", d.Attr.PostLoginPromptResponse)
 	}
 
 	m, _, err := d.match(logger, t, capture, []string{d.Attr.DisabledPromptPattern, d.Attr.EnabledPromptPattern})

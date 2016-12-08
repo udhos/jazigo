@@ -14,7 +14,8 @@ func registerModelMikrotik(logger hasPrintf, t *DeviceTable) {
 	a.NeedLoginChat = true
 	a.UsernamePromptPattern = `Login:\s*$`
 	a.PasswordPromptPattern = `Password:\s*$`
-	a.SendExtraPostPasswordNewline = true
+	a.PostLoginPromptPattern = `Please press "Enter" to continue!`
+	a.PostLoginPromptResponse = "\r\n"
 	a.DisabledPromptPattern = promptPattern
 	a.EnabledPromptPattern = promptPattern
 	a.CommandList = []string{"/system resource print\r", "/export\r", "/export verbose\r"}
