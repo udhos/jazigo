@@ -144,7 +144,7 @@ func (d *Device) Fetch(tab DeviceUpdater, logger hasPrintf, resultCh chan FetchR
 
 	updateDeviceStatus(tab, d.Id, good, time.Now(), logger, opt.Holdtime)
 
-	errlog(logger, result, logPathPrefix, d.Debug)
+	errlog(logger, result, logPathPrefix, d.Debug, d.Attr.ErrlogHistSize)
 
 	if resultCh != nil {
 		resultCh <- result

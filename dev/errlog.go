@@ -15,7 +15,7 @@ func ErrlogPath(pathPrefix, id string) string {
 	return path
 }
 
-func errlog(logger hasPrintf, result FetchResult, pathPrefix string, debug bool) {
+func errlog(logger hasPrintf, result FetchResult, pathPrefix string, debug bool, histSize int) {
 
 	now := time.Now()
 
@@ -30,14 +30,15 @@ func errlog(logger hasPrintf, result FetchResult, pathPrefix string, debug bool)
 	defer f.Close()
 
 	// load lines
-	lines, lineErr := loadLines(f, 9)
-	if openErr != nil {
+	lines, lineErr := loadLines(bufio.NewReader(f), histSize-1)
+	if lineErr != nil {
 		logger.Printf("errlog: could not load lines: '%s': %v", path, lineErr)
 		return
 	}
 
 	if debug {
 		logger.Printf("errlog debug: '%s': %d lines", path, len(lines))
+		//logger.Printf("errlog debug: '%s': last line: [%s]", path, lines[len(lines)-1])
 	}
 
 	// truncate file
@@ -58,7 +59,7 @@ func errlog(logger hasPrintf, result FetchResult, pathPrefix string, debug bool)
 		result.Code == fetchErrNone, result.Model, result.DevId, result.DevHostPort, result.Transport, result.Code, result.Msg)
 
 	if debug {
-		logger.Printf("errlog debug: push: '%s': %v", path, msg)
+		logger.Printf("errlog debug: push: '%s': [%s]", path, msg)
 	}
 
 	_, pushErr := w.WriteString(msg + "\n")
@@ -69,14 +70,13 @@ func errlog(logger hasPrintf, result FetchResult, pathPrefix string, debug bool)
 
 	// write lines back to file
 	for i, line := range lines {
-		l := append(line, LF)
-		_, writeErr := w.Write(l)
+		_, writeErr := w.Write(line)
 		if writeErr != nil {
 			logger.Printf("errlog: write error: '%s': %v", path, writeErr)
 			break
 		}
 		if debug {
-			logger.Printf("errlog debug: wrote line=%d: '%s': %v", i, path, string(line))
+			logger.Printf("errlog debug: wrote line=%d/%d: '%s': [%v]", i+1, len(lines), path, string(line))
 		}
 	}
 
@@ -89,11 +89,22 @@ func errlog(logger hasPrintf, result FetchResult, pathPrefix string, debug bool)
 	}
 }
 
-func loadLines(r io.Reader, max int) ([][]byte, error) {
-	scanner := bufio.NewScanner(r)
+func loadLines(r *bufio.Reader, max int) ([][]byte, error) {
 	var lines [][]byte
-	for lineCount := 0; lineCount < max && scanner.Scan(); lineCount++ {
-		lines = append(lines, scanner.Bytes())
+	for lineCount := 0; lineCount < max; lineCount++ {
+		line, readErr := r.ReadBytes(LF)
+		if len(line) > 0 {
+			lines = append(lines, line)
+		}
+		switch readErr {
+		case io.EOF:
+			break
+		case nil:
+			continue
+		default:
+			return lines, readErr
+		}
 	}
-	return lines, scanner.Err()
+
+	return lines, nil
 }
