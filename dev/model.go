@@ -59,6 +59,7 @@ func RegisterModels(logger hasPrintf, t *DeviceTable) {
 	registerModelJunOS(logger, t)
 	registerModelHTTP(logger, t)
 	registerModelRun(logger, t)
+	registerModelMikrotik(logger, t)
 }
 
 func CreateDevice(tab *DeviceTable, logger hasPrintf, modelName, id, hostPort, transports, user, pass, enable string, debug bool, change *conf.Change) error {
@@ -597,6 +598,17 @@ func (d *Device) enable(logger hasPrintf, t transp, capture *dialog) error {
 
 	if passErr := d.sendln(logger, t, d.EnablePassword); passErr != nil {
 		return fmt.Errorf("enable: could not send enable password: %v", passErr)
+	}
+
+	if d.Attr.SendExtraPostPasswordNewline {
+		if _, _, mismatch := d.match(logger, t, capture, []string{`Please press "Enter" to continue!`}); mismatch != nil {
+			return fmt.Errorf("afterPasswordNL: match: %v", mismatch)
+		}
+		d.debugf("afterPasswordNL: prompt FOUND")
+		if nlErr := d.send(logger, t, "\n"); nlErr != nil {
+			return fmt.Errorf("afterPasswordNL: error: %v", nlErr)
+		}
+		d.debugf("afterPasswordNL: extra newline sent")
 	}
 
 	if _, _, mismatch := d.match(logger, t, capture, []string{d.Attr.EnabledPromptPattern}); mismatch != nil {
