@@ -40,6 +40,14 @@ func (a *AppConfig) Dump() ([]byte, error) {
 	return b, nil
 }
 
+func NewDevAttr() DevAttributes {
+	a := DevAttributes{
+		ErrlogHistSize: 60, // default max number of lines in errlog history
+	}
+
+	return a
+}
+
 type DevAttributes struct {
 	NeedLoginChat               bool          // need login chat
 	NeedEnabledMode             bool          // need enabled mode
@@ -60,6 +68,7 @@ type DevAttributes struct {
 	S3ContentType               string        // ""=none "detect"=http.Detect "text/plain" etc
 	RunProg                     []string      // "/path/to/external/command", "arg1", "arg2" for the run model
 	RunTimeout                  time.Duration // 60s - time allowed for external program to complete
+	ErrlogHistSize              int           // max number of lines in errlog history
 
 	// readTimeout: per-read timeout (protection against inactivity)
 	// matchTimeout: full match timeout (protection against slow sender -- think 1 byte per second)

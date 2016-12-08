@@ -6,30 +6,29 @@ import (
 )
 
 func registerModelCiscoIOSXR(logger hasPrintf, t *DeviceTable) {
-	modelName := "cisco-iosxr"
-	m := &Model{name: modelName}
+	a := conf.NewDevAttr()
 
-	m.defaultAttr = conf.DevAttributes{
-		NeedLoginChat:               true,
-		NeedEnabledMode:             true,
-		NeedPagingOff:               true,
-		EnableCommand:               "enable",
-		UsernamePromptPattern:       `Username:\s*$`,
-		PasswordPromptPattern:       `Password:\s*$`,
-		EnablePasswordPromptPattern: `Password:\s*$`,
-		DisabledPromptPattern:       `\S+>\s*$`,
-		EnabledPromptPattern:        `\S+#\s*$`,
-		CommandList:                 []string{"show ver br", "show run"},
-		DisablePagerCommand:         "term len 0",
-		ReadTimeout:                 10 * time.Second,
-		MatchTimeout:                20 * time.Second,
-		SendTimeout:                 5 * time.Second,
-		CommandReadTimeout:          20 * time.Second, // larger timeout for slow 'sh run'
-		CommandMatchTimeout:         30 * time.Second, // larger timeout for slow 'sh run'
-		QuoteSentCommandsFormat:     `!![%s]`,
-		LineFilter:                  "iosxr", // line filter name - applied to every saved line
-	}
+	a.NeedLoginChat = true
+	a.NeedEnabledMode = true
+	a.NeedPagingOff = true
+	a.EnableCommand = "enable"
+	a.UsernamePromptPattern = `Username:\s*$`
+	a.PasswordPromptPattern = `Password:\s*$`
+	a.EnablePasswordPromptPattern = `Password:\s*$`
+	a.DisabledPromptPattern = `\S+>\s*$`
+	a.EnabledPromptPattern = `\S+#\s*$`
+	a.CommandList = []string{"show ver br", "show run"}
+	a.DisablePagerCommand = "term len 0"
+	a.ReadTimeout = 10 * time.Second
+	a.MatchTimeout = 20 * time.Second
+	a.SendTimeout = 5 * time.Second
+	a.CommandReadTimeout = 20 * time.Second  // larger timeout for slow 'sh run'
+	a.CommandMatchTimeout = 30 * time.Second // larger timeout for slow 'sh run'
+	a.QuoteSentCommandsFormat = `!![%s]`
+	a.LineFilter = "iosxr" // line filter name - applied to every saved line
 
+	m := &Model{name: "cisco-iosxr"}
+	m.defaultAttr = a
 	if err := t.SetModel(m, logger); err != nil {
 		logger.Printf("registerModelCiscoIOSXR: %v", err)
 	}

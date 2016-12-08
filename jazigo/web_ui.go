@@ -603,6 +603,8 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 	textPass := gwu.NewTextBox("")
 	textEnable := gwu.NewTextBox("")
 
+	listModel.SetSelected(0, true)
+
 	inputCols := 10
 	textId.SetCols(inputCols)
 	textHost.SetCols(inputCols)
@@ -659,7 +661,14 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 			When: time.Now(),
 		}
 
-		if createErr := dev.CreateDevice(jaz.table, jaz.logger, listModel.SelectedValue(), id, textHost.Text(), textTransport.Text(), textUser.Text(), textPass.Text(), textEnable.Text(), false, &change); createErr != nil {
+		mod := listModel.SelectedValue()
+		if mod == "" {
+			msg.SetText(fmt.Sprintf("Invalid model: [%s]", mod))
+			e.MarkDirty(createDevPanel)
+			return
+		}
+
+		if createErr := dev.CreateDevice(jaz.table, jaz.logger, mod, id, textHost.Text(), textTransport.Text(), textUser.Text(), textPass.Text(), textEnable.Text(), false, &change); createErr != nil {
 			msg.SetText("Could not create device: " + createErr.Error())
 			e.MarkDirty(createDevPanel)
 			return

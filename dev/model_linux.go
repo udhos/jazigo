@@ -7,29 +7,28 @@ import (
 )
 
 func registerModelLinux(logger hasPrintf, t *DeviceTable) {
-	modelName := "linux"
-	m := &Model{name: modelName}
+	a := conf.NewDevAttr()
 
-	m.defaultAttr = conf.DevAttributes{
-		NeedLoginChat:               true,
-		NeedEnabledMode:             false,
-		NeedPagingOff:               false,
-		EnableCommand:               "",
-		UsernamePromptPattern:       `Username:\s*$`,
-		PasswordPromptPattern:       `Password:\s*$`,
-		EnablePasswordPromptPattern: "",
-		DisabledPromptPattern:       `\$\s*$`,
-		EnabledPromptPattern:        `\$\s*$`,
-		CommandList:                 []string{"", "/bin/uname -a", "/usr/bin/uptime", "/bin/ls"}, // "" = dont send, wait for command prompt
-		DisablePagerCommand:         "",
-		ReadTimeout:                 5 * time.Second,
-		MatchTimeout:                10 * time.Second,
-		SendTimeout:                 5 * time.Second,
-		CommandReadTimeout:          10 * time.Second,
-		CommandMatchTimeout:         10 * time.Second,
-		QuoteSentCommandsFormat:     `##[%s]`,
-	}
+	a.NeedLoginChat = true
+	a.NeedEnabledMode = false
+	a.NeedPagingOff = false
+	a.EnableCommand = ""
+	a.UsernamePromptPattern = `Username:\s*$`
+	a.PasswordPromptPattern = `Password:\s*$`
+	a.EnablePasswordPromptPattern = ""
+	a.DisabledPromptPattern = `\$\s*$`
+	a.EnabledPromptPattern = `\$\s*$`
+	a.CommandList = []string{"", "/bin/uname -a", "/usr/bin/uptime", "/bin/ls"} // "" = dont send, wait for command prompt
+	a.DisablePagerCommand = ""
+	a.ReadTimeout = 5 * time.Second
+	a.MatchTimeout = 10 * time.Second
+	a.SendTimeout = 5 * time.Second
+	a.CommandReadTimeout = 10 * time.Second
+	a.CommandMatchTimeout = 10 * time.Second
+	a.QuoteSentCommandsFormat = `##[%s]`
 
+	m := &Model{name: "linux"}
+	m.defaultAttr = a
 	if err := t.SetModel(m, logger); err != nil {
 		logger.Printf("registerModelLinux: %v", err)
 	}
