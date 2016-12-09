@@ -142,7 +142,7 @@ func handleConnectionJuniperJunOS(t *testing.T, c net.Conn, options optionsJunos
 	}
 
 	if _, err := c.Write([]byte("\n--- JUNOS 11.2R1.2 built 2011-06-22 02:55:58 UTC")); err != nil {
-		t.Logf("handleConnectionJuniperJunOS: send username prompt error: %v", err)
+		t.Logf("handleConnectionJuniperJunOS: send banner error: %v", err)
 		return
 	}
 
