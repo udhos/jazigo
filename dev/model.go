@@ -27,6 +27,13 @@ type Device struct {
 	lastSuccess time.Time
 }
 
+func (d *Device) Username() string {
+	if d.Model() == "mikrotik" {
+		return d.DevConfig.LoginUser + "+cte"
+	}
+	return d.DevConfig.LoginUser
+}
+
 func (d *Device) Printf(format string, v ...interface{}) {
 	prefix := fmt.Sprintf("%s %s %s: ", d.DevConfig.Model, d.Id, d.HostPort)
 	d.logger.Printf(prefix+format, v...)
@@ -165,7 +172,6 @@ func (d *Device) createTransport(logger hasPrintf) (transp, string, bool, error)
 
 func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string, maxFiles int, ft *FilterTable) FetchResult {
 	modelName := d.devModel.name
-	d.Printf("fetch: delay=%dms", delay/time.Millisecond)
 
 	if delay > 0 {
 		time.Sleep(delay)
@@ -271,10 +277,10 @@ func (d *Device) saveCommit(logger hasPrintf, capture *dialog, repository string
 
 		lineFilter, filterFound := ft.table[d.Attr.LineFilter]
 		if filterFound {
-			d.Printf("saveCommit: filter '%s' FOUND", d.Attr.LineFilter)
+			d.debugf("saveCommit: filter '%s' FOUND", d.Attr.LineFilter)
 		} else {
 			if d.Attr.LineFilter != "" {
-				d.Printf("saveCommit: filter '%s' not found", d.Attr.LineFilter)
+				d.debugf("saveCommit: filter '%s' not found", d.Attr.LineFilter)
 			}
 		}
 
@@ -403,13 +409,23 @@ READ_LOOP:
 
 		matchBuf = append(matchBuf, lastRead...)
 
-		lastLine := findLastLine(matchBuf)
+		//lastLine := findLastLine(matchBuf)
 
 		if expList != nil {
-			for i, exp := range expList {
-				if exp.Match(lastLine) {
-					d.debugf("matched: %d/%d [%q]", i, len(expList), lastLine)
-					return i, matchBuf, nil // pattern found
+			var sep []byte
+			if bytes.IndexByte(lastRead, CR) >= 0 {
+				sep = []byte{CR, LF}
+			} else {
+				sep = []byte{LF}
+			}
+			lines := bytes.Split(lastRead, sep)
+			for _, lastLine := range lines {
+				for i, exp := range expList {
+					d.debugf("matching: %d/%d pattern=[%s] line=[%q]", i, len(expList), patterns[i], lastLine)
+					if exp.Match(lastLine) {
+						d.debugf("matched: %d/%d pattern=[%s] line=[%q]", i, len(expList), patterns[i], lastLine)
+						return i, matchBuf, nil // pattern found
+					}
 				}
 			}
 		}
@@ -538,10 +554,11 @@ func (d *Device) sendCommands(logger hasPrintf, t transp, capture *dialog) error
 func (d *Device) save(logger hasPrintf, capture *dialog, command string, buf []byte) error {
 
 	if command != "" {
+		command = fmt.Sprintf("%q", command)
 		if d.Attr.QuoteSentCommandsFormat != "" {
 			command = fmt.Sprintf(d.Attr.QuoteSentCommandsFormat, command)
 		}
-		command = "\n" + command + "\n" // prettify
+		command = "\n" + command + "\n"
 	}
 
 	capture.save = append(capture.save, []byte(command), buf)
@@ -575,9 +592,9 @@ func (d *Device) enable(logger hasPrintf, t transp, capture *dialog) error {
 
 	switch m0 {
 	case 0:
-		d.Printf("enable: found disabled command prompt")
+		d.debugf("enable: found disabled command prompt")
 	case 1:
-		d.Printf("enable: found enabled command prompt")
+		d.debugf("enable: found enabled command prompt")
 		return nil
 	}
 
@@ -600,17 +617,6 @@ func (d *Device) enable(logger hasPrintf, t transp, capture *dialog) error {
 		return fmt.Errorf("enable: could not send enable password: %v", passErr)
 	}
 
-	if d.Attr.SendExtraPostPasswordNewline {
-		if _, _, mismatch := d.match(logger, t, capture, []string{`Please press "Enter" to continue!`}); mismatch != nil {
-			return fmt.Errorf("afterPasswordNL: match: %v", mismatch)
-		}
-		d.debugf("afterPasswordNL: prompt FOUND")
-		if nlErr := d.send(logger, t, "\n"); nlErr != nil {
-			return fmt.Errorf("afterPasswordNL: error: %v", nlErr)
-		}
-		d.debugf("afterPasswordNL: extra newline sent")
-	}
-
 	if _, _, mismatch := d.match(logger, t, capture, []string{d.Attr.EnabledPromptPattern}); mismatch != nil {
 		return fmt.Errorf("enable: could not find enabled command prompt: %v", mismatch)
 	}
@@ -627,23 +633,49 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 
 	switch m1 {
 	case 0:
-		d.Printf("login: found username prompt")
+		d.debugf("login: found username prompt")
 
-		if userErr := d.sendln(logger, t, d.LoginUser); userErr != nil {
+		if userErr := d.sendln(logger, t, d.Username()); userErr != nil {
 			return false, fmt.Errorf("login: could not send username: %v", userErr)
 		}
+
+		d.debugf("login: wait password prompt")
 
 		_, _, err := d.match(logger, t, capture, []string{d.Attr.PasswordPromptPattern})
 		if err != nil {
 			return false, fmt.Errorf("login: could not find password prompt: %v", err)
 		}
 
+		d.debugf("login: found post-username password prompt")
+
 	case 1:
-		d.Printf("login: found password prompt")
+		d.debugf("login: found password prompt")
 	}
+
+	d.debugf("login: will send password")
 
 	if passErr := d.sendln(logger, t, d.LoginPassword); passErr != nil {
 		return false, fmt.Errorf("login: could not send password: %v", passErr)
+	}
+
+	d.debugf("login: sent password")
+
+	if d.Attr.SendExtraPostPasswordNewline {
+
+		d.debugf("login: will send post-password newline")
+
+		pattern := `Please press "Enter" to continue!`
+		d.debugf("login: waiting: [%s]", pattern)
+
+		if _, _, mismatch := d.match(logger, t, capture, []string{pattern}); mismatch != nil {
+			return false, fmt.Errorf("afterPasswordNL: match: %v", mismatch)
+		}
+
+		d.debugf("afterPasswordNL: prompt FOUND")
+		if nlErr := d.send(logger, t, "\n"); nlErr != nil {
+			return false, fmt.Errorf("afterPasswordNL: error: %v", nlErr)
+		}
+		d.debugf("afterPasswordNL: extra newline sent")
 	}
 
 	m, _, err := d.match(logger, t, capture, []string{d.Attr.DisabledPromptPattern, d.Attr.EnabledPromptPattern})
@@ -653,9 +685,9 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 
 	switch m {
 	case 0:
-		d.Printf("login: found disabled command prompt")
+		d.debugf("login: found disabled command prompt")
 	case 1:
-		d.Printf("login: found enabled command prompt")
+		d.debugf("login: found enabled command prompt")
 	}
 
 	enabled := m == 1

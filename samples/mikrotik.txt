@@ -1,0 +1,33 @@
+MikroTik v6.37.3 (stable)
+Login: admin
+Password: 
+
+
+
+
+
+
+
+
+  MMM      MMM       KKK                          TTTTTTTTTTT      KKK
+  MMMM    MMMM       KKK                          TTTTTTTTTTT      KKK
+  MMM MMMM MMM  III  KKK  KKK  RRRRRR     OOOOOO      TTT     III  KKK  KKK
+  MMM  MM  MMM  III  KKKKK     RRR  RRR  OOO  OOO     TTT     III  KKKKK
+  MMM      MMM  III  KKK KKK   RRRRRR    OOO  OOO     TTT     III  KKK KKK
+  MMM      MMM  III  KKK  KKK  RRR  RRR   OOOOOO      TTT     III  KKK  KKK
+
+  MikroTik RouterOS 6.37.3 (c) 1999-2016       http://www.mikrotik.com/
+
+
+ROUTER HAS NO SOFTWARE KEY
+----------------------------
+You have 20h19m to configure the router to be remotely accessible,
+and to enter the key by pasting it in a Telnet window or in Winbox.
+Turn off the device to stop the timer.
+See www.mikrotik.com/key for more details.
+
+Current installation "software ID": 6ZDH-HYFR
+Please press "Enter" to continue!
+
+  
+[admin@MikroTik] >     

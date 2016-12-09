@@ -13,6 +13,9 @@ func removeControlChars(logger hasPrintf, debug bool, buf, suffix []byte) ([]byt
 		case b == CR:
 			next := i + 1
 			if next < len(suffix) {
+				if suffix[next] == 0 {
+					suffix[next] = LF // handle CR NULL as CR LF
+				}
 				if suffix[next] == LF {
 					continue
 				}
@@ -72,6 +75,39 @@ func removeControlChars(logger hasPrintf, debug bool, buf, suffix []byte) ([]byt
 			}
 			suffix = suffix[1:]
 			i = -1 // handle prefix from start
+
+		case b == 27:
+
+			if j := i + 1; j < len(suffix) {
+				switch suffix[j] {
+				case '[':
+					if k := j + 1; k < len(suffix) {
+						switch suffix[k] {
+						case 'A', 'B', 'C', 'D':
+							// remove 3 control chars: ESC [ x
+							suffix = append(suffix[:i], suffix[k+1:]...) // cut bytes i..k
+							i--                                          // handle i again
+						case '1', '3', '4':
+							if l := k + 1; l < len(suffix) {
+								switch suffix[l] {
+								case '~':
+									// remove 4 control chars: ESC [ x y
+									suffix = append(suffix[:i], suffix[k+1:]...) // cut bytes i..k
+									i--                                          // handle i again
+								default:
+									logger.Printf("unknown 4-char escape: %q", suffix[i:])
+								}
+							}
+						default:
+							logger.Printf("unknown 3-char escape: %q", suffix[i:])
+
+						}
+					}
+				default:
+					logger.Printf("unknown 2-char escape: %q", suffix[i:])
+
+				}
+			}
 
 		case b < 32: // other control
 			// remove the single control char

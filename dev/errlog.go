@@ -69,14 +69,11 @@ func errlog(logger hasPrintf, result FetchResult, pathPrefix string, debug bool,
 	}
 
 	// write lines back to file
-	for i, line := range lines {
+	for _, line := range lines {
 		_, writeErr := w.Write(line)
 		if writeErr != nil {
 			logger.Printf("errlog: write error: '%s': %v", path, writeErr)
 			break
-		}
-		if debug {
-			logger.Printf("errlog debug: wrote line=%d/%d: '%s': [%v]", i+1, len(lines), path, string(line))
 		}
 	}
 
