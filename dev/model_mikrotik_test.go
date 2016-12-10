@@ -12,7 +12,8 @@ import (
 )
 
 type optionsMikrotik struct {
-	breakConn bool
+	sendBanner bool
+	breakConn  bool
 }
 
 func TestMikrotik1(t *testing.T) {
@@ -54,7 +55,77 @@ func TestMikrotik2(t *testing.T) {
 
 	// launch bogus test server
 	addr := ":2012"
+	s, listenErr := spawnServerMikrotik(t, addr, optionsMikrotik{sendBanner: true})
+	if listenErr != nil {
+		t.Errorf("could not spawn bogus Mikrotik server: %v", listenErr)
+	}
+
+	// run client test
+	logger := &testLogger{t}
+	tab := NewDeviceTable()
+	opt := conf.NewOptions()
+	opt.Set(&conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10})
+	RegisterModels(logger, tab)
+	CreateDevice(tab, logger, "mikrotik", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false, nil)
+
+	repo := temp.MakeTempRepo()
+	defer temp.CleanupTempRepo()
+
+	requestCh := make(chan FetchRequest)
+	errlogPrefix := filepath.Join(repo, "errlog_test.")
+	go Spawner(tab, logger, requestCh, repo, errlogPrefix, opt, NewFilterTable(logger))
+	good, bad, skip := Scan(tab, tab.ListDevices(), logger, opt.Get(), requestCh)
+	if good != 1 || bad != 0 || skip != 0 {
+		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
+	}
+
+	close(requestCh) // shutdown Spawner - we might exit first though
+
+	s.close() // shutdown server
+
+	<-s.done // wait termination of accept loop goroutine
+}
+
+func TestMikrotik3(t *testing.T) {
+
+	// launch bogus test server
+	addr := ":2013"
 	s, listenErr := spawnServerMikrotik(t, addr, optionsMikrotik{breakConn: true})
+	if listenErr != nil {
+		t.Errorf("could not spawn bogus Mikrotik server: %v", listenErr)
+	}
+
+	// run client test
+	logger := &testLogger{t}
+	tab := NewDeviceTable()
+	opt := conf.NewOptions()
+	opt.Set(&conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10})
+	RegisterModels(logger, tab)
+	CreateDevice(tab, logger, "mikrotik", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false, nil)
+
+	repo := temp.MakeTempRepo()
+	defer temp.CleanupTempRepo()
+
+	requestCh := make(chan FetchRequest)
+	errlogPrefix := filepath.Join(repo, "errlog_test.")
+	go Spawner(tab, logger, requestCh, repo, errlogPrefix, opt, NewFilterTable(logger))
+	good, bad, skip := Scan(tab, tab.ListDevices(), logger, opt.Get(), requestCh)
+	if good != 0 || bad != 1 || skip != 0 {
+		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
+	}
+
+	close(requestCh) // shutdown Spawner - we might exit first though
+
+	s.close() // shutdown server
+
+	<-s.done // wait termination of accept loop goroutine
+}
+
+func TestMikrotik4(t *testing.T) {
+
+	// launch bogus test server
+	addr := ":2014"
+	s, listenErr := spawnServerMikrotik(t, addr, optionsMikrotik{sendBanner: true, breakConn: true})
 	if listenErr != nil {
 		t.Errorf("could not spawn bogus Mikrotik server: %v", listenErr)
 	}
@@ -143,7 +214,9 @@ func handleConnectionMikrotik(t *testing.T, c net.Conn, options optionsMikrotik)
 
 	// send post login prompt
 
-	banner := `
+	if options.sendBanner {
+
+		banner := `
   MMM      MMM       KKK                          TTTTTTTTTTT      KKK
   MMMM    MMMM       KKK                          TTTTTTTTTTT      KKK
   MMM MMMM MMM  III  KKK  KKK  RRRRRR     OOOOOO      TTT     III  KKK  KKK
@@ -165,15 +238,17 @@ Current installation "software ID": 6ZDH-HYFR
 Please press "Enter" to continue!
 `
 
-	if _, err := c.Write([]byte("\r\n" + banner)); err != nil {
-		t.Logf("handleConnectionMikrotik: send banner error: %v", err)
-		return
-	}
+		if _, err := c.Write([]byte("\r\n" + banner)); err != nil {
+			t.Logf("handleConnectionMikrotik: send banner error: %v", err)
+			return
+		}
 
-	// consume response
-	if _, err := c.Read(buf); err != nil {
-		t.Logf("handleConnectionMikrotik: read response error: %v", err)
-		return
+		// consume response
+		if _, err := c.Read(buf); err != nil {
+			t.Logf("handleConnectionMikrotik: read response error: %v", err)
+			return
+		}
+
 	}
 
 LOOP:

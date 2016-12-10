@@ -645,9 +645,6 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 		if err != nil {
 			return false, fmt.Errorf("login: could not find password prompt: %v", err)
 		}
-
-		d.debugf("login: found post-username password prompt")
-
 	case 1:
 		d.debugf("login: found password prompt")
 	}
@@ -664,29 +661,38 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 
 		d.debugf("post-login-prompt: looking for pattern=[%s]", d.Attr.PostLoginPromptPattern)
 
-		if _, _, mismatch := d.match(logger, t, capture, []string{d.Attr.PostLoginPromptPattern}); mismatch != nil {
+		var m int
+		var mismatch error
+		m, _, mismatch = d.match(logger, t, capture,
+			[]string{
+				d.Attr.DisabledPromptPattern,
+				d.Attr.EnabledPromptPattern,
+				d.Attr.PostLoginPromptPattern,
+			})
+		if mismatch != nil {
 			return false, fmt.Errorf("post-login-prompt: match: %v", mismatch)
 		}
 
-		d.debugf("post-login-prompt: prompt FOUND")
+		if m == 2 {
 
-		if nlErr := d.send(logger, t, d.Attr.PostLoginPromptResponse); nlErr != nil {
-			return false, fmt.Errorf("post-login-prompt: error: %v", nlErr)
+			d.debugf("post-login-prompt: prompt FOUND")
+
+			if nlErr := d.send(logger, t, d.Attr.PostLoginPromptResponse); nlErr != nil {
+				return false, fmt.Errorf("post-login-prompt: error: %v", nlErr)
+			}
+
+			d.debugf("post-login-prompt: response sent: [%q]", d.Attr.PostLoginPromptResponse)
+		} else {
+
+			enabled := m == 1
+
+			return enabled, nil
 		}
-
-		d.debugf("post-login-prompt: response sent: [%q]", d.Attr.PostLoginPromptResponse)
 	}
 
 	m, _, err := d.match(logger, t, capture, []string{d.Attr.DisabledPromptPattern, d.Attr.EnabledPromptPattern})
 	if err != nil {
 		return false, fmt.Errorf("login: could not find command prompt: %v", err)
-	}
-
-	switch m {
-	case 0:
-		d.debugf("login: found disabled command prompt")
-	case 1:
-		d.debugf("login: found enabled command prompt")
 	}
 
 	enabled := m == 1
