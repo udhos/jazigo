@@ -106,6 +106,8 @@ func main() {
 
 	jaz := newApp()
 
+	maxMainConfigLoadSize := int64(10000000) // 10M
+
 	var runOnce bool
 	var staticDir string
 	var deviceImport bool
@@ -184,7 +186,7 @@ func main() {
 	store.Init(jaz.logger, s3region)
 
 	// load config
-	loadConfig(jaz)
+	loadConfig(jaz, maxMainConfigLoadSize)
 
 	jaz.logf("runOnce: %v", runOnce)
 	opt := jaz.options.Get()
@@ -257,7 +259,7 @@ func scanLoop(jaz *app) {
 	}
 }
 
-func loadConfig(jaz *app) {
+func loadConfig(jaz *app, maxSize int64) {
 
 	var cfg *conf.Config
 
@@ -268,7 +270,7 @@ func loadConfig(jaz *app) {
 	} else {
 		jaz.logf("last config: %s", lastConfig)
 		var loadErr error
-		cfg, loadErr = conf.Load(lastConfig)
+		cfg, loadErr = conf.Load(lastConfig, maxSize)
 		if loadErr != nil {
 			jaz.logf("could not load config: '%s': %v", lastConfig, loadErr)
 			panic("main: could not load config")

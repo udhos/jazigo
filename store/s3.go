@@ -4,7 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
+	//"io/ioutil"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -212,7 +213,7 @@ func s3fileRename(p1, p2 string) error {
 	return nil
 }
 
-func s3fileRead(path string) ([]byte, error) {
+func s3fileRead(path string) (io.ReadCloser, error) {
 
 	region, bucket, key := s3parse(path)
 
@@ -227,13 +228,8 @@ func s3fileRead(path string) ([]byte, error) {
 	}
 
 	resp, err := svc.GetObject(params)
-	if err != nil {
-		return nil, err
-	}
 
-	s3log("s3fileRead: FIXME limit number of lines read from s3 object")
-
-	return ioutil.ReadAll(resp.Body)
+	return resp.Body, err
 }
 
 func s3fileFirstLine(path string) (string, error) {

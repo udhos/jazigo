@@ -15,12 +15,13 @@ type Change struct {
 }
 
 type AppConfig struct {
-	MaxConfigFiles int
-	Holdtime       time.Duration
-	ScanInterval   time.Duration
-	MaxConcurrency int
-	LastChange     Change
-	Comment        string // free user-defined field
+	MaxConfigFiles    int
+	Holdtime          time.Duration
+	ScanInterval      time.Duration
+	MaxConcurrency    int
+	MaxConfigLoadSize int64
+	LastChange        Change
+	Comment           string // free user-defined field
 }
 
 func NewAppConfigFromString(str string) (*AppConfig, error) {
@@ -121,17 +122,18 @@ type Config struct {
 func New() *Config {
 	return &Config{
 		Options: AppConfig{
-			Holdtime:       12 * time.Hour,   // do not retry a successful device backup before this holdtime
-			ScanInterval:   10 * time.Minute, // interval for scanning device table
-			MaxConcurrency: 20,               // limit for concurrent backup jobs
-			MaxConfigFiles: 120,              // limit for per-device saved files
+			Holdtime:          12 * time.Hour,   // do not retry a successful device backup before this holdtime
+			ScanInterval:      10 * time.Minute, // interval for scanning device table
+			MaxConcurrency:    20,               // limit for concurrent backup jobs
+			MaxConfigFiles:    120,              // limit for per-device saved files
+			MaxConfigLoadSize: 10000000,         // 10M limit max config file size for loading to memory
 		},
 		Devices: []DevConfig{},
 	}
 }
 
-func Load(path string) (*Config, error) {
-	b, readErr := store.FileRead(path)
+func Load(path string, maxSize int64) (*Config, error) {
+	b, readErr := store.FileRead(path, maxSize)
 	if readErr != nil {
 		return nil, readErr
 	}

@@ -176,7 +176,16 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 		logPanel.Clear()
 		logPanel.Add(gwu.NewLabel("File: " + logPath))
 
-		b, readErr := store.FileRead(logPath)
+		maxSize := int64(1000 * 100) // 1000 x 100-byte lines
+
+		d, getErr := jaz.table.GetDevice(devID)
+		if getErr != nil {
+			logPanel.Add(gwu.NewLabel(fmt.Sprintf("Get device error: %v", getErr)))
+		} else {
+			maxSize = 1000 * int64(d.Attr.ErrlogHistSize) // max 1000 bytes per line
+		}
+
+		b, readErr := store.FileRead(logPath, maxSize)
 		if readErr != nil {
 			logPanel.Add(gwu.NewLabel(fmt.Sprintf("Could not read '%s': %v", logPath, readErr)))
 		}
@@ -195,8 +204,8 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 		showPanel.Clear()
 		showPanel.Add(gwu.NewLabel("File: " + show))
 
-		jaz.logger.Printf("FIXME web_ui loadView: limit number of lines read from file")
-		b, readErr := store.FileRead(show)
+		options := jaz.options.Get()
+		b, readErr := store.FileRead(show, options.MaxConfigLoadSize)
 		if readErr != nil {
 			showPanel.Add(gwu.NewLabel(fmt.Sprintf("Could not read '%s': %v", show, readErr)))
 		}

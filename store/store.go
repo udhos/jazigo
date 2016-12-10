@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -251,13 +252,36 @@ func fileRename(p1, p2 string) error {
 	return os.Rename(p1, p2)
 }
 
-func FileRead(path string) ([]byte, error) {
+func FileRead(path string, maxSize int64) ([]byte, error) {
+
+	var r *io.LimitedReader
 
 	if s3path(path) {
-		return s3fileRead(path)
+		r1, readErr := s3fileRead(path)
+		if readErr != nil {
+			return nil, readErr
+		}
+		defer r1.Close()
+		r = &io.LimitedReader{R: r1, N: maxSize}
+	} else {
+		f, openErr := os.Open(path)
+		if openErr != nil {
+			return nil, openErr
+		}
+		defer f.Close()
+		r = &io.LimitedReader{R: f, N: maxSize}
 	}
 
-	return ioutil.ReadFile(path)
+	buf, readErr := ioutil.ReadAll(r)
+	if readErr != nil {
+		return buf, readErr
+	}
+
+	if r.N != 0 {
+		return buf, fmt.Errorf("FileRead: partial read: remaining=%d", r.N)
+	}
+
+	return buf, nil
 }
 
 func writeFileBuf(path string, buf []byte, contentType string) error {
