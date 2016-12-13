@@ -277,8 +277,8 @@ func FileRead(path string, maxSize int64) ([]byte, error) {
 		return buf, readErr
 	}
 
-	if r.N != 0 {
-		return buf, fmt.Errorf("FileRead: partial read: remaining=%d", r.N)
+	if r.N < 1 {
+		return buf, fmt.Errorf("FileRead: reached max=%d: remaining=%d", maxSize, r.N)
 	}
 
 	return buf, nil
@@ -464,7 +464,8 @@ func fileCompare(p1, p2 string) (bool, error) {
 		return s3fileCompare(p1, p2, maxSize)
 	}
 
-	return equalfile.CompareFile(p1, p2)
+	cmp := equalfile.New(nil, equalfile.Options{})
+	return cmp.CompareFile(p1, p2)
 }
 
 func MkDir(path string) error {

@@ -250,8 +250,8 @@ func s3fileRead(path string, maxSize int64) ([]byte, error) {
 		return buf, readErr
 	}
 
-	if l.N != 0 {
-		return buf, fmt.Errorf("s3fileRead: remaining bytes: %d", l.N)
+	if l.N < 1 {
+		return buf, fmt.Errorf("s3fileRead: reached max=%d: remaining bytes: %d", maxSize, l.N)
 	}
 
 	return buf, nil
@@ -410,8 +410,9 @@ func s3fileCompare(p1, p2 string, maxSize int64) (bool, error) {
 	defer r2.Close()
 
 	buf := make([]byte, 100000)
+	cmp := equalfile.New(buf, equalfile.Options{MaxSize: maxSize})
 
-	return equalfile.CompareReaderBufLimit(r1, r2, buf, maxSize)
+	return cmp.CompareReader(r1, r2)
 }
 
 func S3URL(path string) string {
