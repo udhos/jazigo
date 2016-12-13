@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	//"io/ioutil"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -15,6 +15,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+
+	"github.com/udhos/equalfile"
 )
 
 var awsSession *session.Session
@@ -213,7 +215,7 @@ func s3fileRename(p1, p2 string) error {
 	return nil
 }
 
-func s3fileRead(path string) (io.ReadCloser, error) {
+func s3fileReader(path string) (io.ReadCloser, error) {
 
 	region, bucket, key := s3parse(path)
 
@@ -230,6 +232,29 @@ func s3fileRead(path string) (io.ReadCloser, error) {
 	resp, err := svc.GetObject(params)
 
 	return resp.Body, err
+}
+
+func s3fileRead(path string, maxSize int64) ([]byte, error) {
+
+	r, err := s3fileReader(path)
+	if err != nil {
+		return nil, err
+	}
+
+	defer r.Close()
+
+	l := &io.LimitedReader{R: r, N: maxSize}
+
+	buf, readErr := ioutil.ReadAll(r)
+	if readErr != nil {
+		return buf, readErr
+	}
+
+	if l.N != 0 {
+		return buf, fmt.Errorf("s3fileRead: remaining bytes: %d", l.N)
+	}
+
+	return buf, nil
 }
 
 func s3fileFirstLine(path string) (string, error) {
@@ -371,8 +396,22 @@ func s3fileInfo(path string) (time.Time, int64, error) {
 	return mod, size, nil
 }
 
-func s3fileCompare(p1, p2 string) (bool, error) {
-	return false, fmt.Errorf("s3fileCompare: FIXME WRITEME cant currently compare files on S3: [%s,%s]", p1, p2)
+func s3fileCompare(p1, p2 string, maxSize int64) (bool, error) {
+	r1, err1 := s3fileReader(p1)
+	if err1 != nil {
+		return false, err1
+	}
+	defer r1.Close()
+
+	r2, err2 := s3fileReader(p2)
+	if err2 != nil {
+		return false, err2
+	}
+	defer r2.Close()
+
+	buf := make([]byte, 100000)
+
+	return equalfile.CompareReaderBufLimit(r1, r2, buf, maxSize)
 }
 
 func S3URL(path string) string {

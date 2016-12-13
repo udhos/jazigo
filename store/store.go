@@ -257,7 +257,7 @@ func FileRead(path string, maxSize int64) ([]byte, error) {
 	var r *io.LimitedReader
 
 	if s3path(path) {
-		r1, readErr := s3fileRead(path)
+		r1, readErr := s3fileReader(path)
 		if readErr != nil {
 			return nil, readErr
 		}
@@ -460,7 +460,8 @@ func FileInfo(path string) (time.Time, int64, error) {
 func fileCompare(p1, p2 string) (bool, error) {
 
 	if s3path(p1) {
-		return s3fileCompare(p1, p2)
+		maxSize := int64(10000000) // 10M FIXME??
+		return s3fileCompare(p1, p2, maxSize)
 	}
 
 	return equalfile.CompareFile(p1, p2)
