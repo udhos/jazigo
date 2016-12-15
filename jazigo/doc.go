@@ -39,5 +39,13 @@ Flags are:
         address:port for web UI
   -wwwStaticPath string
         directory for static www content
+
+By default, jazigo looks for three path prefixes under $JAZIGO_HOME:
+  etc/jazigo.conf. (can be overridden with -configPathPrefix)
+  log/jazigo.log.  (can be overridden with -logPathPrefix)
+  repo             (can be overridden with -repositoryPath)
+
+If $JAZIGO_HOME is not defined, jazigo home defaults to /var/jazigo.
+
 */
 package main
