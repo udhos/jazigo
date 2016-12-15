@@ -1,9 +1,9 @@
 /*
-Package jazigo is the main application for the Jazigo tool.
+This is the main application for the Jazigo tool.
 
 Jazigo is a tool written in Go for retrieving configuration for multiple network devices.
 
-See: https://github.com/udhos/jazigo
+See also: https://github.com/udhos/jazigo
 
 Usage:
         jazigo [flag]
