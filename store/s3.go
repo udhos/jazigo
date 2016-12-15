@@ -76,7 +76,7 @@ func s3init(logger hasPrintf, region string) {
 
 func s3log(format string, v ...interface{}) {
 	if s3logger == nil {
-		log.Printf("s3 store (unitialized): "+format, v...)
+		log.Printf("s3 store (uninitialized): "+format, v...)
 		return
 	}
 	s3logger.Printf("s3 store: "+format, v...)
