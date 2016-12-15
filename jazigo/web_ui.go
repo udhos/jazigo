@@ -167,7 +167,7 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 	devPrefix := dev.DeviceFullPrefix(jaz.repositoryPath, devID)
 	showFile, lastErr := store.FindLastConfig(devPrefix, jaz.logger)
 	if lastErr != nil {
-		jaz.logger.Printf("buildDeviceWindow: could find last config for device: %v", lastErr)
+		jaz.logger.Printf("buildDeviceWindow: could not find last config for device: %v", lastErr)
 	}
 
 	loadLog := func(e gwu.Event) {

@@ -66,9 +66,9 @@ go test github.com/udhos/jazigo/dev
 
 msg test store
 if [ -z "$JAZIGO_S3_REGION" ]; then
-    echo >&2 JAZIGO_S3_REGION undefined -- set JAZIGO_S3_REGION=region
+    echo >&2 JAZIGO_S3_REGION undefined -- for S3 testing, set JAZIGO_S3_REGION=region
 fi
 if [ -z "$JAZIGO_S3_FOLDER" ]; then
-    echo >&2 JAZIGO_S3_FOLDER undefined -- set JAZIGO_S3_FOLDER=bucket/folder
+    echo >&2 JAZIGO_S3_FOLDER undefined -- for S3 testing, set JAZIGO_S3_FOLDER=bucket/folder
 fi
 go test github.com/udhos/jazigo/store
