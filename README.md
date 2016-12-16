@@ -9,6 +9,8 @@ About Jazigo
 
 Jazigo is a tool written in Go for retrieving configuration for multiple devices, similar to [rancid](http://www.shrubbery.net/rancid/), [fetchconfig](https://github.com/udhos/fetchconfig), [oxidized](https://github.com/ytti/oxidized), [Sweet](https://github.com/AppliedTrust/sweet).
 
+Installation and usage are supposed to be dead simple. If you hit any surprising difficulty, please [report](https://github.com/udhos/jazigo/issues/new).
+
 Supported Platforms
 ===================
 
@@ -41,6 +43,8 @@ Requirements
 
 Quick Start
 ===========
+
+Installation and usage are supposed to be dead simple. If you hit any surprising difficulty, please [report](https://github.com/udhos/jazigo/issues/new).
 
 1\. Setup GOPATH as usual
 
