@@ -47,5 +47,7 @@ By default, jazigo looks for three path prefixes under $JAZIGO_HOME:
 
 If $JAZIGO_HOME is not defined, jazigo home defaults to /var/jazigo.
 
+Since root privileges are usually not needed, run the jazigo application as a regular user.
+
 */
 package main

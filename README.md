@@ -27,7 +27,8 @@ Please send pull requests for new plataforms.
 Features
 ========
 
-- Written in [Go](https://golang.org/). Single binary. No runtime dependency.
+- Written in [Go](https://golang.org/). Single executable file. No runtime dependency.
+- Straightforward usage: run the binary then point browser to web UI. Default settings should work out-of-the-box.
 - Spawns multiple concurrent lightweight goroutines to quickly handle large number of devices.
 - Very easy to add support for new platforms. See the [Cisco IOS model](https://github.com/udhos/jazigo/blob/master/dev/model_cisco.go) as example.
 - Configured with [YAML](http://yaml.org).
@@ -74,7 +75,7 @@ Example:
 
 Example:
 
-    export JAZIGO_HOME=/var/jazigo
+    export JAZIGO_HOME=$HOME/jazigo
     mkdir -p $JAZIGO_HOME/etc $JAZIGO_HOME/repo $JAZIGO_HOME/log
 
 Hint: See command line options to fine tune filesystem locations.
@@ -84,6 +85,8 @@ Hint: See command line options to fine tune filesystem locations.
 `$GOPATH/bin/jazigo -runOnce`
 
 Watch messages logged to standard output for errors.
+
+Hint: Since root privileges are usually not needed, run Jazigo as a regular user.
 
 7\. Run jazigo forever
 
