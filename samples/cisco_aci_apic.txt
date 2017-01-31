@@ -1,0 +1,7 @@
+login as: admin
+Application Policy Infrastructure Controller
+admin@10.0.0.1's password:
+Last login: Wed Nov 23 12:12:46 2016
+apic2# conf
+apic2(config)# terminal length 0
+apic2(config)# show running-config
