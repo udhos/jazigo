@@ -59,6 +59,27 @@ func TestControl1(t *testing.T) {
 	control(t, debug, logger, "suffix-middleCR2", five, middleCR, empty, []byte("45"))
 }
 
+func TestPrefixM(t *testing.T) {
+	expectPrefixM(t, []byte("1m"), 2, true)
+	expectPrefixM(t, []byte("12m"), 3, true)
+	expectPrefixM(t, []byte("12mx"), 3, true)
+	expectPrefixM(t, []byte(""), 0, false)
+	expectPrefixM(t, []byte("1"), 0, false)
+	expectPrefixM(t, []byte("m"), 0, false)
+	expectPrefixM(t, []byte("12"), 0, false)
+	expectPrefixM(t, []byte("12a"), 0, false)
+	expectPrefixM(t, []byte("a"), 0, false)
+	expectPrefixM(t, []byte("a1"), 0, false)
+	expectPrefixM(t, []byte("x12m"), 0, false)
+}
+
+func expectPrefixM(t *testing.T, input []byte, wantSize int, wantFound bool) {
+	size, found := prefixNumberM(input)
+	if size != wantSize || found != wantFound {
+		t.Errorf("expectPrefixM: input=%v wantSize=%d wantFound=%v gotSize=%d gotFound=%v", input, wantSize, wantFound, size, found)
+	}
+}
+
 func control(t *testing.T, debug bool, logger hasPrintf, label string, inputBuf, inputSuffix, expectedBuf, expectedSuffix []byte) {
 	buf := clone(inputBuf)
 	suffix := clone(inputSuffix)

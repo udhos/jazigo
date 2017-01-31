@@ -2,6 +2,7 @@ package dev
 
 import (
 	"bytes"
+	"unicode"
 )
 
 func removeControlChars(logger hasPrintf, debug bool, buf, suffix []byte) ([]byte, []byte) {
@@ -81,9 +82,20 @@ func removeControlChars(logger hasPrintf, debug bool, buf, suffix []byte) ([]byt
 			if j := i + 1; j < len(suffix) {
 				switch suffix[j] {
 				case '[':
+
+					if size, ok := prefixNumberM(suffix[j+1:]); ok {
+						// remove N control chars: ESC [ d d d m
+						//                         i   j <----->
+						//                               size
+						k := j + size
+						suffix = append(suffix[:i], suffix[k+1:]...) // cut bytes i..k
+						i--                                          // handle i again
+						continue
+					}
+
 					if k := j + 1; k < len(suffix) {
 						switch suffix[k] {
-						case 'A', 'B', 'C', 'D':
+						case 'A', 'B', 'C', 'D', 'J', 'K':
 							// remove 3 control chars: ESC [ x
 							suffix = append(suffix[:i], suffix[k+1:]...) // cut bytes i..k
 							i--                                          // handle i again
@@ -117,4 +129,25 @@ func removeControlChars(logger hasPrintf, debug bool, buf, suffix []byte) ([]byt
 	}
 
 	return buf, suffix
+}
+
+func prefixNumberM(s []byte) (int, bool) {
+
+	foundDigit := false
+
+	for i, c := range s {
+		switch {
+		case c == 'm':
+			if foundDigit {
+				return i + 1, true
+			}
+			return 0, false
+		case unicode.IsDigit(rune(c)):
+			foundDigit = true
+		default:
+			return 0, false
+		}
+	}
+
+	return 0, false
 }

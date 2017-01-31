@@ -60,6 +60,7 @@ func (d *Device) Holdtime(now time.Time, holdtime time.Duration) time.Duration {
 }
 
 func RegisterModels(logger hasPrintf, t *DeviceTable) {
+	registerModelCiscoAPIC(logger, t)
 	registerModelCiscoIOS(logger, t)
 	registerModelCiscoIOSXR(logger, t)
 	registerModelLinux(logger, t)
