@@ -43,7 +43,7 @@ func accountPanelUpdate(jaz *app, user string) {
 
 	if jaz.winHome != nil {
 		if jaz.apHome != nil {
-			home := jaz.winHome.ById(jaz.apHome.Id())
+			home := jaz.winHome.ByID(jaz.apHome.ID())
 			jaz.winHome.Remove(home)
 		}
 		jaz.apHome = newAccPanel(user)
@@ -54,7 +54,7 @@ func accountPanelUpdate(jaz *app, user string) {
 
 	if jaz.winAdmin != nil {
 		if jaz.apAdmin != nil {
-			admin := jaz.winAdmin.ById(jaz.apAdmin.Id())
+			admin := jaz.winAdmin.ByID(jaz.apAdmin.ID())
 			jaz.winAdmin.Remove(admin)
 		}
 		jaz.apAdmin = newAccPanel(user)
@@ -65,7 +65,7 @@ func accountPanelUpdate(jaz *app, user string) {
 
 	if jaz.winLogout != nil {
 		if jaz.apLogout != nil {
-			logout := jaz.winLogout.ById(jaz.apLogout.Id())
+			logout := jaz.winLogout.ByID(jaz.apLogout.ID())
 			jaz.winLogout.Remove(logout)
 		}
 		jaz.apLogout = newAccPanel(user)
@@ -95,7 +95,7 @@ func accountPanelUpdateEvent(jaz *app, user string, e gwu.Event) {
 func newWin(jaz *app, path, name string) gwu.Window {
 	win := gwu.NewWindow(path, name)
 	cssLink := fmt.Sprintf(`<link rel="stylesheet" type="text/css" href="%s">`, jaz.cssPath)
-	win.AddHeadHtml(cssLink)
+	win.AddHeadHTML(cssLink)
 	jaz.logf("window=[%s] attached CSS=[%s]", path, cssLink)
 	return win
 }
@@ -814,7 +814,7 @@ func buildLoginWin(jaz *app, s gwu.Session) {
 	b.AddEHandlerFunc(loginHandler, gwu.ETypeClick)
 
 	win.Add(p)
-	win.SetFocusedCompId(tb.Id())
+	win.SetFocusedCompID(tb.ID())
 
 	s.AddWin(win)
 }
