@@ -30,9 +30,9 @@ Features
 
 - Written in [Go](https://golang.org/). Single executable file. No runtime dependency.
 - Straightforward usage: run the binary then point browser to web UI. Default settings should work out-of-the-box.
+- Tool configuration is automatically saved as [YAML](http://yaml.org). However one is NOT supposed to edit configuration file directly.
 - Spawns multiple concurrent lightweight goroutines to quickly handle large number of devices.
 - Very easy to add support for new platforms. See the [Cisco IOS model](https://github.com/udhos/jazigo/blob/master/dev/model_cisco.go) as example.
-- Configured with [YAML](http://yaml.org).
 - Backup files can be accessed from web UI.
 - Support for SSH and TELNET.
 - Can directly store backup files into AWS S3 bucket.
