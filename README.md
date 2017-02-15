@@ -22,7 +22,7 @@ Please send pull requests for new plataforms.
 - [Juniper JunOS](https://github.com/udhos/jazigo/blob/master/dev/model_junos.go)
 - [Mikrotik](https://github.com/udhos/jazigo/blob/master/dev/model_mikrotik.go)
 - [HTTP](https://github.com/udhos/jazigo/blob/master/dev/model_http.go) (collect output of http GET method)
-- [Linux](https://github.com/udhos/jazigo/blob/master/dev/model_linux.go) (collect output of SSH commands)
+- [Linux](https://github.com/udhos/jazigo/blob/master/dev/model_lin.go) (collect output of SSH commands)
 - [Run](https://github.com/udhos/jazigo/blob/master/dev/model_run.go) (run external program and collect its output)
 
 Features
