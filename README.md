@@ -77,9 +77,14 @@ Example:
 Example:
 
     export JAZIGO_HOME=$HOME/jazigo
-    mkdir -p $JAZIGO_HOME/etc $JAZIGO_HOME/repo $JAZIGO_HOME/log
+    mkdir $JAZIGO_HOME
+    cd $JAZIGO_HOME
+    mkdir etc repo log
 
-Hint: See command line options to fine tune filesystem locations.
+Hint:
+By default, Jazigo looks for directories 'etc', 'repo', and 'log' under $JAZIGO_HOME.
+If left undefined, JAZIGO_HOME defaults to /var/jazigo.
+See command line options to fine tune filesystem locations.
 
 6\. Run jazigo once (see -runOnce option)
 
