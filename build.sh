@@ -21,6 +21,7 @@ get gopkg.in/yaml.v2
 get golang.org/x/crypto/ssh
 get github.com/aws/aws-sdk-go
 #get honnef.co/go/simple/cmd/gosimple
+get honnef.co/go/tools/cmd/staticcheck
 
 src=`find . -type f | egrep '\.go$'`
 
@@ -60,6 +61,19 @@ lint() {
     $l temp/*.go
 }
 [ -x "$l" ] && lint
+
+# go get honnef.co/go/tools/cmd/staticcheck
+sc=$GOPATH/bin/staticcheck
+static() {
+    msg staticcheck - this is slow, please standby
+    # staticcheck cant handle source files from multiple packages
+    $sc jazigo/*.go
+    $sc conf/*.go
+    $sc dev/*.go
+    $sc store/*.go
+    $sc temp/*.go
+}
+[ -x "$sc" ] && static
 
 msg test dev
 go test github.com/udhos/jazigo/dev

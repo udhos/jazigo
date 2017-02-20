@@ -88,6 +88,8 @@ func errlog(logger hasPrintf, result FetchResult, pathPrefix string, debug bool,
 
 func loadLines(r *bufio.Reader, max int) ([][]byte, error) {
 	var lines [][]byte
+
+LOOP:
 	for lineCount := 0; lineCount < max; lineCount++ {
 		line, readErr := r.ReadBytes(LF)
 		if len(line) > 0 {
@@ -95,7 +97,7 @@ func loadLines(r *bufio.Reader, max int) ([][]byte, error) {
 		}
 		switch readErr {
 		case io.EOF:
-			break
+			break LOOP
 		case nil:
 			continue
 		default:
