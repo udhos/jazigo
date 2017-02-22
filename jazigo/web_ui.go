@@ -156,13 +156,16 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 
 	showPanel := gwu.NewPanel()
 	logPanel := gwu.NewPanel()
+	diffPanel := gwu.NewPanel()
 
 	panel.Add(gwu.NewLabel("Files"), filesPanel)      // tab 0
 	panel.Add(gwu.NewLabel("View Config"), showPanel) // tab 1
 	panel.Add(gwu.NewLabel("Properties"), propPanel)  // tab 2
 	panel.Add(gwu.NewLabel("Error Log"), logPanel)    // tab 3
+	panel.Add(gwu.NewLabel("Diff"), diffPanel)        // tab 4
 
 	const tabShow = 1 // index
+	const tabDiff = 4 // index
 
 	devPrefix := dev.DeviceFullPrefix(jaz.repositoryPath, devID)
 	showFile, lastErr := store.FindLastConfig(devPrefix, jaz.logger)
@@ -222,6 +225,52 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 
 	loadView(e, showFile) // first run
 
+	loadDiff := func(e gwu.Event, from, to string) {
+
+		jaz.logger.Printf("diff: from=%s to=%s", from, to)
+
+		diffPanel.Clear()
+		diffPanel.Add(gwu.NewLabel("From: " + from))
+		diffPanel.Add(gwu.NewLabel("To: " + to))
+
+		/*
+			options := jaz.options.Get()
+			b, readErr := store.FileRead(show, options.MaxConfigLoadSize)
+			if readErr != nil {
+				diffPanel.Add(gwu.NewLabel(fmt.Sprintf("Could not read '%s': %v", show, readErr)))
+			}
+		*/
+
+		text := "diffBox FIXME WRITEME1"
+
+		diffBox := gwu.NewTextBox("")
+		diffBox.SetRows(40)
+		diffBox.SetCols(100)
+		diffBox.SetText(text)
+		diffPanel.Add(diffBox)
+		e.MarkDirty(panel)
+	}
+
+	{
+		// Preload diff panel
+		prefix := dev.DeviceFullPrefix(jaz.repositoryPath, devID)
+		_, matches, listErr := store.ListConfigSorted(prefix, true, jaz.logger)
+		if listErr != nil {
+			jaz.logger.Printf("failure preloading diff panel: %v", listErr)
+		}
+		if len(matches) > 0 {
+			diffTo := dev.DeviceFullPath(jaz.repositoryPath, devID, matches[0])
+			var f string
+			if len(matches) > 1 {
+				f = matches[1] // previous file
+			} else {
+				f = matches[0] // there is no previous file
+			}
+			diffFrom := dev.DeviceFullPath(jaz.repositoryPath, devID, f)
+			loadDiff(e, diffFrom, diffTo)
+		}
+	}
+
 	win.Add(panel)
 
 	fileList := func(e gwu.Event) {
@@ -237,7 +286,7 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 
 		filesTab.Clear()
 
-		const COLS = 4
+		const COLS = 6
 
 		row := 0
 
@@ -246,10 +295,14 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 		filesTab.Add(gwu.NewLabel("View"), row, 1)
 		filesTab.Add(gwu.NewLabel("Size"), row, 2)
 		filesTab.Add(gwu.NewLabel("Time"), row, 3)
+		filesTab.Add(gwu.NewLabel("Diff From"), row, 4)
+		filesTab.Add(gwu.NewLabel("Run Diff"), row, 5)
 
 		row++
 
-		for _, m := range matches {
+		// Scan files:
+
+		for i, m := range matches {
 			path := filepath.Join(dirname, m)
 			timeStr := "unknown"
 
@@ -265,7 +318,6 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 			if store.S3Path(path) {
 				filePath = store.S3URL(path)
 			} else {
-				//filePath = fmt.Sprintf("/%s/%s/%s/%s", appName, jaz.repoPath, devID, m)
 				filePath = fmt.Sprintf("%s/%s/%s", jaz.repoPath, devID, m)
 			}
 			devLink := gwu.NewLink(m, filePath)
@@ -277,13 +329,39 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 				panel.SetSelected(tabShow)
 			}, gwu.ETypeClick)
 
+			listDiffSrc := gwu.NewListBox(matches)
+			buttonDiff := gwu.NewButton("Diff")
+
+			var diffFrom int
+			if i < len(matches)-1 {
+				// default diff src is previous file
+				diffFrom = i + 1
+			} else {
+				// there is no previous file
+				diffFrom = i
+			}
+			listDiffSrc.SetSelectedIndices([]int{diffFrom})
+
+			diffTo := dev.DeviceFullPath(jaz.repositoryPath, devID, m)
+			buttonDiff.AddEHandlerFunc(func(e gwu.Event) {
+				from := listDiffSrc.SelectedIdx()
+				f := matches[from]
+				diffFrom := dev.DeviceFullPath(jaz.repositoryPath, devID, f)
+				loadDiff(e, diffFrom, diffTo)
+				panel.SetSelected(tabDiff)
+			}, gwu.ETypeClick)
+
 			filesTab.Add(devLink, row, 0)
 			filesTab.Add(buttonView, row, 1)
 			filesTab.Add(gwu.NewLabel(strconv.FormatInt(size, 10)), row, 2)
 			filesTab.Add(gwu.NewLabel(timeStr), row, 3)
+			filesTab.Add(listDiffSrc, row, 4)
+			filesTab.Add(buttonDiff, row, 5)
 
 			row++
 		}
+
+		// Attach CSS formatting to cells
 
 		for r := 0; r < row; r++ {
 			for j := 0; j < COLS; j++ {
