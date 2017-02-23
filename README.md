@@ -34,6 +34,7 @@ Features
 - Spawns multiple concurrent lightweight goroutines to quickly handle large number of devices.
 - Very easy to add support for new platforms. See the [Cisco IOS model](https://github.com/udhos/jazigo/blob/master/dev/model_cisco.go) as example.
 - Backup files can be accessed from web UI.
+- See file differences directly from the web UI.
 - Support for SSH and TELNET.
 - Can directly store backup files into AWS S3 bucket.
 - Can call an external program and collect its output.
