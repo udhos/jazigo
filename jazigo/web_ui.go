@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/icza/gowut/gwu"
+	"github.com/udhos/difflib"
 	"github.com/udhos/jazigo/conf"
 	"github.com/udhos/jazigo/dev"
 	"github.com/udhos/jazigo/store"
@@ -233,20 +234,62 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 		diffPanel.Add(gwu.NewLabel("From: " + from))
 		diffPanel.Add(gwu.NewLabel("To: " + to))
 
-		/*
-			options := jaz.options.Get()
-			b, readErr := store.FileRead(show, options.MaxConfigLoadSize)
-			if readErr != nil {
-				diffPanel.Add(gwu.NewLabel(fmt.Sprintf("Could not read '%s': %v", show, readErr)))
+		options := jaz.options.Get()
+
+		bufFrom, errReadFrom := store.FileRead(from, options.MaxConfigLoadSize)
+		if errReadFrom != nil {
+			diffPanel.Add(gwu.NewLabel(fmt.Sprintf("Could not read '%s': %v", from, errReadFrom)))
+		}
+
+		bufTo, errReadTo := store.FileRead(to, options.MaxConfigLoadSize)
+		if errReadTo != nil {
+			diffPanel.Add(gwu.NewLabel(fmt.Sprintf("Could not read '%s': %v", from, errReadTo)))
+		}
+
+		seqFrom := strings.Split(string(bufFrom), "\n")
+		seqTo := strings.Split(string(bufTo), "\n")
+		diff := difflib.Diff(seqFrom, seqTo)
+
+		diffBox := gwu.NewTable()
+
+		var f, t int
+
+		for _, d := range diff {
+
+			switch d.Delta {
+			case difflib.LeftOnly:
+				diffBox.Add(gwu.NewLabel(strconv.Itoa(f+1)), f, 0)
+				diffBox.CellFmt(f, 0).Style().AddClass("diffbox_linenum")
+
+				lab := gwu.NewLabel(d.Payload)
+				lab.Style().AddClass("diffbox_deleted")
+				lab.Style().AddClass("diffbox_text_cell")
+				diffBox.Add(lab, f, 1)
+				f++
+			case difflib.RightOnly:
+				diffBox.Add(gwu.NewLabel(strconv.Itoa(t+1)), t, 3)
+				diffBox.CellFmt(t, 3).Style().AddClass("diffbox_linenum")
+
+				lab := gwu.NewLabel(d.Payload)
+				lab.Style().AddClass("diffbox_added")
+				lab.Style().AddClass("diffbox_text_cell")
+				diffBox.Add(lab, t, 2)
+				t++
+			case difflib.Common:
+				diffBox.Add(gwu.NewLabel(strconv.Itoa(f+1)), f, 0)
+				diffBox.CellFmt(f, 0).Style().AddClass("diffbox_linenum")
+				diffBox.Add(gwu.NewLabel(strconv.Itoa(t+1)), t, 3)
+				diffBox.CellFmt(t, 3).Style().AddClass("diffbox_linenum")
+
+				diffBox.Add(gwu.NewLabel(d.Payload), f, 1)
+				diffBox.Add(gwu.NewLabel(d.Payload), t, 2)
+				diffBox.CellFmt(f, 1).Style().AddClass("diffbox_text_cell")
+				diffBox.CellFmt(t, 2).Style().AddClass("diffbox_text_cell")
+				f++
+				t++
 			}
-		*/
+		}
 
-		text := "diffBox FIXME WRITEME1"
-
-		diffBox := gwu.NewTextBox("")
-		diffBox.SetRows(40)
-		diffBox.SetCols(100)
-		diffBox.SetText(text)
 		diffPanel.Add(diffBox)
 		e.MarkDirty(panel)
 	}

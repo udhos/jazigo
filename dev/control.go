@@ -5,6 +5,8 @@ import (
 	"unicode"
 )
 
+const ctrlG = 'G' - '@'
+
 func removeControlChars(logger hasPrintf, debug bool, buf, suffix []byte) ([]byte, []byte) {
 
 	for i := 0; i < len(suffix); i++ {
@@ -87,6 +89,7 @@ func removeControlChars(logger hasPrintf, debug bool, buf, suffix []byte) ([]byt
 						// remove N control chars: ESC [ d d d m
 						//                         i   j <----->
 						//                               size
+						//                                     k
 						k := j + size
 						suffix = append(suffix[:i], suffix[k+1:]...) // cut bytes i..k
 						i--                                          // handle i again
@@ -115,6 +118,29 @@ func removeControlChars(logger hasPrintf, debug bool, buf, suffix []byte) ([]byt
 
 						}
 					}
+
+				case ']':
+
+					if k := j + 1; k < len(suffix) {
+						switch suffix[k] {
+						case '0':
+
+							if size, ok := prefixTitle(suffix[k+1:]); ok {
+								// remove N control chars: ESC ] 0 ; string ^G
+								//                         i   j k <--------->
+								//                                 size
+								//                                           l
+								l := k + size
+								suffix = append(suffix[:i], suffix[l+1:]...) // cut bytes i..l
+								i--                                          // handle i again
+								continue
+							}
+
+						default:
+							logger.Printf("unknown 3-char escape: %q", suffix[i:])
+						}
+					}
+
 				default:
 					logger.Printf("unknown 2-char escape: %q", suffix[i:])
 
@@ -131,6 +157,22 @@ func removeControlChars(logger hasPrintf, debug bool, buf, suffix []byte) ([]byt
 	return buf, suffix
 }
 
+// ; string ^G
+func prefixTitle(s []byte) (int, bool) {
+	if len(s) < 2 {
+		return 0, false
+	}
+	if s[0] != ';' {
+		return 0, false
+	}
+	g := bytes.IndexByte(s, ctrlG)
+	if g < 1 {
+		return 0, false
+	}
+	return g + 1, true
+}
+
+// d ... d m
 func prefixNumberM(s []byte) (int, bool) {
 
 	foundDigit := false

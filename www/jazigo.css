@@ -30,3 +30,18 @@
     border-spacing: 0.5rem;
     border: 1px solid blue;
 }
+
+.diffbox_linenum {
+}
+
+.diffbox_text_cell {
+    font-family: Courier;
+}
+
+.diffbox_added {
+    color: green;
+}
+
+.diffbox_deleted {
+    color: red;
+}

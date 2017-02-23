@@ -15,6 +15,7 @@ get() {
 }
 
 get github.com/icza/gowut/gwu
+get github.com/udhos/difflib
 get github.com/udhos/lockfile
 get github.com/udhos/equalfile
 get gopkg.in/yaml.v2
