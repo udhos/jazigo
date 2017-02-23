@@ -31,11 +31,18 @@
     border: 1px solid blue;
 }
 
+.diffbox {
+    border: 2px solid gray;
+    padding: 2px;
+}
+
 .diffbox_linenum {
+    border: 1px solid blue;
 }
 
 .diffbox_text_cell {
     font-family: Courier;
+    border-spacing: 0.5rem;
 }
 
 .diffbox_added {

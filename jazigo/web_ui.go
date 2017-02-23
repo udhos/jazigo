@@ -119,6 +119,18 @@ func deviceWinName(id string) string {
 	return "device-" + id
 }
 
+func splitBufLines(b []byte) []string {
+	list := strings.Split(string(b), "\n")
+	last := len(list) - 1
+	if last < 0 {
+		return list
+	}
+	if list[last] == "" {
+		return list[:last]
+	}
+	return list
+}
+
 func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 	winName := deviceWinName(devID)
 	s := e.Session()
@@ -246,11 +258,17 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 			diffPanel.Add(gwu.NewLabel(fmt.Sprintf("Could not read '%s': %v", from, errReadTo)))
 		}
 
-		seqFrom := strings.Split(string(bufFrom), "\n")
-		seqTo := strings.Split(string(bufTo), "\n")
+		seqFrom := splitBufLines(bufFrom)
+		seqTo := splitBufLines(bufTo)
 		diff := difflib.Diff(seqFrom, seqTo)
 
 		diffBox := gwu.NewTable()
+		diffBox.Style().AddClass("diffbox")
+
+		colLineNumFrom := 0
+		colLineTextFrom := 1
+		colLineTextTo := 2
+		colLineNumTo := 3
 
 		var f, t int
 
@@ -258,33 +276,30 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 
 			switch d.Delta {
 			case difflib.LeftOnly:
-				diffBox.Add(gwu.NewLabel(strconv.Itoa(f+1)), f, 0)
-				diffBox.CellFmt(f, 0).Style().AddClass("diffbox_linenum")
-
+				diffBox.Add(gwu.NewLabel(strconv.Itoa(f+1)), f, colLineNumFrom)
+				diffBox.CellFmt(f, colLineNumFrom).Style().AddClass("diffbox_linenum")
 				lab := gwu.NewLabel(d.Payload)
-				lab.Style().AddClass("diffbox_deleted")
-				lab.Style().AddClass("diffbox_text_cell")
-				diffBox.Add(lab, f, 1)
+				diffBox.Add(lab, f, colLineTextFrom)
+				diffBox.CellFmt(f, colLineTextFrom).Style().AddClass("diffbox_deleted")
+				diffBox.CellFmt(f, colLineTextFrom).Style().AddClass("diffbox_text_cell")
 				f++
 			case difflib.RightOnly:
-				diffBox.Add(gwu.NewLabel(strconv.Itoa(t+1)), t, 3)
-				diffBox.CellFmt(t, 3).Style().AddClass("diffbox_linenum")
-
+				diffBox.Add(gwu.NewLabel(strconv.Itoa(t+1)), t, colLineNumTo)
+				diffBox.CellFmt(t, colLineNumTo).Style().AddClass("diffbox_linenum")
 				lab := gwu.NewLabel(d.Payload)
-				lab.Style().AddClass("diffbox_added")
-				lab.Style().AddClass("diffbox_text_cell")
-				diffBox.Add(lab, t, 2)
+				diffBox.Add(lab, t, colLineTextTo)
+				diffBox.CellFmt(t, colLineTextTo).Style().AddClass("diffbox_added")
+				diffBox.CellFmt(t, colLineTextTo).Style().AddClass("diffbox_text_cell")
 				t++
 			case difflib.Common:
-				diffBox.Add(gwu.NewLabel(strconv.Itoa(f+1)), f, 0)
-				diffBox.CellFmt(f, 0).Style().AddClass("diffbox_linenum")
-				diffBox.Add(gwu.NewLabel(strconv.Itoa(t+1)), t, 3)
-				diffBox.CellFmt(t, 3).Style().AddClass("diffbox_linenum")
-
-				diffBox.Add(gwu.NewLabel(d.Payload), f, 1)
-				diffBox.Add(gwu.NewLabel(d.Payload), t, 2)
-				diffBox.CellFmt(f, 1).Style().AddClass("diffbox_text_cell")
-				diffBox.CellFmt(t, 2).Style().AddClass("diffbox_text_cell")
+				diffBox.Add(gwu.NewLabel(strconv.Itoa(f+1)), f, colLineNumFrom)
+				diffBox.CellFmt(f, colLineNumFrom).Style().AddClass("diffbox_linenum")
+				diffBox.Add(gwu.NewLabel(strconv.Itoa(t+1)), t, colLineNumTo)
+				diffBox.CellFmt(t, colLineNumTo).Style().AddClass("diffbox_linenum")
+				diffBox.Add(gwu.NewLabel(d.Payload), f, colLineTextFrom)
+				diffBox.Add(gwu.NewLabel(d.Payload), t, colLineTextTo)
+				diffBox.CellFmt(f, colLineTextFrom).Style().AddClass("diffbox_text_cell")
+				diffBox.CellFmt(t, colLineTextTo).Style().AddClass("diffbox_text_cell")
 				f++
 				t++
 			}

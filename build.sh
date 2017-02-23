@@ -87,3 +87,6 @@ if [ -z "$JAZIGO_S3_FOLDER" ]; then
     echo >&2 JAZIGO_S3_FOLDER undefined -- for S3 testing, set JAZIGO_S3_FOLDER=bucket/folder
 fi
 go test github.com/udhos/jazigo/store
+
+msg test jazigo
+go test github.com/udhos/jazigo/jazigo
