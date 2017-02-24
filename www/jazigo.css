@@ -21,6 +21,7 @@
 }
 
 .device_files_table {
+    text-align: center;
     border-spacing: 0.5rem;
     border-collapse: collapse;
 }

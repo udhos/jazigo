@@ -354,7 +354,7 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 		filesTab.Add(gwu.NewLabel("Size"), row, 2)
 		filesTab.Add(gwu.NewLabel("Time"), row, 3)
 		filesTab.Add(gwu.NewLabel("Diff From"), row, 4)
-		filesTab.Add(gwu.NewLabel("Run Diff"), row, 5)
+		filesTab.Add(gwu.NewLabel("Compare"), row, 5)
 
 		row++
 
