@@ -18,7 +18,7 @@ func registerModelCiscoAPIC(logger hasPrintf, t *DeviceTable) {
 	a.MatchTimeout = 20 * time.Second
 	a.SendTimeout = 5 * time.Second
 	a.CommandReadTimeout = 20 * time.Second  // larger timeout for slow 'sh run'
-	a.CommandMatchTimeout = 30 * time.Second // larger timeout for slow 'sh run'
+	a.CommandMatchTimeout = 60 * time.Second // larger timeout for slow 'sh run'
 	a.QuoteSentCommandsFormat = `!![%s]`
 
 	m := &Model{name: "cisco-apic"}
