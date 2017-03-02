@@ -47,9 +47,11 @@
 }
 
 .diffbox_added {
-    color: green;
+    color: darkgreen;
+    background-color: lightgreen;
 }
 
 .diffbox_deleted {
-    color: red;
+    color: darkred;
+    background-color: #FFCCCB;
 }
