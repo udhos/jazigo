@@ -42,8 +42,9 @@
 }
 
 .diffbox_text_cell {
-    font-family: Courier;
+    font-family: courier;
     border-spacing: 0.5rem;
+    white-space: pre-wrap;
 }
 
 .diffbox_added {

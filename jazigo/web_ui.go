@@ -296,8 +296,10 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 				diffBox.CellFmt(f, colLineNumFrom).Style().AddClass("diffbox_linenum")
 				diffBox.Add(gwu.NewLabel(strconv.Itoa(t+1)), t, colLineNumTo)
 				diffBox.CellFmt(t, colLineNumTo).Style().AddClass("diffbox_linenum")
-				diffBox.Add(gwu.NewLabel(d.Payload), f, colLineTextFrom)
-				diffBox.Add(gwu.NewLabel(d.Payload), t, colLineTextTo)
+				labF := gwu.NewLabel(d.Payload)
+				labT := gwu.NewLabel(d.Payload)
+				diffBox.Add(labF, f, colLineTextFrom)
+				diffBox.Add(labT, t, colLineTextTo)
 				diffBox.CellFmt(f, colLineTextFrom).Style().AddClass("diffbox_text_cell")
 				diffBox.CellFmt(t, colLineTextTo).Style().AddClass("diffbox_text_cell")
 				f++
