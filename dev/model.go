@@ -60,6 +60,7 @@ func (d *Device) Holdtime(now time.Time, holdtime time.Duration) time.Duration {
 }
 
 func RegisterModels(logger hasPrintf, t *DeviceTable) {
+	registerModelFortiOS(logger, t)
 	registerModelCiscoAPIC(logger, t)
 	registerModelCiscoIOS(logger, t)
 	registerModelCiscoIOSXR(logger, t)
@@ -214,7 +215,7 @@ func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string,
 		}
 	}
 
-	d.debugf("will disable paging")
+	d.debugf("will disable paging: %v pattern=[%s]", d.Attr.NeedPagingOff, d.Attr.DisablePagerCommand)
 
 	if d.Attr.NeedPagingOff {
 		pagingErr := d.pagingOff(logger, session, &capture)
@@ -567,12 +568,24 @@ func (d *Device) save(logger hasPrintf, capture *dialog, command string, buf []b
 }
 
 func (d *Device) pagingOff(logger hasPrintf, t transp, capture *dialog) error {
+
 	if pagerErr := d.sendln(logger, t, d.Attr.DisablePagerCommand); pagerErr != nil {
 		return fmt.Errorf("pager off: could not send pager disabling command '%s': %v", d.Attr.DisablePagerCommand, pagerErr)
 	}
 
-	if _, _, err := d.match(logger, t, capture, []string{d.Attr.EnabledPromptPattern}); err != nil {
-		return fmt.Errorf("pager off: could not match command prompt: %v", err)
+	matchCount := d.Attr.DisablePagerExtraPromptCount + 1
+
+	for i := 0; i < matchCount; i++ {
+
+		d.debugf("pagingOff: matching %d/%d", i, matchCount)
+
+		var buf []byte
+		var err error
+		if _, buf, err = d.match(logger, t, capture, []string{d.Attr.EnabledPromptPattern}); err != nil {
+			return fmt.Errorf("pagingOff: %d/%d could not match command prompt: %v", i, matchCount, err)
+		}
+
+		d.debugf("pagingOff: matching %d/%d: found buf=[%s]", i, matchCount, string(buf))
 	}
 
 	return nil
