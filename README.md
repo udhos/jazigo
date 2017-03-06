@@ -19,10 +19,11 @@ Please send pull requests for new plataforms.
 - [Cisco IOS](https://github.com/udhos/jazigo/blob/master/dev/model_cisco.go)
 - [Cisco IOS XR](https://github.com/udhos/jazigo/blob/master/dev/model_cisco_iosxr.go)
 - [Cisco ACI APIC](https://github.com/udhos/jazigo/blob/master/dev/model_cisco_apic.go)
-- [Juniper JunOS](https://github.com/udhos/jazigo/blob/master/dev/model_junos.go)
-- [Mikrotik](https://github.com/udhos/jazigo/blob/master/dev/model_mikrotik.go)
+- [Fortigate FortiOS](https://github.com/udhos/jazigo/blob/master/dev/model_fortios.go)
 - [HTTP](https://github.com/udhos/jazigo/blob/master/dev/model_http.go) (collect output of http GET method)
+- [Juniper JunOS](https://github.com/udhos/jazigo/blob/master/dev/model_junos.go)
 - [Linux](https://github.com/udhos/jazigo/blob/master/dev/model_lin.go) (collect output of SSH commands)
+- [Mikrotik](https://github.com/udhos/jazigo/blob/master/dev/model_mikrotik.go)
 - [Run](https://github.com/udhos/jazigo/blob/master/dev/model_run.go) (run external program and collect its output)
 
 Features
