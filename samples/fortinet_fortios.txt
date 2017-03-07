@@ -1,0 +1,13 @@
+hostname #
+hostname # config system console
+
+hostname (console) # set output standard
+
+hostname (console) # end
+
+hostname # show
+
+config router multicast
+end
+
+hostname #
