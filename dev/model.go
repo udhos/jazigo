@@ -655,12 +655,28 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 
 		d.debugf("login: wait password prompt")
 
-		_, _, err := d.match(logger, t, capture, []string{d.Attr.PasswordPromptPattern})
+		m2, _, err := d.match(logger, t, capture,
+			[]string{
+				d.Attr.PasswordPromptPattern,
+				d.Attr.EnabledPromptPattern,
+				d.Attr.DisabledPromptPattern,
+			})
 		if err != nil {
 			return false, fmt.Errorf("login: could not find password prompt: %v", err)
 		}
-	case 1:
+
+		switch m2 {
+		case 1:
+			d.debugf("login: found enabled command prompt")
+			return true, nil
+		case 2:
+			d.debugf("login: found disabled command prompt")
+			return false, nil
+		}
 		d.debugf("login: found password prompt")
+
+	case 1:
+		d.debugf("login: found password prompt (while looking for login prompt)")
 	}
 
 	d.debugf("login: will send password")

@@ -9,8 +9,6 @@ import (
 func registerModelFortiOS(logger hasPrintf, t *DeviceTable) {
 	a := conf.NewDevAttr()
 
-	promptPattern := `\S+\s#\s$` // "hostname # "
-
 	// old method for disabling pager
 	/*
 		a.NeedPagingOff = true
@@ -22,8 +20,12 @@ func registerModelFortiOS(logger hasPrintf, t *DeviceTable) {
 	// preferred method for disabling pager
 	a.CommandList = []string{"config system console", "set output standard", "end", "get system status", "show"}
 
+	promptPattern := `\S+\s#\s$` // "hostname # "
 	a.DisabledPromptPattern = promptPattern
 	a.EnabledPromptPattern = promptPattern
+	a.NeedLoginChat = true
+	a.UsernamePromptPattern = `login:\s*$`
+	a.PasswordPromptPattern = `Password:\s*$`
 	a.ReadTimeout = 10 * time.Second
 	a.MatchTimeout = 20 * time.Second
 	a.SendTimeout = 5 * time.Second

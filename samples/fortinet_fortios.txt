@@ -1,4 +1,7 @@
-hostname #
+login: admin
+Password:
+Welcome!
+
 hostname # config system console
 
 hostname (console) # set output standard
