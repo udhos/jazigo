@@ -4,6 +4,21 @@
 [![gocover dev](http://gocover.io/_badge/github.com/udhos/jazigo/dev)](http://gocover.io/github.com/udhos/jazigo/dev)
 [![gocover store](http://gocover.io/_badge/github.com/udhos/jazigo/store)](http://gocover.io/github.com/udhos/jazigo/store)
 
+Table of Contents
+=================
+
+  * [About Jazigo](#about-jazigo)
+  * [Supported Platforms](#supported-platforms)
+  * [Features](#features)
+  * [Requirements](#requirements)
+  * [Quick Start](#quick-start)
+  * [Global Settings](#global-settings)
+  * [Importing Many Devices](#importing-many-devices)
+  * [Using AWS S3](#using-aws-s3)
+  * [Calling an external program](#calling-an-external-program)
+
+Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc.go)
+
 About Jazigo
 =============
 
