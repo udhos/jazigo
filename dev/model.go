@@ -769,26 +769,6 @@ func UpdateLastSuccess(tab *DeviceTable, logger hasPrintf, repository string) {
 			continue
 		}
 
-		/*
-			f, openErr := os.Open(lastConfig)
-			if openErr != nil {
-				logger.Printf("UpdateLastSuccess: open: '%s': %v", lastConfig, openErr)
-				continue
-			}
-
-			info, statErr := f.Stat()
-			if statErr != nil {
-				logger.Printf("UpdateLastSuccess: stat: '%s': %v", lastConfig, statErr)
-			} else {
-				d.lastSuccess = info.ModTime()
-				tab.UpdateDevice(d)
-			}
-
-			if closeErr := f.Close(); closeErr != nil {
-				logger.Printf("UpdateLastSuccess: close: '%s': %v", lastConfig, closeErr)
-			}
-		*/
-
 		modTime, _, infoErr := store.FileInfo(lastConfig)
 		if infoErr != nil {
 			logger.Printf("UpdateLastSuccess: info error: '%s': %v", lastConfig, infoErr)
