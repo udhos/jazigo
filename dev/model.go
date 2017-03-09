@@ -135,6 +135,7 @@ type FetchResult struct {
 	Msg         string    // result error message
 	Code        int       // result error code
 	Begin       time.Time // begin timestamp
+	End         time.Time // end timestamp
 }
 
 type hasPrintf interface {
@@ -149,6 +150,8 @@ type dialog struct {
 func (d *Device) Fetch(tab DeviceUpdater, logger hasPrintf, resultCh chan FetchResult, delay time.Duration, repository, logPathPrefix string, opt *conf.AppConfig, ft *FilterTable) {
 
 	result := d.fetch(logger, delay, repository, opt.MaxConfigFiles, ft)
+
+	result.End = time.Now()
 
 	good := result.Code == fetchErrNone
 

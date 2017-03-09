@@ -25,7 +25,8 @@ func Spawner(tab DeviceUpdater, logger hasPrintf, reqChan chan FetchRequest, rep
 		d, getErr := tab.GetDevice(devId)
 		if getErr != nil {
 			if replyChan != nil {
-				replyChan <- FetchResult{DevId: devId, Msg: fmt.Sprintf("Spawner: could not find device: %v", getErr), Code: fetchErrGetDev, Begin: time.Now()}
+				now := time.Now()
+				replyChan <- FetchResult{DevId: devId, Msg: fmt.Sprintf("Spawner: could not find device: %v", getErr), Code: fetchErrGetDev, Begin: now, End: now}
 			}
 			continue
 		}

@@ -54,9 +54,11 @@ func errlog(logger hasPrintf, result FetchResult, pathPrefix string, debug bool,
 
 	// push result
 	w := bufio.NewWriter(f)
-	msg := fmt.Sprintf("%s success=%v model=%s dev=%s host=%s transport=%s code=%d message=[%s]",
+	msg := fmt.Sprintf("%s success=%v elapsed=%v model=%s dev=%s host=%s transport=%s code=%d message=[%s]",
 		now.String(),
-		result.Code == fetchErrNone, result.Model, result.DevId, result.DevHostPort, result.Transport, result.Code, result.Msg)
+		result.Code == fetchErrNone,
+		result.End.Sub(result.Begin),
+		result.Model, result.DevId, result.DevHostPort, result.Transport, result.Code, result.Msg)
 
 	if debug {
 		logger.Printf("errlog debug: push: '%s': [%s]", path, msg)
