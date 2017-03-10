@@ -120,7 +120,7 @@ func Scan(tab DeviceUpdater, devices []*Device, logger hasPrintf, opt *conf.AppC
 	return success, deviceCount - success, skipped + deleted
 }
 
-func updateDeviceStatus(tab DeviceUpdater, devId string, good bool, last time.Time, logger hasPrintf, holdtime time.Duration) {
+func updateDeviceStatus(tab DeviceUpdater, devId string, good bool, last time.Time, elapsed time.Duration, logger hasPrintf, holdtime time.Duration) {
 	d, getErr := tab.GetDevice(devId)
 	if getErr != nil {
 		logger.Printf("updateDeviceStatus: '%s' not found: %v", devId, getErr)
@@ -131,6 +131,7 @@ func updateDeviceStatus(tab DeviceUpdater, devId string, good bool, last time.Ti
 	h1 := d.Holdtime(now, holdtime)
 
 	d.lastTry = last
+	d.lastElapsed = elapsed
 	d.lastStatus = good
 	if d.lastStatus {
 		d.lastSuccess = d.lastTry

@@ -25,6 +25,7 @@ type Device struct {
 	lastStatus  bool // true=good false=bad
 	lastTry     time.Time
 	lastSuccess time.Time
+	lastElapsed time.Duration
 }
 
 func (d *Device) Username() string {
@@ -53,6 +54,10 @@ func (d *Device) LastTry() time.Time {
 
 func (d *Device) LastSuccess() time.Time {
 	return d.lastSuccess
+}
+
+func (d *Device) LastElapsed() time.Duration {
+	return d.lastElapsed
 }
 
 func (d *Device) Holdtime(now time.Time, holdtime time.Duration) time.Duration {
@@ -155,7 +160,7 @@ func (d *Device) Fetch(tab DeviceUpdater, logger hasPrintf, resultCh chan FetchR
 
 	good := result.Code == fetchErrNone
 
-	updateDeviceStatus(tab, d.Id, good, time.Now(), logger, opt.Holdtime)
+	updateDeviceStatus(tab, d.Id, good, result.End, result.End.Sub(result.Begin), logger, opt.Holdtime)
 
 	errlog(logger, result, logPathPrefix, d.Debug, d.Attr.ErrlogHistSize)
 

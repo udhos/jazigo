@@ -514,7 +514,7 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 }
 
 func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table, tabSumm gwu.Panel) {
-	const COLS = 9
+	const COLS = 10
 
 	row := 0 // filter
 	filterModel := gwu.NewTextBox(jaz.filterModel)
@@ -554,6 +554,7 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table, tabSumm gwu.Panel) {
 	t.Add(gwu.NewLabel(""), row, 6)
 	t.Add(gwu.NewLabel(""), row, 7)
 	t.Add(gwu.NewLabel(""), row, 8)
+	t.Add(gwu.NewLabel(""), row, 9)
 
 	row = 1 // header
 	t.Add(gwu.NewLabel("Model"), row, 0)
@@ -561,10 +562,11 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table, tabSumm gwu.Panel) {
 	t.Add(gwu.NewLabel("Host"), row, 2)
 	t.Add(gwu.NewLabel("Transport"), row, 3)
 	t.Add(gwu.NewLabel("Last Status"), row, 4)
-	t.Add(gwu.NewLabel("Last Try"), row, 5)
-	t.Add(gwu.NewLabel("Last Success"), row, 6)
-	t.Add(gwu.NewLabel("Holdtime"), row, 7)
-	t.Add(gwu.NewLabel("Run Now"), row, 8)
+	t.Add(gwu.NewLabel("Elapsed"), row, 5)
+	t.Add(gwu.NewLabel("Last Try"), row, 6)
+	t.Add(gwu.NewLabel("Last Success"), row, 7)
+	t.Add(gwu.NewLabel("Holdtime"), row, 8)
+	t.Add(gwu.NewLabel("Run Now"), row, 9)
 
 	devList := jaz.table.ListDevices()
 	sort.Sort(sortByID{data: devList})
@@ -606,6 +608,7 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table, tabSumm gwu.Panel) {
 		} else {
 			imageLastStatus = gwu.NewImage("Failure", fmt.Sprintf("%s/fail-small.png", jaz.staticPath))
 		}
+		labElapsed := gwu.NewLabel(durationHMSString(d.LastElapsed()))
 		labLastTry := gwu.NewLabel(timestampString(d.LastTry()))
 		labLastSuccess := gwu.NewLabel(timestampString(d.LastSuccess()))
 		h := d.Holdtime(now, options.Holdtime)
@@ -626,10 +629,11 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table, tabSumm gwu.Panel) {
 		t.Add(labHost, row, 2)
 		t.Add(labTransport, row, 3)
 		t.Add(imageLastStatus, row, 4)
-		t.Add(labLastTry, row, 5)
-		t.Add(labLastSuccess, row, 6)
-		t.Add(labHoldtime, row, 7)
-		t.Add(buttonRun, row, 8)
+		t.Add(labElapsed, row, 5)
+		t.Add(labLastTry, row, 6)
+		t.Add(labLastSuccess, row, 7)
+		t.Add(labHoldtime, row, 8)
+		t.Add(buttonRun, row, 9)
 
 		row++
 	}
