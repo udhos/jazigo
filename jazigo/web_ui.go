@@ -368,7 +368,7 @@ func buildDeviceWindow(jaz *app, e gwu.Event, devID string) string {
 
 			modTime, size, infoErr := store.FileInfo(path)
 			if infoErr == nil {
-				timeStr = modTime.String()
+				timeStr = timestampString(modTime)
 			} else {
 				timeStr += fmt.Sprintf("(could not get file info: %v)", infoErr)
 			}
@@ -612,7 +612,7 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table, tabSumm gwu.Panel) {
 		if h < 0 {
 			h = 0
 		}
-		labHoldtime := gwu.NewLabel(fmt.Sprintf("%v", h))
+		labHoldtime := gwu.NewLabel(durationHMSString(h))
 
 		buttonRun := gwu.NewButton("Run")
 		id := d.Id
@@ -840,7 +840,11 @@ func timestampString(ts time.Time) string {
 	if ts.IsZero() {
 		return "never"
 	}
-	return ts.String()
+	return ts.Format("2006-01-02 15:04:05")
+}
+
+func durationHMSString(d time.Duration) string {
+	return fmt.Sprintf("%02d:%02d:%02d", int(d.Hours()), int(d.Minutes()), int(d.Seconds()))
 }
 
 func buildLoginWin(jaz *app, s gwu.Session) {
