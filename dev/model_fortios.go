@@ -18,7 +18,14 @@ func registerModelFortiOS(logger hasPrintf, t *DeviceTable) {
 	*/
 
 	// preferred method for disabling pager
-	a.CommandList = []string{"config system console", "set output standard", "end", "get system status", "show"}
+	a.CommandList = []string{
+		"config system global",  // enter config: valid only for vdom
+		"config system console", // enter config: valid only for non-vdom
+		"set output standard",   // disable paging
+		"end",               // exit config
+		"get system status", // system information
+		"show",              // get configuration
+	}
 
 	promptPattern := `\S+\s#\s$` // "hostname # "
 	a.DisabledPromptPattern = promptPattern

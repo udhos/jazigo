@@ -15,6 +15,7 @@ import (
 type optionsFortiOS struct {
 	requestPassword bool
 	breakConn       bool
+	vdom            bool
 }
 
 func TestFortiOS1(t *testing.T) {
@@ -57,7 +58,7 @@ func TestFortiOS2(t *testing.T) {
 
 	// launch bogus test server
 	addr := ":2002"
-	s, listenErr := spawnServerFortiOS(t, addr, optionsFortiOS{})
+	s, listenErr := spawnServerFortiOS(t, addr, optionsFortiOS{vdom: true})
 	if listenErr != nil {
 		t.Errorf("could not spawn bogus FortiOS server: %v", listenErr)
 	}
@@ -214,7 +215,9 @@ LOOP:
 			break LOOP
 		case strings.HasPrefix(str, "ex"): //exit
 			break LOOP
-		case strings.HasPrefix(str, "config system console"):
+		case !options.vdom && strings.HasPrefix(str, "config system console"):
+			config = true
+		case options.vdom && strings.HasPrefix(str, "config system global"):
 			config = true
 		case strings.HasPrefix(str, "end"):
 			config = false
