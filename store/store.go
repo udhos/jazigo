@@ -478,7 +478,7 @@ func fileCompare(p1, p2 string) (bool, error) {
 func MkDir(path string) error {
 
 	if s3path(path) {
-		s3log("store.mkDir: silenty refusing to create unneeded dir path on S3: [%s]", path)
+		s3log("store.MkDir: silently refusing to create unneeded dir path on S3: [%s]", path)
 		return nil
 	}
 
