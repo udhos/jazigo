@@ -415,6 +415,8 @@ func s3fileCompare(p1, p2 string, maxSize int64) (bool, error) {
 	return cmp.CompareReader(r1, r2)
 }
 
+// S3URL builds the URL for an S3 bucket.
+// The path is an ARN: "arn:aws:s3:region::bucket/folder/file.xxx"
 func S3URL(path string) string {
 	region, bucket, key := s3parse(path)
 

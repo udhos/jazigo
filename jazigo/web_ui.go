@@ -790,7 +790,7 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 
 	createAutoId := func() {
 		if strings.HasPrefix(textId.Text(), autoIdPrefix) {
-			textId.SetText(jaz.table.FindDeviceFreeId(autoIdPrefix))
+			textId.SetText(jaz.table.FindDeviceFreeID(autoIdPrefix))
 		}
 	}
 
@@ -803,7 +803,7 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 		id := textId.Text()
 
 		if id == autoIdPrefix {
-			id = jaz.table.FindDeviceFreeId(autoIdPrefix)
+			id = jaz.table.FindDeviceFreeID(autoIdPrefix)
 		}
 
 		change := conf.Change{

@@ -21,31 +21,32 @@ type hasPrintf interface {
 	Printf(fmt string, v ...interface{})
 }
 
-type sortByCommitId struct {
+type sortByCommitID struct {
 	data   []string
 	logger hasPrintf
 }
 
-func (s sortByCommitId) Len() int {
+func (s sortByCommitID) Len() int {
 	return len(s.data)
 }
-func (s sortByCommitId) Swap(i, j int) {
+func (s sortByCommitID) Swap(i, j int) {
 	s.data[i], s.data[j] = s.data[j], s.data[i]
 }
-func (s sortByCommitId) Less(i, j int) bool {
+func (s sortByCommitID) Less(i, j int) bool {
 	s1 := s.data[i]
-	id1, err1 := ExtractCommitIdFromFilename(s1)
+	id1, err1 := ExtractCommitIDFromFilename(s1)
 	if err1 != nil {
-		s.logger.Printf("sortByCommitId.Less: error parsing config file path: '%s': %v", s1, err1)
+		s.logger.Printf("sortByCommitID.Less: error parsing config file path: '%s': %v", s1, err1)
 	}
 	s2 := s.data[j]
-	id2, err2 := ExtractCommitIdFromFilename(s2)
+	id2, err2 := ExtractCommitIDFromFilename(s2)
 	if err2 != nil {
-		s.logger.Printf("sortByCommitId.Less: error parsing config file path: '%s': %v", s2, err2)
+		s.logger.Printf("sortByCommitID.Less: error parsing config file path: '%s': %v", s2, err2)
 	}
 	return id1 < id2
 }
 
+// Init starts the store by providing a logger and default S3 region.
 func Init(logger hasPrintf, region string) {
 	if logger == nil {
 		panic("store.Init: nil logger")
@@ -53,7 +54,8 @@ func Init(logger hasPrintf, region string) {
 	s3init(logger, region)
 }
 
-func ExtractCommitIdFromFilename(filename string) (int, error) {
+// ExtractCommitIDFromFilename gets the commit from a filename: "aaa.1" => 1
+func ExtractCommitIDFromFilename(filename string) (int, error) {
 	lastDot := strings.LastIndexByte(filename, '.')
 	commitId := filename[lastDot+1:]
 	id, err := strconv.Atoi(commitId)
@@ -99,6 +101,7 @@ func tryShortcut(configPathPrefix string, logger hasPrintf) string {
 	return "" // not found
 }
 
+// FindLastConfig finds the last file under a path prefix.
 func FindLastConfig(configPathPrefix string, logger hasPrintf) (string, error) {
 
 	if path := tryShortcut(configPathPrefix, logger); path != "" {
@@ -124,7 +127,7 @@ func FindLastConfig(configPathPrefix string, logger hasPrintf) (string, error) {
 	maxId := -1
 	last := ""
 	for _, m := range matches {
-		id, idErr := ExtractCommitIdFromFilename(m)
+		id, idErr := ExtractCommitIDFromFilename(m)
 		if idErr != nil {
 			return "", fmt.Errorf("FindLastConfig: bad commit id: %s: %v", m, idErr)
 		}
@@ -141,6 +144,7 @@ func FindLastConfig(configPathPrefix string, logger hasPrintf) (string, error) {
 	return lastPath, nil
 }
 
+// ListConfigSorted retrieves the sorted list of files under a path prefix.
 func ListConfigSorted(configPathPrefix string, reverse bool, logger hasPrintf) (string, []string, error) {
 
 	dirname, matches, err := ListConfig(configPathPrefix, logger)
@@ -149,9 +153,9 @@ func ListConfigSorted(configPathPrefix string, reverse bool, logger hasPrintf) (
 	}
 
 	if reverse {
-		sort.Sort(sort.Reverse(sortByCommitId{data: matches, logger: logger}))
+		sort.Sort(sort.Reverse(sortByCommitID{data: matches, logger: logger}))
 	} else {
-		sort.Sort(sortByCommitId{data: matches, logger: logger})
+		sort.Sort(sortByCommitID{data: matches, logger: logger})
 	}
 
 	return dirname, matches, nil
@@ -180,6 +184,7 @@ func dirList(path string) (string, []string, error) {
 	return dirname, names, nil
 }
 
+// ListConfig retrieves files under a path prefix.
 func ListConfig(configPathPrefix string, logger hasPrintf) (string, []string, error) {
 
 	var dirname string
@@ -206,6 +211,7 @@ func ListConfig(configPathPrefix string, logger hasPrintf) (string, []string, er
 	return dirname, matches, nil
 }
 
+// HasWrite is a helper interface for types providing the method Write().
 type HasWrite interface {
 	Write(p []byte) (int, error)
 }
@@ -249,6 +255,7 @@ func fileRename(p1, p2 string) error {
 	return os.Rename(p1, p2)
 }
 
+// FileRead reads bytes from file.
 func FileRead(path string, maxSize int64) ([]byte, error) {
 
 	var r *io.LimitedReader
@@ -324,6 +331,7 @@ func writeFile(path string, writeFunc func(HasWrite) error, contentType string) 
 	return nil
 }
 
+// SaveNewConfig saves data to a new file. The function writeFunc must be provided to issue the actual data.
 func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writeFunc func(HasWrite) error, changesOnly bool, contentType string) (string, error) {
 
 	// get tmp file
@@ -351,7 +359,7 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 		previousFound = false
 	}
 
-	id, err2 := ExtractCommitIdFromFilename(lastConfig)
+	id, err2 := ExtractCommitIDFromFilename(lastConfig)
 	if err2 != nil {
 		logger.Printf("SaveNewConfig: error parsing config path: [%s]: %v", lastConfig, err2)
 	}
@@ -440,6 +448,7 @@ func eraseOldFiles(configPathPrefix string, maxFiles int, logger hasPrintf) {
 	}
 }
 
+// FileInfo returns file modification time and size.
 func FileInfo(path string) (time.Time, int64, error) {
 
 	if s3path(path) {
@@ -465,6 +474,7 @@ func fileCompare(p1, p2 string) (bool, error) {
 	return cmp.CompareFile(p1, p2)
 }
 
+// MkDir creates a new directory.
 func MkDir(path string) error {
 
 	if s3path(path) {

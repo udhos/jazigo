@@ -7,7 +7,7 @@ import (
 	"github.com/udhos/jazigo/conf"
 )
 
-// Spawner: launches new goroutines to fetch requests received on channel reqChan
+// Spawner launches new goroutines to fetch requests received on channel reqChan.
 func Spawner(tab DeviceUpdater, logger hasPrintf, reqChan chan FetchRequest, repository, logPathPrefix string, options *conf.Options, ft *FilterTable) {
 
 	logger.Printf("Spawner: starting")
@@ -21,12 +21,12 @@ func Spawner(tab DeviceUpdater, logger hasPrintf, reqChan chan FetchRequest, rep
 
 		replyChan := req.ReplyChan // alias
 
-		devId := req.Id
-		d, getErr := tab.GetDevice(devId)
+		devID := req.Id
+		d, getErr := tab.GetDevice(devID)
 		if getErr != nil {
 			if replyChan != nil {
 				now := time.Now()
-				replyChan <- FetchResult{DevId: devId, Msg: fmt.Sprintf("Spawner: could not find device: %v", getErr), Code: fetchErrGetDev, Begin: now, End: now}
+				replyChan <- FetchResult{DevID: devID, Msg: fmt.Sprintf("Spawner: could not find device: %v", getErr), Code: fetchErrGetDev, Begin: now, End: now}
 			}
 			continue
 		}
@@ -38,7 +38,7 @@ func Spawner(tab DeviceUpdater, logger hasPrintf, reqChan chan FetchRequest, rep
 	logger.Printf("Spawner: exiting")
 }
 
-// Scan: new scheduler
+// Scan scans the list of devices dispatching backup requests to the Spawner thru the request channel reqChan.
 func Scan(tab DeviceUpdater, devices []*Device, logger hasPrintf, opt *conf.AppConfig, reqChan chan FetchRequest) (int, int, int) {
 
 	deviceCount := len(devices)
@@ -97,7 +97,7 @@ func Scan(tab DeviceUpdater, devices []*Device, logger hasPrintf, opt *conf.AppC
 
 		end := time.Now()
 		elap := end.Sub(r.Begin)
-		logger.Printf("Scan: recv %s %s %s %s msg=[%s] code=%d wait=%d remain=%d skipped=%d elap=%s", r.Model, r.DevId, r.DevHostPort, r.Transport, r.Msg, r.Code, wait, deviceCount-nextDevice, skipped, elap)
+		logger.Printf("Scan: recv %s %s %s %s msg=[%s] code=%d wait=%d remain=%d skipped=%d elap=%s", r.Model, r.DevID, r.DevHostPort, r.Transport, r.Msg, r.Code, wait, deviceCount-nextDevice, skipped, elap)
 
 		good := r.Code == fetchErrNone
 
@@ -120,10 +120,10 @@ func Scan(tab DeviceUpdater, devices []*Device, logger hasPrintf, opt *conf.AppC
 	return success, deviceCount - success, skipped + deleted
 }
 
-func updateDeviceStatus(tab DeviceUpdater, devId string, good bool, last time.Time, elapsed time.Duration, logger hasPrintf, holdtime time.Duration) {
-	d, getErr := tab.GetDevice(devId)
+func updateDeviceStatus(tab DeviceUpdater, devID string, good bool, last time.Time, elapsed time.Duration, logger hasPrintf, holdtime time.Duration) {
+	d, getErr := tab.GetDevice(devID)
 	if getErr != nil {
-		logger.Printf("updateDeviceStatus: '%s' not found: %v", devId, getErr)
+		logger.Printf("updateDeviceStatus: '%s' not found: %v", devID, getErr)
 		return
 	}
 
@@ -140,5 +140,5 @@ func updateDeviceStatus(tab DeviceUpdater, devId string, good bool, last time.Ti
 	tab.UpdateDevice(d)
 
 	h2 := d.Holdtime(now, holdtime)
-	logger.Printf("updateDeviceStatus: device %s holdtime: old=%v new=%v", devId, h1, h2)
+	logger.Printf("updateDeviceStatus: device %s holdtime: old=%v new=%v", devID, h1, h2)
 }

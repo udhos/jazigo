@@ -8,12 +8,14 @@ import (
 	"github.com/udhos/jazigo/store"
 )
 
+// Change stores info about last config change.
 type Change struct {
 	When time.Time
 	By   string
 	From string
 }
 
+// AppConfig is persistent global configuration.
 type AppConfig struct {
 	MaxConfigFiles    int
 	Holdtime          time.Duration
@@ -24,6 +26,7 @@ type AppConfig struct {
 	Comment           string // free user-defined field
 }
 
+// NewAppConfigFromString creates AppConfig from string.
 func NewAppConfigFromString(str string) (*AppConfig, error) {
 	b := []byte(str)
 	c := &AppConfig{}
@@ -33,6 +36,7 @@ func NewAppConfigFromString(str string) (*AppConfig, error) {
 	return c, nil
 }
 
+// Dump exports AppConfig as YAML.
 func (a *AppConfig) Dump() ([]byte, error) {
 	b, err := yaml.Marshal(a)
 	if err != nil {
@@ -41,6 +45,7 @@ func (a *AppConfig) Dump() ([]byte, error) {
 	return b, nil
 }
 
+// NewDevAttr creates a new set of DevAttributes.
 func NewDevAttr() DevAttributes {
 	a := DevAttributes{
 		ErrlogHistSize: 60, // default max number of lines in errlog history
@@ -49,6 +54,7 @@ func NewDevAttr() DevAttributes {
 	return a
 }
 
+// DevAttributes is per-model set of default attributes for device.
 type DevAttributes struct {
 	NeedLoginChat                bool          // need login chat
 	NeedEnabledMode              bool          // need enabled mode
@@ -83,6 +89,7 @@ type DevAttributes struct {
 	CommandMatchTimeout time.Duration // larger timeout for slow responses (slow show running)
 }
 
+// DevConfig is full set of device properties.
 type DevConfig struct {
 	Debug          bool
 	Deleted        bool
@@ -98,6 +105,7 @@ type DevConfig struct {
 	Attr           DevAttributes
 }
 
+// NewDeviceFromString creates device configuration from string.
 func NewDeviceFromString(str string) (*DevConfig, error) {
 	b := []byte(str)
 	c := &DevConfig{}
@@ -107,6 +115,7 @@ func NewDeviceFromString(str string) (*DevConfig, error) {
 	return c, nil
 }
 
+// Dump exports device properties as YAML.
 func (c *DevConfig) Dump() ([]byte, error) {
 	b, err := yaml.Marshal(c)
 	if err != nil {
@@ -115,11 +124,13 @@ func (c *DevConfig) Dump() ([]byte, error) {
 	return b, nil
 }
 
+// Config is full (global+devices) app configuration.
 type Config struct {
 	Options AppConfig
 	Devices []DevConfig
 }
 
+// New creates new full app configuration.
 func New() *Config {
 	return &Config{
 		Options: AppConfig{
@@ -133,6 +144,7 @@ func New() *Config {
 	}
 }
 
+// Load loads a Config from file.
 func Load(path string, maxSize int64) (*Config, error) {
 	b, readErr := store.FileRead(path, maxSize)
 	if readErr != nil {
@@ -145,6 +157,7 @@ func Load(path string, maxSize int64) (*Config, error) {
 	return c, nil
 }
 
+// Dump exports device properties as YAML.
 func (c *Config) Dump() ([]byte, error) {
 	b, err := yaml.Marshal(c)
 	if err != nil {

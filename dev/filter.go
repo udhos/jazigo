@@ -5,6 +5,7 @@ import (
 	"strconv"
 )
 
+// FilterTable stores line filters for custom line-by-line processing of configuration.
 type FilterTable struct {
 	table map[string]FilterFunc
 	re1   *regexp.Regexp
@@ -13,8 +14,10 @@ type FilterTable struct {
 	re4   *regexp.Regexp
 }
 
+// FilterFunc is a helper function type for line filters.
 type FilterFunc func(hasPrintf, bool, *FilterTable, []byte, int) []byte
 
+// NewFilterTable creates a filter table.
 func NewFilterTable(logger hasPrintf) *FilterTable {
 	t := &FilterTable{
 		table: map[string]FilterFunc{},

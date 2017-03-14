@@ -380,7 +380,7 @@ func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
 		jaz.logf("reading device list from stdin")
 
 		autoID := "auto"
-		nextID := jaz.table.FindDeviceFreeId(autoID)
+		nextID := jaz.table.FindDeviceFreeID(autoID)
 		valueStr := nextID[len(autoID):]
 		value, valErr := strconv.Atoi(valueStr)
 		if valErr != nil {

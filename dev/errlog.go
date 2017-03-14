@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// ErrlogPath builds the full pathname for errlog file.
 func ErrlogPath(pathPrefix, id string) string {
 	dir := filepath.Dir(pathPrefix)
 	path := filepath.Join(dir, id) + ".errlog"
@@ -19,7 +20,7 @@ func errlog(logger hasPrintf, result FetchResult, pathPrefix string, debug bool,
 
 	now := time.Now()
 
-	path := ErrlogPath(pathPrefix, result.DevId)
+	path := ErrlogPath(pathPrefix, result.DevID)
 
 	f, openErr := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0640)
 	if openErr != nil {
@@ -58,7 +59,7 @@ func errlog(logger hasPrintf, result FetchResult, pathPrefix string, debug bool,
 		now.String(),
 		result.Code == fetchErrNone,
 		result.End.Sub(result.Begin),
-		result.Model, result.DevId, result.DevHostPort, result.Transport, result.Code, result.Msg)
+		result.Model, result.DevID, result.DevHostPort, result.Transport, result.Code, result.Msg)
 
 	if debug {
 		logger.Printf("errlog debug: push: '%s': [%s]", path, msg)

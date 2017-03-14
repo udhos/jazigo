@@ -12,11 +12,13 @@ import (
 	"github.com/udhos/jazigo/store"
 )
 
+// Model provides default attributes for model of devices.
 type Model struct {
 	name        string
 	defaultAttr conf.DevAttributes
 }
 
+// Device is an specific device.
 type Device struct {
 	conf.DevConfig
 
@@ -28,6 +30,7 @@ type Device struct {
 	lastElapsed time.Duration
 }
 
+// Username gets the username for login into a device.
 func (d *Device) Username() string {
 	if d.Model() == "mikrotik" {
 		return d.DevConfig.LoginUser + "+cte"
@@ -35,35 +38,43 @@ func (d *Device) Username() string {
 	return d.DevConfig.LoginUser
 }
 
+// Printf formats device-specific messages into logs.
 func (d *Device) Printf(format string, v ...interface{}) {
 	prefix := fmt.Sprintf("%s %s %s: ", d.DevConfig.Model, d.Id, d.HostPort)
 	d.logger.Printf(prefix+format, v...)
 }
 
+// Model gets the model name.
 func (d *Device) Model() string {
 	return d.devModel.name
 }
 
+// LastStatus gets a status string for last configuration backup.
 func (d *Device) LastStatus() bool {
 	return d.lastStatus
 }
 
+// LastTry provides the timestamp for the last backup attempt.
 func (d *Device) LastTry() time.Time {
 	return d.lastTry
 }
 
+// LastSuccess informs the timestamp for the last successful backup.
 func (d *Device) LastSuccess() time.Time {
 	return d.lastSuccess
 }
 
+// LastElapsed gets the elapsed time for the last backup attempt.
 func (d *Device) LastElapsed() time.Duration {
 	return d.lastElapsed
 }
 
+// Holdtime informs the devices' remaining holdtime.
 func (d *Device) Holdtime(now time.Time, holdtime time.Duration) time.Duration {
 	return holdtime - now.Sub(d.lastSuccess)
 }
 
+// RegisterModels adds known device models.
 func RegisterModels(logger hasPrintf, t *DeviceTable) {
 	registerModelFortiOS(logger, t)
 	registerModelCiscoAPIC(logger, t)
@@ -76,6 +87,7 @@ func RegisterModels(logger hasPrintf, t *DeviceTable) {
 	registerModelMikrotik(logger, t)
 }
 
+// CreateDevice creates a new device in the device table.
 func CreateDevice(tab *DeviceTable, logger hasPrintf, modelName, id, hostPort, transports, user, pass, enable string, debug bool, change *conf.Change) error {
 	logger.Printf("CreateDevice: %s %s %s %s", modelName, id, hostPort, transports)
 
@@ -101,6 +113,7 @@ func CreateDevice(tab *DeviceTable, logger hasPrintf, modelName, id, hostPort, t
 	return nil
 }
 
+// NewDeviceFromConf creates a new device from a DevConfig.
 func NewDeviceFromConf(tab *DeviceTable, logger hasPrintf, cfg *conf.DevConfig) (*Device, error) {
 	mod, getErr := tab.GetModel(cfg.Model)
 	if getErr != nil {
@@ -110,6 +123,7 @@ func NewDeviceFromConf(tab *DeviceTable, logger hasPrintf, cfg *conf.DevConfig) 
 	return d, nil
 }
 
+// NewDevice creates a new device.
 func NewDevice(logger hasPrintf, mod *Model, id, hostPort, transports, loginUser, loginPassword, enablePassword string, debug bool) *Device {
 	d := &Device{logger: logger, devModel: mod, DevConfig: conf.DevConfig{Model: mod.name, Id: id, HostPort: hostPort, Transports: transports, LoginUser: loginUser, LoginPassword: loginPassword, EnablePassword: enablePassword, Debug: debug}}
 	d.Attr = mod.defaultAttr
@@ -127,14 +141,16 @@ const (
 	fetchErrSave     = 7
 )
 
+// FetchRequest is a request for fetching a device configuration.
 type FetchRequest struct {
 	Id        string           // fetch this device
 	ReplyChan chan FetchResult // reply on this channel
 }
 
+// FetchResult reports the result for fetching a device configuration.
 type FetchResult struct {
 	Model       string
-	DevId       string
+	DevID       string
 	DevHostPort string
 	Transport   string
 	Msg         string    // result error message
@@ -151,7 +167,8 @@ type dialog struct {
 	save [][]byte
 }
 
-// fetch runs in a per-device goroutine
+// Fetch captures a configuration for a device.
+// Fetch runs in a per-device goroutine.
 func (d *Device) Fetch(tab DeviceUpdater, logger hasPrintf, resultCh chan FetchResult, delay time.Duration, repository, logPathPrefix string, opt *conf.AppConfig, ft *FilterTable) {
 
 	result := d.fetch(logger, delay, repository, opt.MaxConfigFiles, ft)
@@ -191,7 +208,7 @@ func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string,
 
 	session, transport, logged, err := d.createTransport(logger)
 	if err != nil {
-		return FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch transport: %v", err), Code: fetchErrTransp, Begin: begin}
+		return FetchResult{Model: modelName, DevID: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch transport: %v", err), Code: fetchErrTransp, Begin: begin}
 	}
 
 	defer session.Close()
@@ -207,7 +224,7 @@ func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string,
 	if d.Attr.NeedLoginChat && !logged {
 		e, loginErr := d.login(logger, session, &capture)
 		if loginErr != nil {
-			return FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch login: %v", loginErr), Code: fetchErrLogin, Begin: begin}
+			return FetchResult{Model: modelName, DevID: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch login: %v", loginErr), Code: fetchErrLogin, Begin: begin}
 		}
 		if e {
 			enabled = true
@@ -219,7 +236,7 @@ func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string,
 	if d.Attr.NeedEnabledMode && !enabled {
 		enableErr := d.enable(logger, session, &capture)
 		if enableErr != nil {
-			return FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch enable: %v", enableErr), Code: fetchErrEnable, Begin: begin}
+			return FetchResult{Model: modelName, DevID: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch enable: %v", enableErr), Code: fetchErrEnable, Begin: begin}
 		}
 	}
 
@@ -228,7 +245,7 @@ func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string,
 	if d.Attr.NeedPagingOff {
 		pagingErr := d.pagingOff(logger, session, &capture)
 		if pagingErr != nil {
-			return FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch pager off: %v", pagingErr), Code: fetchErrPager, Begin: begin}
+			return FetchResult{Model: modelName, DevID: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch pager off: %v", pagingErr), Code: fetchErrPager, Begin: begin}
 		}
 	}
 
@@ -236,16 +253,16 @@ func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string,
 
 	if cmdErr := d.sendCommands(logger, session, &capture); cmdErr != nil {
 		d.saveRollback(logger, &capture)
-		return FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("commands: %v", cmdErr), Code: fetchErrCommands, Begin: begin}
+		return FetchResult{Model: modelName, DevID: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("commands: %v", cmdErr), Code: fetchErrCommands, Begin: begin}
 	}
 
 	d.debugf("will save results")
 
 	if saveErr := d.saveCommit(logger, &capture, repository, maxFiles, ft); saveErr != nil {
-		return FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("save commit: %v", saveErr), Code: fetchErrSave, Begin: begin}
+		return FetchResult{Model: modelName, DevID: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("save commit: %v", saveErr), Code: fetchErrSave, Begin: begin}
 	}
 
-	return FetchResult{Model: modelName, DevId: d.Id, DevHostPort: d.HostPort, Transport: transport, Code: fetchErrNone, Begin: begin}
+	return FetchResult{Model: modelName, DevID: d.Id, DevHostPort: d.HostPort, Transport: transport, Code: fetchErrNone, Begin: begin}
 }
 
 func (d *Device) saveRollback(logger hasPrintf, capture *dialog) {
@@ -256,18 +273,22 @@ func deviceDirectory(repository, id string) string {
 	return filepath.Join(repository, id)
 }
 
+// DeviceDir gets the directory used as device repository.
 func (d *Device) DeviceDir(repository string) string {
 	return deviceDirectory(repository, d.Id)
 }
 
+// DeviceFullPrefix gets the full path prefix for a device repository.
 func DeviceFullPrefix(repository, id string) string {
 	return filepath.Join(deviceDirectory(repository, id), id+".")
 }
 
+// DeviceFullPath get the full file path for a device repository.
 func DeviceFullPath(repository, id, file string) string {
 	return filepath.Join(repository, id, file)
 }
 
+// DevicePathPrefix gets the full path prefix for a device repository.
 func (d *Device) DevicePathPrefix(devDir string) string {
 	return filepath.Join(devDir, d.Id+".")
 }
@@ -449,10 +470,11 @@ READ_LOOP:
 	}
 }
 
+// Some constants.
 const (
-	BS = 'H' - '@'
-	CR = '\r'
-	LF = '\n'
+	BS = 'H' - '@' // BS backspace
+	CR = '\r'      // CR carriage return
+	LF = '\n'      // LF linefeed
 )
 
 func findLastLine(buf []byte) []byte {
@@ -745,7 +767,7 @@ func round(val float64) int {
 	return int(val + 0.5)
 }
 
-// ClearDeviceStatus: forget about last success (expire holdtime).
+// ClearDeviceStatus forgets about last success (expire holdtime).
 // Otherwise holdtime could prevent immediate backup.
 func ClearDeviceStatus(tab DeviceUpdater, devId string, logger hasPrintf, holdtime time.Duration) (*Device, error) {
 	d, getErr := tab.GetDevice(devId)
@@ -766,7 +788,7 @@ func ClearDeviceStatus(tab DeviceUpdater, devId string, logger hasPrintf, holdti
 	return d, nil
 }
 
-// UpdateLastSuccess: load device last success from filesystem.
+// UpdateLastSuccess loads device last success from filesystem.
 func UpdateLastSuccess(tab *DeviceTable, logger hasPrintf, repository string) {
 	for _, d := range tab.ListDevices() {
 		prefix := d.DevicePathPrefix(d.DeviceDir(repository))

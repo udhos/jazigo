@@ -9,7 +9,8 @@ import (
 	"github.com/udhos/jazigo/store"
 )
 
-type logfile struct {
+// Logfile log stream implements io.Writer in order to be attachable to log.New()
+type Logfile struct {
 	logPathPrefix     string
 	maxFiles          int
 	maxFileSize       int64
@@ -20,8 +21,8 @@ type logfile struct {
 }
 
 // NewLogfile creates a new log stream capable of automatically saving to filesystem.
-func NewLogfile(prefix string, maxFiles int, maxSize int64, checkInterval time.Duration) *logfile {
-	l := &logfile{
+func NewLogfile(prefix string, maxFiles int, maxSize int64, checkInterval time.Duration) *Logfile {
+	l := &Logfile{
 		logPathPrefix:     prefix,
 		maxFiles:          maxFiles,
 		maxFileSize:       maxSize,
@@ -56,7 +57,7 @@ func touchFunc(w store.HasWrite) error {
 	return wrErr
 }
 
-func (l *logfile) rotate() {
+func (l *Logfile) rotate() {
 	if l.output != nil {
 		l.output.Close()
 		l.output = nil
@@ -68,19 +69,19 @@ func (l *logfile) rotate() {
 			l.output.Close()
 			l.output = nil
 		}
-		l.logger.Printf("logfile.rotate: could not find log path: %v", newErr)
+		l.logger.Printf("Logfile.rotate: could not find log path: %v", newErr)
 		return
 	}
 
 	var openErr error
 	l.output, openErr = openAppend(outputPath)
 	if openErr != nil {
-		l.logger.Printf("logfile.rotate: could not open log: %v", openErr)
+		l.logger.Printf("Logfile.rotate: could not open log: %v", openErr)
 	}
 }
 
 // Write implements io.Writer in order to be attached to log.New().
-func (l *logfile) Write(b []byte) (int, error) {
+func (l *Logfile) Write(b []byte) (int, error) {
 
 	if l.output == nil {
 		l.rotate()
