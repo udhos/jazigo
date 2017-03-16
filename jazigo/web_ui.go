@@ -608,14 +608,14 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table, tabSumm gwu.Panel) {
 		} else {
 			imageLastStatus = gwu.NewImage("Failure", fmt.Sprintf("%s/fail-small.png", jaz.staticPath))
 		}
-		labElapsed := gwu.NewLabel(durationHMSString(d.LastElapsed()))
+		labElapsed := gwu.NewLabel(durationSecString(d.LastElapsed()))
 		labLastTry := gwu.NewLabel(timestampString(d.LastTry()))
 		labLastSuccess := gwu.NewLabel(timestampString(d.LastSuccess()))
 		h := d.Holdtime(now, options.Holdtime)
 		if h < 0 {
 			h = 0
 		}
-		labHoldtime := gwu.NewLabel(durationHMSString(h))
+		labHoldtime := gwu.NewLabel(durationSecString(h))
 
 		buttonRun := gwu.NewButton("Run")
 		id := d.Id
@@ -847,8 +847,8 @@ func timestampString(ts time.Time) string {
 	return ts.Format("2006-01-02 15:04:05")
 }
 
-func durationHMSString(d time.Duration) string {
-	return fmt.Sprintf("%02d:%02d:%02d", int(d.Hours()), int(d.Minutes()), int(d.Seconds()))
+func durationSecString(d time.Duration) string {
+	return fmt.Sprintf("%.3fs", d.Seconds())
 }
 
 func buildLoginWin(jaz *app, s gwu.Session) {
