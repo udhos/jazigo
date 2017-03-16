@@ -1,0 +1,11 @@
+Last login: Thu Feb 15 17:14:50 2017 from 1.2.3.4
+
+
+Cisco Netflow Generation Appliance (NGA3240-K9) Console, 1.0(2-Eng)
+Copyright (c) 2013 by Cisco Systems, Inc.
+
+root@nga# term len 0
+Terminal length for this session set to 0.
+root@nga#
+root@nga# show conf
+root@nga#
