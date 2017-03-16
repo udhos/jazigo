@@ -282,14 +282,14 @@ func loadConfig(jaz *app, maxSize int64) {
 	for _, c := range cfg.Devices {
 		d, newErr := dev.NewDeviceFromConf(jaz.table, jaz.logger, &c)
 		if newErr != nil {
-			jaz.logger.Printf("loadConfig: failure creating device '%s': %v", c.Id, newErr)
+			jaz.logger.Printf("loadConfig: failure creating device '%s': %v", c.ID, newErr)
 			continue
 		}
 		if addErr := jaz.table.SetDevice(d); addErr != nil {
-			jaz.logger.Printf("loadConfig: failure adding device '%s': %v", c.Id, addErr)
+			jaz.logger.Printf("loadConfig: failure adding device '%s': %v", c.ID, addErr)
 			continue
 		}
-		jaz.logger.Printf("loadConfig: loaded device '%s'", c.Id)
+		jaz.logger.Printf("loadConfig: loaded device '%s'", c.ID)
 	}
 }
 
@@ -448,7 +448,7 @@ func manageDeviceList(jaz *app, imp, del, purge, list bool) error {
 			if d.Debug {
 				debug = "debug"
 			}
-			fmt.Printf("%s %s %s %s %s %s %s %s\n", d.DevConfig.Model, d.DevConfig.Id, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword, enable, debug)
+			fmt.Printf("%s %s %s %s %s %s %s %s\n", d.DevConfig.Model, d.DevConfig.ID, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword, enable, debug)
 		}
 	}
 

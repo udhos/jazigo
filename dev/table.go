@@ -75,7 +75,7 @@ func (t *DeviceTable) SetDevice(d *Device) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	id := d.Id
+	id := d.ID
 
 	if _, found := t.devices[id]; found {
 		return fmt.Errorf("DeviceTable.SetDevice: found")
@@ -108,7 +108,7 @@ func (t *DeviceTable) UpdateDevice(d *Device) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	id := d.Id
+	id := d.ID
 
 	if _, found := t.devices[id]; !found {
 		return fmt.Errorf("DeviceTable.UpdateDevice: not found")
@@ -143,7 +143,7 @@ func (t *DeviceTable) FindDeviceFreeID(prefix string) string {
 	devices := t.ListDevices()
 	highest := 0
 	for _, d := range devices {
-		id := d.Id
+		id := d.ID
 		if !strings.HasPrefix(id, prefix) {
 			continue
 		}

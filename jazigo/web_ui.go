@@ -112,7 +112,7 @@ func (s sortByID) Swap(i, j int) {
 	s.data[i], s.data[j] = s.data[j], s.data[i]
 }
 func (s sortByID) Less(i, j int) bool {
-	return s.data[i].Id < s.data[j].Id
+	return s.data[i].ID < s.data[j].ID
 }
 
 func deviceWinName(id string) string {
@@ -581,7 +581,7 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table, tabSumm gwu.Panel) {
 		if !strings.Contains(d.Model(), filterModel.Text()) {
 			continue
 		}
-		if !strings.Contains(d.Id, filterID.Text()) {
+		if !strings.Contains(d.ID, filterID.Text()) {
 			continue
 		}
 		if !strings.Contains(d.HostPort, filterHost.Text()) {
@@ -590,11 +590,11 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table, tabSumm gwu.Panel) {
 
 		labMod := gwu.NewLabel(d.Model())
 
-		//devWin := deviceWinName(d.Id)
-		//labID := gwu.NewLink(d.Id, devWin)
-		buttonID := gwu.NewButton(d.Id)
+		//devWin := deviceWinName(d.ID)
+		//labID := gwu.NewLink(d.ID, devWin)
+		buttonID := gwu.NewButton(d.ID)
 
-		devID := d.Id // get dev id for closure below
+		devID := d.ID // get dev id for closure below
 		buttonID.AddEHandlerFunc(func(e gwu.Event) {
 			winName := buildDeviceWindow(jaz, e, devID)
 			e.ReloadWin(winName)
@@ -618,7 +618,7 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table, tabSumm gwu.Panel) {
 		labHoldtime := gwu.NewLabel(durationSecString(h))
 
 		buttonRun := gwu.NewButton("Run")
-		id := d.Id
+		id := d.ID
 		buttonRun.AddEHandlerFunc(func(e gwu.Event) {
 			// run in a goroutine to not block the UI on channel write
 			go runPriority(jaz, id)
@@ -657,7 +657,7 @@ func runPriority(jaz *app, id string) {
 		return
 	}
 
-	jaz.requestChan <- dev.FetchRequest{Id: id}
+	jaz.requestChan <- dev.FetchRequest{ID: id}
 }
 
 func refreshDeviceTable(jaz *app, t gwu.Table, tabSumm gwu.Panel, e gwu.Event) {
@@ -725,7 +725,7 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 	createDevPanel.Add(msg)
 
 	panelModel := gwu.NewPanel()
-	panelId := gwu.NewPanel()
+	panelID := gwu.NewPanel()
 	panelHost := gwu.NewPanel()
 	panelTransport := gwu.NewPanel()
 	panelUser := gwu.NewPanel()
@@ -734,20 +734,20 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 	button := createButton
 
 	labelModel := gwu.NewLabel("Model")
-	labelId := gwu.NewLabel("Id")
+	labelID := gwu.NewLabel("ID")
 	labelHost := gwu.NewLabel("Host")
 	labelTransport := gwu.NewLabel("Transports")
 	labelUser := gwu.NewLabel("User")
 	labelPass := gwu.NewLabel("Pass")
 	labelEnable := gwu.NewLabel("Enable")
 
-	autoIdPrefix := "auto"
+	autoIDPrefix := "auto"
 
 	models := jaz.table.ListModels()
 	sort.Strings(models)
 
 	listModel := gwu.NewListBox(models)
-	textId := gwu.NewTextBox(autoIdPrefix)
+	textID := gwu.NewTextBox(autoIDPrefix)
 	textHost := gwu.NewTextBox("")
 	textTransport := gwu.NewTextBox("ssh,telnet")
 	textUser := gwu.NewTextBox("")
@@ -757,7 +757,7 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 	listModel.SetSelected(0, true)
 
 	inputCols := 10
-	textId.SetCols(inputCols)
+	textID.SetCols(inputCols)
 	textHost.SetCols(inputCols)
 	textTransport.SetCols(inputCols)
 	textUser.SetCols(inputCols)
@@ -766,8 +766,8 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 
 	panelModel.Add(labelModel)
 	panelModel.Add(listModel)
-	panelId.Add(labelId)
-	panelId.Add(textId)
+	panelID.Add(labelID)
+	panelID.Add(textID)
 	panelHost.Add(labelHost)
 	panelHost.Add(textHost)
 	panelTransport.Add(labelTransport)
@@ -780,7 +780,7 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 	panelEnable.Add(textEnable)
 
 	createPanel.Add(panelModel)
-	createPanel.Add(panelId)
+	createPanel.Add(panelID)
 	createPanel.Add(panelHost)
 	createPanel.Add(panelTransport)
 	createPanel.Add(panelUser)
@@ -788,9 +788,9 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 	createPanel.Add(panelEnable)
 	createPanel.Add(button)
 
-	createAutoId := func() {
-		if strings.HasPrefix(textId.Text(), autoIdPrefix) {
-			textId.SetText(jaz.table.FindDeviceFreeID(autoIdPrefix))
+	createAutoID := func() {
+		if strings.HasPrefix(textID.Text(), autoIDPrefix) {
+			textID.SetText(jaz.table.FindDeviceFreeID(autoIDPrefix))
 		}
 	}
 
@@ -800,10 +800,10 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 			return // refuse to create
 		}
 
-		id := textId.Text()
+		id := textID.Text()
 
-		if id == autoIdPrefix {
-			id = jaz.table.FindDeviceFreeID(autoIdPrefix)
+		if id == autoIDPrefix {
+			id = jaz.table.FindDeviceFreeID(autoIDPrefix)
 		}
 
 		change := conf.Change{
@@ -831,15 +831,15 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 
 		saveConfig(jaz, change)
 
-		createAutoId() // prepare next auto id
-		e.MarkDirty(textId)
+		createAutoID() // prepare next auto id
+		e.MarkDirty(textID)
 
 		msg.SetText("Device created: " + id)
 		e.MarkDirty(createDevPanel) // redraw msg
 		refresh(e)                  // redraw device table
 	}, gwu.ETypeClick)
 
-	createAutoId() // first call
+	createAutoID() // first call
 
 	return createDevPanel
 }

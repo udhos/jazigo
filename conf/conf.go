@@ -94,7 +94,7 @@ type DevConfig struct {
 	Debug          bool
 	Deleted        bool
 	Model          string
-	Id             string
+	ID             string
 	HostPort       string
 	Transports     string
 	LoginUser      string

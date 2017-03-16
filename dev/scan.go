@@ -21,7 +21,7 @@ func Spawner(tab DeviceUpdater, logger hasPrintf, reqChan chan FetchRequest, rep
 
 		replyChan := req.ReplyChan // alias
 
-		devID := req.Id
+		devID := req.ID
 		d, getErr := tab.GetDevice(devID)
 		if getErr != nil {
 			if replyChan != nil {
@@ -75,16 +75,16 @@ func Scan(tab DeviceUpdater, devices []*Device, logger hasPrintf, opt *conf.AppC
 
 			if h := d.Holdtime(time.Now(), holdtime); h > 0 {
 				// do not handle device yet (holdtime not expired)
-				logger.Printf("Scan: %s skipping due to holdtime=%s", d.Id, h)
+				logger.Printf("Scan: %s skipping due to holdtime=%s", d.ID, h)
 				skipped++
 				continue
 			}
 
-			req.Id = d.Id
+			req.ID = d.ID
 			reqChan <- req
 
 			wait++ // launched
-			logger.Printf("Scan: launched: %s count=%d/%d wait=%d max=%d", req.Id, nextDevice, deviceCount, wait, maxConcurrency)
+			logger.Printf("Scan: launched: %s count=%d/%d wait=%d max=%d", req.ID, nextDevice, deviceCount, wait, maxConcurrency)
 		}
 
 		if wait < 1 {

@@ -57,10 +57,10 @@ func Init(logger hasPrintf, region string) {
 // ExtractCommitIDFromFilename gets the commit from a filename: "aaa.1" => 1
 func ExtractCommitIDFromFilename(filename string) (int, error) {
 	lastDot := strings.LastIndexByte(filename, '.')
-	commitId := filename[lastDot+1:]
-	id, err := strconv.Atoi(commitId)
+	commitID := filename[lastDot+1:]
+	id, err := strconv.Atoi(commitID)
 	if err != nil {
-		return -1, fmt.Errorf("extractCommitIdFromFilename: error parsing filename [%s]: %v", filename, err)
+		return -1, fmt.Errorf("extractCommitIDFromFilename: error parsing filename [%s]: %v", filename, err)
 	}
 
 	return id, nil
@@ -86,10 +86,10 @@ func fileFirstLine(path string) (string, error) {
 
 func tryShortcut(configPathPrefix string, logger hasPrintf) string {
 
-	lastIdPath := getLastIdPath(configPathPrefix)
-	id, err := fileFirstLine(lastIdPath)
+	lastIDPath := getLastIDPath(configPathPrefix)
+	id, err := fileFirstLine(lastIDPath)
 	if err != nil {
-		//logger.Printf("tryShortcut: [%s] error: %v", lastIdPath, err)
+		//logger.Printf("tryShortcut: [%s] error: %v", lastIDPath, err)
 		return "" // not found
 	}
 
@@ -124,15 +124,15 @@ func FindLastConfig(configPathPrefix string, logger hasPrintf) (string, error) {
 		return "", fmt.Errorf("FindLastConfig: no config file found for prefix: %s", configPathPrefix)
 	}
 
-	maxId := -1
+	maxID := -1
 	last := ""
 	for _, m := range matches {
 		id, idErr := ExtractCommitIDFromFilename(m)
 		if idErr != nil {
 			return "", fmt.Errorf("FindLastConfig: bad commit id: %s: %v", m, idErr)
 		}
-		if id >= maxId {
-			maxId = id
+		if id >= maxID {
+			maxID = id
 			last = m
 		}
 	}
@@ -216,7 +216,7 @@ type HasWrite interface {
 	Write(p []byte) (int, error)
 }
 
-func getLastIdPath(configPathPrefix string) string {
+func getLastIDPath(configPathPrefix string) string {
 	return fmt.Sprintf("%slast", configPathPrefix)
 }
 
@@ -384,8 +384,8 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 
 	// get new file
 
-	newCommitId := id + 1
-	newFilepath := getConfigPath(configPathPrefix, strconv.Itoa(newCommitId))
+	newCommitID := id + 1
+	newFilepath := getConfigPath(configPathPrefix, strconv.Itoa(newCommitID))
 
 	logger.Printf("SaveNewConfig: newPath=[%s]", newFilepath)
 
@@ -402,14 +402,14 @@ func SaveNewConfig(configPathPrefix string, maxFiles int, logger hasPrintf, writ
 	// write shortcut file
 
 	// write last id into shortcut file
-	lastIdPath := getLastIdPath(configPathPrefix)
-	if err := writeFileBuf(lastIdPath, []byte(strconv.Itoa(newCommitId)), contentType); err != nil {
-		logger.Printf("SaveNewConfig: error writing last id file '%s': %v", lastIdPath, err)
+	lastIDPath := getLastIDPath(configPathPrefix)
+	if err := writeFileBuf(lastIDPath, []byte(strconv.Itoa(newCommitID)), contentType); err != nil {
+		logger.Printf("SaveNewConfig: error writing last id file '%s': %v", lastIDPath, err)
 
 		// since we failed to update the shortcut file,
 		// it might be pointing to old backup.
 		// then it's safer to simply remove it.
-		fileRemove(lastIdPath)
+		fileRemove(lastIDPath)
 	}
 
 	// erase old file

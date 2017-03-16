@@ -40,7 +40,7 @@ func (d *Device) Username() string {
 
 // Printf formats device-specific messages into logs.
 func (d *Device) Printf(format string, v ...interface{}) {
-	prefix := fmt.Sprintf("%s %s %s: ", d.DevConfig.Model, d.Id, d.HostPort)
+	prefix := fmt.Sprintf("%s %s %s: ", d.DevConfig.Model, d.ID, d.HostPort)
 	d.logger.Printf(prefix+format, v...)
 }
 
@@ -126,7 +126,7 @@ func NewDeviceFromConf(tab *DeviceTable, logger hasPrintf, cfg *conf.DevConfig) 
 
 // NewDevice creates a new device.
 func NewDevice(logger hasPrintf, mod *Model, id, hostPort, transports, loginUser, loginPassword, enablePassword string, debug bool) *Device {
-	d := &Device{logger: logger, devModel: mod, DevConfig: conf.DevConfig{Model: mod.name, Id: id, HostPort: hostPort, Transports: transports, LoginUser: loginUser, LoginPassword: loginPassword, EnablePassword: enablePassword, Debug: debug}}
+	d := &Device{logger: logger, devModel: mod, DevConfig: conf.DevConfig{Model: mod.name, ID: id, HostPort: hostPort, Transports: transports, LoginUser: loginUser, LoginPassword: loginPassword, EnablePassword: enablePassword, Debug: debug}}
 	d.Attr = mod.defaultAttr
 	return d
 }
@@ -144,7 +144,7 @@ const (
 
 // FetchRequest is a request for fetching a device configuration.
 type FetchRequest struct {
-	Id        string           // fetch this device
+	ID        string           // fetch this device
 	ReplyChan chan FetchResult // reply on this channel
 }
 
@@ -178,7 +178,7 @@ func (d *Device) Fetch(tab DeviceUpdater, logger hasPrintf, resultCh chan FetchR
 
 	good := result.Code == fetchErrNone
 
-	updateDeviceStatus(tab, d.Id, good, result.End, result.End.Sub(result.Begin), logger, opt.Holdtime)
+	updateDeviceStatus(tab, d.ID, good, result.End, result.End.Sub(result.Begin), logger, opt.Holdtime)
 
 	errlog(logger, result, logPathPrefix, d.Debug, d.Attr.ErrlogHistSize)
 
@@ -192,10 +192,10 @@ func (d *Device) createTransport(logger hasPrintf) (transp, string, bool, error)
 
 	if modelName == "run" {
 		d.debugf("createTransport: %q", d.Attr.RunProg)
-		return openTransportPipe(logger, modelName, d.Id, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword, d.Attr.RunProg, d.Debug, d.Attr.RunTimeout)
+		return openTransportPipe(logger, modelName, d.ID, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword, d.Attr.RunProg, d.Debug, d.Attr.RunTimeout)
 	}
 
-	return openTransport(logger, modelName, d.Id, d.HostPort, d.Transports, d.Username(), d.LoginPassword)
+	return openTransport(logger, modelName, d.ID, d.HostPort, d.Transports, d.Username(), d.LoginPassword)
 }
 
 func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string, maxFiles int, ft *FilterTable) FetchResult {
@@ -209,12 +209,12 @@ func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string,
 
 	session, transport, logged, err := d.createTransport(logger)
 	if err != nil {
-		return FetchResult{Model: modelName, DevID: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch transport: %v", err), Code: fetchErrTransp, Begin: begin}
+		return FetchResult{Model: modelName, DevID: d.ID, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch transport: %v", err), Code: fetchErrTransp, Begin: begin}
 	}
 
 	defer session.Close()
 
-	logger.Printf("fetch: %s %s %s - transport OPEN logged=%v", modelName, d.Id, d.HostPort, logged)
+	logger.Printf("fetch: %s %s %s - transport OPEN logged=%v", modelName, d.ID, d.HostPort, logged)
 
 	capture := dialog{}
 
@@ -225,7 +225,7 @@ func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string,
 	if d.Attr.NeedLoginChat && !logged {
 		e, loginErr := d.login(logger, session, &capture)
 		if loginErr != nil {
-			return FetchResult{Model: modelName, DevID: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch login: %v", loginErr), Code: fetchErrLogin, Begin: begin}
+			return FetchResult{Model: modelName, DevID: d.ID, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch login: %v", loginErr), Code: fetchErrLogin, Begin: begin}
 		}
 		if e {
 			enabled = true
@@ -237,7 +237,7 @@ func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string,
 	if d.Attr.NeedEnabledMode && !enabled {
 		enableErr := d.enable(logger, session, &capture)
 		if enableErr != nil {
-			return FetchResult{Model: modelName, DevID: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch enable: %v", enableErr), Code: fetchErrEnable, Begin: begin}
+			return FetchResult{Model: modelName, DevID: d.ID, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch enable: %v", enableErr), Code: fetchErrEnable, Begin: begin}
 		}
 	}
 
@@ -246,7 +246,7 @@ func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string,
 	if d.Attr.NeedPagingOff {
 		pagingErr := d.pagingOff(logger, session, &capture)
 		if pagingErr != nil {
-			return FetchResult{Model: modelName, DevID: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch pager off: %v", pagingErr), Code: fetchErrPager, Begin: begin}
+			return FetchResult{Model: modelName, DevID: d.ID, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch pager off: %v", pagingErr), Code: fetchErrPager, Begin: begin}
 		}
 	}
 
@@ -254,16 +254,16 @@ func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string,
 
 	if cmdErr := d.sendCommands(logger, session, &capture); cmdErr != nil {
 		d.saveRollback(logger, &capture)
-		return FetchResult{Model: modelName, DevID: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("commands: %v", cmdErr), Code: fetchErrCommands, Begin: begin}
+		return FetchResult{Model: modelName, DevID: d.ID, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("commands: %v", cmdErr), Code: fetchErrCommands, Begin: begin}
 	}
 
 	d.debugf("will save results")
 
 	if saveErr := d.saveCommit(logger, &capture, repository, maxFiles, ft); saveErr != nil {
-		return FetchResult{Model: modelName, DevID: d.Id, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("save commit: %v", saveErr), Code: fetchErrSave, Begin: begin}
+		return FetchResult{Model: modelName, DevID: d.ID, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("save commit: %v", saveErr), Code: fetchErrSave, Begin: begin}
 	}
 
-	return FetchResult{Model: modelName, DevID: d.Id, DevHostPort: d.HostPort, Transport: transport, Code: fetchErrNone, Begin: begin}
+	return FetchResult{Model: modelName, DevID: d.ID, DevHostPort: d.HostPort, Transport: transport, Code: fetchErrNone, Begin: begin}
 }
 
 func (d *Device) saveRollback(logger hasPrintf, capture *dialog) {
@@ -276,7 +276,7 @@ func deviceDirectory(repository, id string) string {
 
 // DeviceDir gets the directory used as device repository.
 func (d *Device) DeviceDir(repository string) string {
-	return deviceDirectory(repository, d.Id)
+	return deviceDirectory(repository, d.ID)
 }
 
 // DeviceFullPrefix gets the full path prefix for a device repository.
@@ -291,7 +291,7 @@ func DeviceFullPath(repository, id, file string) string {
 
 // DevicePathPrefix gets the full path prefix for a device repository.
 func (d *Device) DevicePathPrefix(devDir string) string {
-	return filepath.Join(devDir, d.Id+".")
+	return filepath.Join(devDir, d.ID+".")
 }
 
 func (d *Device) saveCommit(logger hasPrintf, capture *dialog, repository string, maxFiles int, ft *FilterTable) error {
@@ -353,7 +353,7 @@ func (d *Device) saveCommit(logger hasPrintf, capture *dialog, repository string
 		return fmt.Errorf("saveCommit: error: %v", writeErr)
 	}
 
-	logger.Printf("saveCommit: dev '%s' saved to '%s'", d.Id, path)
+	logger.Printf("saveCommit: dev '%s' saved to '%s'", d.ID, path)
 
 	return nil
 }
@@ -504,7 +504,7 @@ func (d *Device) debugf(format string, v ...interface{}) {
 }
 
 func (d *Device) logf(format string, v ...interface{}) {
-	d.logger.Printf(fmt.Sprintf("device '%s': ", d.Id)+format, v...)
+	d.logger.Printf(fmt.Sprintf("device '%s': ", d.ID)+format, v...)
 }
 
 func (d *Device) send(logger hasPrintf, t transp, msg string) error {
@@ -770,10 +770,10 @@ func round(val float64) int {
 
 // ClearDeviceStatus forgets about last success (expire holdtime).
 // Otherwise holdtime could prevent immediate backup.
-func ClearDeviceStatus(tab DeviceUpdater, devId string, logger hasPrintf, holdtime time.Duration) (*Device, error) {
-	d, getErr := tab.GetDevice(devId)
+func ClearDeviceStatus(tab DeviceUpdater, devID string, logger hasPrintf, holdtime time.Duration) (*Device, error) {
+	d, getErr := tab.GetDevice(devID)
 	if getErr != nil {
-		logger.Printf("ClearDeviceStatus: '%s' not found: %v", devId, getErr)
+		logger.Printf("ClearDeviceStatus: '%s' not found: %v", devID, getErr)
 		return nil, getErr
 	}
 
@@ -784,7 +784,7 @@ func ClearDeviceStatus(tab DeviceUpdater, devId string, logger hasPrintf, holdti
 	tab.UpdateDevice(d)
 
 	h2 := d.Holdtime(now, holdtime)
-	logger.Printf("ClearDeviceStatus: device %s holdtime: old=%v new=%v", devId, h1, h2)
+	logger.Printf("ClearDeviceStatus: device %s holdtime: old=%v new=%v", devID, h1, h2)
 
 	return d, nil
 }
