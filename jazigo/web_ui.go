@@ -819,7 +819,11 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 			return
 		}
 
-		if createErr := dev.CreateDevice(jaz.table, jaz.logger, mod, id, textHost.Text(), textTransport.Text(), textUser.Text(), textPass.Text(), textEnable.Text(), false, &change); createErr != nil {
+		host := strings.TrimSpace(textHost.Text())
+		textHost.SetText(host)
+		e.MarkDirty(textHost)
+
+		if createErr := dev.CreateDevice(jaz.table, jaz.logger, mod, id, host, textTransport.Text(), textUser.Text(), textPass.Text(), textEnable.Text(), false, &change); createErr != nil {
 			msg.SetText("Could not create device: " + createErr.Error())
 			e.MarkDirty(createDevPanel)
 			return
