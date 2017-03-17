@@ -91,21 +91,34 @@ Example:
 
 `go install github.com/udhos/jazigo/jazigo`
 
-5\. Decide where to store config, backup and log files
+5\. Decide where to store config, backup, log and static www files
 
 Example:
 
     export JAZIGO_HOME=$HOME/jazigo
     mkdir $JAZIGO_HOME
     cd $JAZIGO_HOME
-    mkdir etc repo log
+    mkdir etc repo log www
 
 Hint:
-By default, Jazigo looks for directories 'etc', 'repo', and 'log' under $JAZIGO_HOME.
+By default, Jazigo looks for directories 'etc', 'repo', 'log', and 'www' under $JAZIGO_HOME.
 If left undefined, JAZIGO_HOME defaults to /var/jazigo.
 See command line options to fine tune filesystem locations.
 
-6\. Run jazigo once (see -runOnce option)
+6\. Copy static files (CSS and images) to $JAZIGO_HOME/www
+
+Example:
+
+    # If you have downloaded jazigo using 'go get':
+    cp ~/go/src/github.com/udhos/jazigo/www/* $JAZIGO_HOME/www
+
+    # Otherwise get static files from https://github.com/udhos/jazigo/tree/master/www
+    cd $JAZIGO_HOME/www
+    wget https://github.com/udhos/jazigo/blob/master/www/fail-small.png
+    wget https://github.com/udhos/jazigo/blob/master/www/ok-small.png
+    wget https://github.com/udhos/jazigo/blob/master/www/jazigo.css
+
+7\. Run jazigo once (see -runOnce option)
 
 `$GOPATH/bin/jazigo -runOnce`
 
@@ -113,7 +126,7 @@ Watch messages logged to standard output for errors.
 
 Hint: Since root privileges are usually not needed, run Jazigo as a regular user.
 
-7\. Run jazigo forever
+8\. Run jazigo forever
 
 `$GOPATH/bin/jazigo -disableStdoutLog`
 
