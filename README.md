@@ -134,7 +134,7 @@ Hint: Since root privileges are usually not needed, run Jazigo as a regular user
 
 `$GOPATH/bin/jazigo -disableStdoutLog`
 
-8\. Open the web interface
+9\. Open the web interface
 
 Point web browser at: [http://localhost:8080/jazigo](http://localhost:8080/jazigo)
       
