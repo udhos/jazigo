@@ -66,6 +66,10 @@ Quick Start
 
 Installation and usage are supposed to be dead simple. If you hit any surprising difficulty, please [report](https://github.com/udhos/jazigo/issues/new).
 
+If you want to build from source code, start from step 1.
+
+If you downloaded the executable binary file, start from step 5.
+
 1\. Setup GOPATH as usual
 
 Example:
