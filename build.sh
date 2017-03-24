@@ -76,7 +76,7 @@ static() {
 }
 [ -x "$sc" ] && static
 
-msg test dev
+msg test dev - this may take a while, please stand by
 go test github.com/udhos/jazigo/dev
 
 msg test store
