@@ -36,6 +36,7 @@ Please send pull requests for new plataforms.
 - [Cisco IOS XR](https://github.com/udhos/jazigo/blob/master/dev/model_cisco_iosxr.go)
 - [Cisco NGA](https://github.com/udhos/jazigo/blob/master/dev/model_cisco_nga.go)
 - [Fortigate FortiOS](https://github.com/udhos/jazigo/blob/master/dev/model_fortios.go)
+- [Huawei VRP](https://github.com/udhos/jazigo/blob/master/dev/model_huawei_vrp.go)
 - [HTTP](https://github.com/udhos/jazigo/blob/master/dev/model_http.go) (collect output of http GET method)
 - [Juniper JunOS](https://github.com/udhos/jazigo/blob/master/dev/model_junos.go)
 - [Linux](https://github.com/udhos/jazigo/blob/master/dev/model_lin.go) (collect output of SSH commands)

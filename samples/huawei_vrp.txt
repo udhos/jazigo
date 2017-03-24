@@ -1,0 +1,21 @@
+Login authentication
+
+
+Username:operacao
+Password:
+  -----------------------------------------------------------------------------
+
+  User last login information:
+  -----------------------------------------------------------------------------
+  Access Type: Telnet
+  IP-Address : 1.2.3.4
+  Time       : 2017-02-24 13:39:23+00:00
+  -----------------------------------------------------------------------------
+<Router_AR1220>
+<Router_AR1220>sys
+Enter system view, return user view with Ctrl+Z.
+[Router_AR1220]
+[Router_AR1220]quit
+<Router_AR1220>quit
+
+  Configuration console exit, please retry to log on

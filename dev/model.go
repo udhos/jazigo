@@ -81,6 +81,7 @@ func RegisterModels(logger hasPrintf, t *DeviceTable) {
 	registerModelCiscoAPIC(logger, t)
 	registerModelCiscoIOS(logger, t)
 	registerModelCiscoIOSXR(logger, t)
+	registerModelHuaweiVRP(logger, t)
 	registerModelLinux(logger, t)
 	registerModelJunOS(logger, t)
 	registerModelHTTP(logger, t)
@@ -237,6 +238,7 @@ func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string,
 	if d.Attr.NeedEnabledMode && !enabled {
 		enableErr := d.enable(logger, session, &capture)
 		if enableErr != nil {
+			d.debugf("enable failed")
 			return FetchResult{Model: modelName, DevID: d.ID, DevHostPort: d.HostPort, Transport: transport, Msg: fmt.Sprintf("fetch enable: %v", enableErr), Code: fetchErrEnable, Begin: begin}
 		}
 	}
@@ -372,6 +374,9 @@ func (d *Device) match(logger hasPrintf, t transp, capture *dialog, patterns []s
 	var expList []*regexp.Regexp
 
 	// patterns[0] == "" --> look for EOF
+	if patterns[0] == "" {
+		d.debugf("match: WARNING first pattern is empty, will look for EOF")
+	}
 	if patterns[0] != "" {
 		expList = make([]*regexp.Regexp, len(patterns))
 		for i, p := range patterns {
@@ -441,8 +446,6 @@ READ_LOOP:
 
 		matchBuf = append(matchBuf, lastRead...)
 
-		//lastLine := findLastLine(matchBuf)
-
 		if expList != nil {
 			var sep []byte
 			if bytes.IndexByte(lastRead, CR) >= 0 {
@@ -458,6 +461,7 @@ READ_LOOP:
 						d.debugf("matched: %d/%d pattern=[%s] line=[%q]", i, len(expList), patterns[i], lastLine)
 						return i, matchBuf, nil // pattern found
 					}
+					d.debugf("mismatch: %d/%d pattern=[%s] line=[%q]", i, len(expList), patterns[i], lastLine)
 				}
 			}
 		}
@@ -626,9 +630,13 @@ func (d *Device) enable(logger hasPrintf, t transp, capture *dialog) error {
 
 	// test enabled prompt
 
+	d.debugf("enable: sending empty line")
+
 	if emptyErr := d.sendln(logger, t, ""); emptyErr != nil {
 		return fmt.Errorf("enable: could not send empty: %v", emptyErr)
 	}
+
+	d.debugf("enable: expecting prompt")
 
 	m0, _, err0 := d.match(logger, t, capture, []string{d.Attr.DisabledPromptPattern, d.Attr.EnabledPromptPattern})
 	if err0 != nil {
@@ -645,8 +653,27 @@ func (d *Device) enable(logger hasPrintf, t transp, capture *dialog) error {
 
 	// send enable
 
+	d.debugf("enable: sending enable command")
+
 	if enableErr := d.sendln(logger, t, d.Attr.EnableCommand); enableErr != nil {
 		return fmt.Errorf("enable: could not send enable command '%s': %v", d.Attr.EnableCommand, enableErr)
+	}
+
+	d.debugf("enable: expecting enabled prompt")
+
+	if d.Attr.EnablePasswordPromptPattern == "" {
+
+		// no pattern for enable password prompt
+
+		d.debugf("enable: expecting enabled prompt - no pattern for enable password prompt")
+
+		_, _, err := d.match(logger, t, capture, []string{d.Attr.EnabledPromptPattern})
+		if err != nil {
+			return fmt.Errorf("enable: could not match after-enable prompt: %v", err)
+		}
+
+		return nil // found enabled command prompt
+
 	}
 
 	m, _, err := d.match(logger, t, capture, []string{d.Attr.EnablePasswordPromptPattern, d.Attr.EnabledPromptPattern})
