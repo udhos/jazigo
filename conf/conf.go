@@ -79,6 +79,7 @@ type DevAttributes struct {
 	ErrlogHistSize               int           // max number of lines in errlog history
 	PostLoginPromptPattern       string        // mikrotik: Please press "Enter" to continue!
 	PostLoginPromptResponse      string        // mikrotik: \r\n
+	UsernameAppend               string        // mikrotik: +cte
 
 	// readTimeout: per-read timeout (protection against inactivity)
 	// matchTimeout: full match timeout (protection against slow sender -- think 1 byte per second)

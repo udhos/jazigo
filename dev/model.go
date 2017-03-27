@@ -32,10 +32,7 @@ type Device struct {
 
 // Username gets the username for login into a device.
 func (d *Device) Username() string {
-	if d.Model() == "mikrotik" {
-		return d.DevConfig.LoginUser + "+cte"
-	}
-	return d.DevConfig.LoginUser
+	return d.DevConfig.LoginUser + d.DevConfig.Attr.UsernameAppend
 }
 
 // Printf formats device-specific messages into logs.

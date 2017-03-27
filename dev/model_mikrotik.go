@@ -25,6 +25,7 @@ func registerModelMikrotik(logger hasPrintf, t *DeviceTable) {
 	a.CommandReadTimeout = 20 * time.Second  // larger timeout for slow 'sh run'
 	a.CommandMatchTimeout = 30 * time.Second // larger timeout for slow 'sh run'
 	a.QuoteSentCommandsFormat = `##[%s]`
+	a.UsernameAppend = "+cte"
 
 	m := &Model{name: "mikrotik"}
 	m.defaultAttr = a
