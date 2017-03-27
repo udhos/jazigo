@@ -536,6 +536,30 @@ func (d *Device) sendBytes(logger hasPrintf, t transp, msg []byte) error {
 	return wrErr
 }
 
+func (d *Device) matchCommandPrompt(t transp, capture *dialog) (matchBuf []byte, enabledPrompt, wantEOF bool, errMatch error) {
+
+	wantEOF = d.Attr.DisabledPromptPattern == ""
+
+	m, buf, err := d.match(d.logger, t, capture,
+		[]string{
+			d.Attr.DisabledPromptPattern,
+			d.Attr.EnabledPromptPattern,
+		})
+
+	enabledPrompt = m == 1
+	matchBuf = buf
+
+	switch err {
+	case io.EOF:
+		errMatch = err // return original EOF error
+	case nil: // no error
+	default:
+		errMatch = fmt.Errorf("matchCommandPrompt: %v", err) // return expanded custom error
+	}
+
+	return
+}
+
 func (d *Device) sendCommands(logger hasPrintf, t transp, capture *dialog) error {
 
 	// save timeouts
@@ -562,15 +586,19 @@ func (d *Device) sendCommands(logger hasPrintf, t transp, capture *dialog) error
 			}
 		}
 
-		pattern := d.Attr.EnabledPromptPattern
+		//pattern := d.Attr.EnabledPromptPattern
 
 		d.debugf("waiting response for command=[%s]", c)
 
-		_, matchBuf, matchErr := d.match(logger, t, capture, []string{pattern})
+		//_, matchBuf, matchErr := d.match(logger, t, capture, []string{pattern})
+
+		matchBuf, _, wantEOF, matchErr := d.matchCommandPrompt(t, capture)
+
 		switch matchErr {
 		case nil: // ok
 		case io.EOF:
-			if pattern != "" {
+			//if pattern != "" {
+			if !wantEOF {
 				return fmt.Errorf("sendCommands: EOF could not match command prompt: %v buf=[%s]", matchErr, matchBuf)
 			}
 			logger.Printf("sendCommands: found wanted EOF")
@@ -616,7 +644,8 @@ func (d *Device) pagingOff(logger hasPrintf, t transp, capture *dialog) error {
 
 		var buf []byte
 		var err error
-		if _, buf, err = d.match(logger, t, capture, []string{d.Attr.EnabledPromptPattern}); err != nil {
+		//if _, buf, err = d.match(logger, t, capture, []string{d.Attr.EnabledPromptPattern}); err != nil {
+		if buf, _, _, err = d.matchCommandPrompt(t, capture); err != nil {
 			return fmt.Errorf("pagingOff: %d/%d could not match command prompt: %v", i, matchCount, err)
 		}
 
@@ -638,18 +667,18 @@ func (d *Device) enable(logger hasPrintf, t transp, capture *dialog) error {
 
 	d.debugf("enable: expecting prompt")
 
-	m0, _, err0 := d.match(logger, t, capture, []string{d.Attr.DisabledPromptPattern, d.Attr.EnabledPromptPattern})
+	//m0, _, err0 := d.match(logger, t, capture, []string{d.Attr.DisabledPromptPattern, d.Attr.EnabledPromptPattern})
+	_, enabled, _, err0 := d.matchCommandPrompt(t, capture)
 	if err0 != nil {
 		return fmt.Errorf("enable: could not find command prompt: %v", err0)
 	}
 
-	switch m0 {
-	case 0:
-		d.debugf("enable: found disabled command prompt")
-	case 1:
+	if enabled {
 		d.debugf("enable: found enabled command prompt")
 		return nil
 	}
+
+	d.debugf("enable: found disabled command prompt")
 
 	// send enable
 
@@ -778,12 +807,13 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 		}
 	}
 
-	m, _, err := d.match(logger, t, capture, []string{d.Attr.DisabledPromptPattern, d.Attr.EnabledPromptPattern})
+	//m, _, err := d.match(logger, t, capture, []string{d.Attr.DisabledPromptPattern, d.Attr.EnabledPromptPattern})
+	_, enabled, _, err := d.matchCommandPrompt(t, capture)
 	if err != nil {
 		return false, fmt.Errorf("login: could not find command prompt: %v", err)
 	}
 
-	enabled := m == 1
+	//enabled := m == 1
 
 	return enabled, nil
 }
