@@ -222,7 +222,7 @@ LOOP:
 			}
 		case strings.HasPrefix(str, "sys"):
 			config = true
-		case configVty && strings.HasPrefix(str, "screen-length"):
+		case strings.HasPrefix(str, "screen-length"):
 			// set paging
 		case config && strings.HasPrefix(str, "user-interface"):
 			configVty = true

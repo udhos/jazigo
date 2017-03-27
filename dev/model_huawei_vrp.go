@@ -9,21 +9,31 @@ import (
 func registerModelHuaweiVRP(logger hasPrintf, t *DeviceTable) {
 	a := conf.NewDevAttr()
 
-	// preferred method for disabling pager
+	/*
+		a.CommandList = []string{
+			"user-interface vty 0 4",
+			"screen-length 0", // disable paging
+			"quit",
+			"disp ver",  // get system information
+			"disp curr", // get configuration
+			"user-interface vty 0 4",
+			"screen-length 24", // restore paging
+		}
+		a.NeedEnabledMode = true
+		a.EnableCommand = "sys"
+		a.EnabledPromptPattern = `\[[^\[\]]+\]$`
+	*/
+
 	a.CommandList = []string{
-		"user-interface vty 0 4",
-		"screen-length 0", // disable paging
-		"quit",
-		"disp ver",  // get system information
-		"disp curr", // get configuration
-		"user-interface vty 0 4",
-		"screen-length 24", // restore paging
+		"screen-length 0 temporary", // disable paging
+		"disp ver",                  // get system information
+		"disp curr",                 // get configuration
 	}
 
-	a.NeedEnabledMode = true
-	a.EnableCommand = "sys"
-	a.DisabledPromptPattern = `<[^<>]+>$`
-	a.EnabledPromptPattern = `\[[^\[\]]+\]$`
+	promptPattern := `<[^<>]+>$`
+	a.DisabledPromptPattern = promptPattern
+	a.EnabledPromptPattern = promptPattern
+
 	a.NeedLoginChat = true
 	a.UsernamePromptPattern = `Username:$`
 	a.PasswordPromptPattern = `Password:$`
