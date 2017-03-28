@@ -15,6 +15,7 @@ import (
 type optionsHuaweiVRP struct {
 	requestPassword bool
 	breakConn       bool
+	refuseAuth      bool
 }
 
 func TestHuaweiVRP1(t *testing.T) {
@@ -125,6 +126,42 @@ func TestHuaweiVRP3(t *testing.T) {
 	<-s.done // wait termination of accept loop goroutine
 }
 
+func TestHuaweiVRP4(t *testing.T) {
+
+	// launch bogus test server
+	addr := ":2004"
+	s, listenErr := spawnServerHuaweiVRP(t, addr, optionsHuaweiVRP{requestPassword: true, refuseAuth: true})
+	if listenErr != nil {
+		t.Errorf("could not spawn bogus HuaweiVRP server: %v", listenErr)
+	}
+
+	// run client test
+	debug := false
+	logger := &testLogger{t}
+	tab := NewDeviceTable()
+	opt := conf.NewOptions()
+	opt.Set(&conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10})
+	RegisterModels(logger, tab)
+	CreateDevice(tab, logger, "huawei-vrp", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", debug, nil)
+
+	repo := temp.MakeTempRepo()
+	defer temp.CleanupTempRepo()
+
+	requestCh := make(chan FetchRequest)
+	errlogPrefix := filepath.Join(repo, "errlog_test.")
+	go Spawner(tab, logger, requestCh, repo, errlogPrefix, opt, NewFilterTable(logger))
+	good, bad, skip := Scan(tab, tab.ListDevices(), logger, opt.Get(), requestCh)
+	if good != 0 || bad != 1 || skip != 0 {
+		t.Errorf("good=%d bad=%d skip=%d", good, bad, skip)
+	}
+
+	close(requestCh) // shutdown Spawner - we might exit first though
+
+	s.close() // shutdown server
+
+	<-s.done // wait termination of accept loop goroutine
+}
+
 func spawnServerHuaweiVRP(t *testing.T, addr string, options optionsHuaweiVRP) (*testServer, error) {
 
 	ln, err := net.Listen("tcp", addr)
@@ -157,30 +194,49 @@ func handleConnectionHuaweiVRP(t *testing.T, c net.Conn, options optionsHuaweiVR
 
 	buf := make([]byte, 1000)
 
-	// send username prompt
-	if _, err := c.Write([]byte("Bogus HuaweiVRP server\n\nLogin authentication\n\nUsername:")); err != nil {
-		t.Logf("handleConnectionHuaweiVRP: send username prompt error: %v", err)
+	// send banner
+	if _, err := c.Write([]byte("Bogus HuaweiVRP server\n\nLogin authentication")); err != nil {
+		t.Logf("handleConnectionHuaweiVRP: send banner error: %v", err)
 		return
 	}
 
-	// consume username
-	if _, err := c.Read(buf); err != nil {
-		t.Logf("handleConnectionHuaweiVRP: read username error: %v", err)
-		return
-	}
-
-	if options.requestPassword {
-		// send password prompt
-		if _, err := c.Write([]byte("\nPassword:")); err != nil {
-			t.Logf("handleConnectionHuaweiVRP: send password prompt error: %v", err)
+	for {
+		// send username prompt
+		if _, err := c.Write([]byte("\n\nUsername:")); err != nil {
+			t.Logf("handleConnectionHuaweiVRP: send username prompt error: %v", err)
 			return
 		}
 
-		// consume password
+		// consume username
 		if _, err := c.Read(buf); err != nil {
-			t.Logf("handleConnectionHuaweiVRP: read password error: %v", err)
+			t.Logf("handleConnectionHuaweiVRP: read username error: %v", err)
 			return
 		}
+
+		if options.requestPassword {
+			// send password prompt
+			if _, err := c.Write([]byte("\nPassword:")); err != nil {
+				t.Logf("handleConnectionHuaweiVRP: send password prompt error: %v", err)
+				return
+			}
+
+			// consume password
+			if _, err := c.Read(buf); err != nil {
+				t.Logf("handleConnectionHuaweiVRP: read password error: %v", err)
+				return
+			}
+		}
+
+		if options.refuseAuth {
+			if _, err := c.Write([]byte("\r\nError: Authentication failed.\r\n  Logged Fail!\r\n  Please retry after 5 seconds.\r\n")); err != nil {
+				t.Logf("handleConnectionHuaweiVRP: send auth refusal error: %v", err)
+				return
+			}
+
+			continue // repeat authentication
+		}
+
+		break // accept authentication
 	}
 
 	config := false

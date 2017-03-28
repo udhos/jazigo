@@ -741,25 +741,48 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 
 		d.debugf("login: wait password prompt")
 
-		m2, _, err := d.match(logger, t, capture,
-			[]string{
-				d.Attr.PasswordPromptPattern,
-				d.Attr.EnabledPromptPattern,
-				d.Attr.DisabledPromptPattern,
-			})
+		list := []string{}
+
+		indexPwd := -1
+		indexEna := -1
+		indexDis := -1
+
+		if d.Attr.PasswordPromptPattern != "" {
+			indexPwd = len(list)
+			list = append(list, d.Attr.PasswordPromptPattern)
+		}
+
+		if d.Attr.EnabledPromptPattern != "" {
+			indexEna = len(list)
+			list = append(list, d.Attr.EnabledPromptPattern)
+		}
+
+		if d.Attr.DisabledPromptPattern != "" {
+			indexDis = len(list)
+			list = append(list, d.Attr.DisabledPromptPattern)
+		}
+
+		if len(list) < 1 {
+			return false, fmt.Errorf("login: find password prompt: no pattern provided")
+		}
+
+		m2, _, err := d.match(logger, t, capture, list)
 		if err != nil {
 			return false, fmt.Errorf("login: could not find password prompt: %v", err)
 		}
 
 		switch m2 {
-		case 1:
+		case indexPwd:
+			d.debugf("login: found password prompt")
+		case indexEna:
 			d.debugf("login: found enabled command prompt")
 			return true, nil
-		case 2:
+		case indexDis:
 			d.debugf("login: found disabled command prompt")
 			return false, nil
+		default:
+			return false, fmt.Errorf("login: find password prompt: no pattern matched")
 		}
-		d.debugf("login: found password prompt")
 
 	case 1:
 		d.debugf("login: found password prompt (while looking for login prompt)")
