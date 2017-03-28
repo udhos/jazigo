@@ -30,9 +30,7 @@ func registerModelHuaweiVRP(logger hasPrintf, t *DeviceTable) {
 		"disp curr",                 // get configuration
 	}
 
-	promptPattern := `<[^<>]+>$`
-	a.DisabledPromptPattern = promptPattern
-	a.EnabledPromptPattern = promptPattern
+	a.DisabledPromptPattern = `<[^<>]+>$`
 
 	a.NeedLoginChat = true
 	a.UsernamePromptPattern = `Username:$`

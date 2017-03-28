@@ -99,12 +99,13 @@ func TestHuaweiVRP3(t *testing.T) {
 	}
 
 	// run client test
+	debug := false
 	logger := &testLogger{t}
 	tab := NewDeviceTable()
 	opt := conf.NewOptions()
 	opt.Set(&conf.AppConfig{MaxConcurrency: 3, MaxConfigFiles: 10})
 	RegisterModels(logger, tab)
-	CreateDevice(tab, logger, "huawei-vrp", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", false, nil)
+	CreateDevice(tab, logger, "huawei-vrp", "lab1", "localhost"+addr, "telnet", "lab", "pass", "en", debug, nil)
 
 	repo := temp.MakeTempRepo()
 	defer temp.CleanupTempRepo()
@@ -230,6 +231,7 @@ LOOP:
 
 			if options.breakConn {
 				// break connection (on defer/exit)
+				t.Logf("handleConnectionHuaweiVRP: breaking connection")
 				return
 			}
 

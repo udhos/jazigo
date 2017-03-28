@@ -537,11 +537,13 @@ func (d *Device) matchCommandPrompt(t transp, capture *dialog) (matchBuf []byte,
 
 	wantEOF = d.Attr.DisabledPromptPattern == ""
 
-	m, buf, err := d.match(d.logger, t, capture,
-		[]string{
-			d.Attr.DisabledPromptPattern,
-			d.Attr.EnabledPromptPattern,
-		})
+	list := []string{d.Attr.DisabledPromptPattern}
+
+	if d.Attr.EnabledPromptPattern != "" {
+		list = append(list, d.Attr.EnabledPromptPattern)
+	}
+
+	m, buf, err := d.match(d.logger, t, capture, list)
 
 	enabledPrompt = m == 1
 	matchBuf = buf

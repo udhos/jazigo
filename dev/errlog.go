@@ -39,7 +39,6 @@ func errlog(logger hasPrintf, result FetchResult, pathPrefix string, debug bool,
 
 	if debug {
 		logger.Printf("errlog debug: '%s': %d lines", path, len(lines))
-		//logger.Printf("errlog debug: '%s': last line: [%s]", path, lines[len(lines)-1])
 	}
 
 	// truncate file
@@ -61,9 +60,7 @@ func errlog(logger hasPrintf, result FetchResult, pathPrefix string, debug bool,
 		result.End.Sub(result.Begin),
 		result.Model, result.DevID, result.DevHostPort, result.Transport, result.Code, result.Msg)
 
-	if debug {
-		logger.Printf("errlog debug: push: '%s': [%s]", path, msg)
-	}
+	logger.Printf("errlog: push: %s: %s", path, msg)
 
 	_, pushErr := w.WriteString(msg + "\n")
 	if pushErr != nil {
