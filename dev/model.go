@@ -800,20 +800,34 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 
 		d.debugf("post-login-prompt: looking for pattern=[%s]", d.Attr.PostLoginPromptPattern)
 
+		list := []string{}
+
+		indexEna := -1
+
+		if d.Attr.DisabledPromptPattern != "" {
+			list = append(list, d.Attr.DisabledPromptPattern)
+		}
+
+		if d.Attr.EnabledPromptPattern != "" {
+			indexEna = len(list)
+			list = append(list, d.Attr.EnabledPromptPattern)
+		}
+
+		if len(list) < 1 {
+			return false, fmt.Errorf("post-login-prompt: no prompt pattern provided")
+		}
+
+		indexPos := len(list)
+		list = append(list, d.Attr.PostLoginPromptPattern)
+
 		var m int
 		var mismatch error
-		m, _, mismatch = d.match(logger, t, capture,
-			[]string{
-				d.Attr.DisabledPromptPattern,
-				d.Attr.EnabledPromptPattern,
-				d.Attr.PostLoginPromptPattern,
-			})
+		m, _, mismatch = d.match(logger, t, capture, list)
 		if mismatch != nil {
 			return false, fmt.Errorf("post-login-prompt: match: %v", mismatch)
 		}
 
-		if m == 2 {
-
+		if m == indexPos {
 			d.debugf("post-login-prompt: prompt FOUND")
 
 			if nlErr := d.send(logger, t, d.Attr.PostLoginPromptResponse); nlErr != nil {
@@ -822,9 +836,7 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 
 			d.debugf("post-login-prompt: response sent: [%q]", d.Attr.PostLoginPromptResponse)
 		} else {
-
-			enabled := m == 1
-
+			enabled := m == indexEna
 			return enabled, nil
 		}
 	}
