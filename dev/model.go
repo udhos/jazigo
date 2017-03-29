@@ -479,25 +479,6 @@ const (
 	LF = '\n'      // LF linefeed
 )
 
-func findLastLine(buf []byte) []byte {
-
-	// remove possible trailing CR LF from end of line
-	if len(buf) > 0 && buf[len(buf)-1] == '\n' {
-		// found LF
-		buf = buf[:len(buf)-1] // drop LF
-		if len(buf) > 0 && buf[len(buf)-1] == '\r' {
-			// found CR
-			buf = buf[:len(buf)-1] // drop CR
-		}
-	}
-
-	lastEOL := bytes.LastIndexAny(buf, "\r\n")
-	lineBegin := lastEOL + 1
-	lastLine := buf[lineBegin:]
-
-	return lastLine
-}
-
 func (d *Device) debugf(format string, v ...interface{}) {
 	if d.Debug {
 		d.logf("debug: "+format, v...)
@@ -585,18 +566,13 @@ func (d *Device) sendCommands(logger hasPrintf, t transp, capture *dialog) error
 			}
 		}
 
-		//pattern := d.Attr.EnabledPromptPattern
-
 		d.debugf("waiting response for command=[%s]", c)
-
-		//_, matchBuf, matchErr := d.match(logger, t, capture, []string{pattern})
 
 		matchBuf, _, wantEOF, matchErr := d.matchCommandPrompt(t, capture)
 
 		switch matchErr {
 		case nil: // ok
 		case io.EOF:
-			//if pattern != "" {
 			if !wantEOF {
 				return fmt.Errorf("sendCommands: EOF could not match command prompt: %v buf=[%s]", matchErr, matchBuf)
 			}
@@ -643,7 +619,6 @@ func (d *Device) pagingOff(logger hasPrintf, t transp, capture *dialog) error {
 
 		var buf []byte
 		var err error
-		//if _, buf, err = d.match(logger, t, capture, []string{d.Attr.EnabledPromptPattern}); err != nil {
 		if buf, _, _, err = d.matchCommandPrompt(t, capture); err != nil {
 			return fmt.Errorf("pagingOff: %d/%d could not match command prompt: %v", i, matchCount, err)
 		}
@@ -666,7 +641,6 @@ func (d *Device) enable(logger hasPrintf, t transp, capture *dialog) error {
 
 	d.debugf("enable: expecting prompt")
 
-	//m0, _, err0 := d.match(logger, t, capture, []string{d.Attr.DisabledPromptPattern, d.Attr.EnabledPromptPattern})
 	_, enabled, _, err0 := d.matchCommandPrompt(t, capture)
 	if err0 != nil {
 		return fmt.Errorf("enable: could not find command prompt: %v", err0)
@@ -841,13 +815,10 @@ func (d *Device) login(logger hasPrintf, t transp, capture *dialog) (bool, error
 		}
 	}
 
-	//m, _, err := d.match(logger, t, capture, []string{d.Attr.DisabledPromptPattern, d.Attr.EnabledPromptPattern})
 	_, enabled, _, err := d.matchCommandPrompt(t, capture)
 	if err != nil {
 		return false, fmt.Errorf("login: could not find command prompt: %v", err)
 	}
-
-	//enabled := m == 1
 
 	return enabled, nil
 }
