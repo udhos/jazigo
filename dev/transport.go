@@ -258,6 +258,10 @@ func forceHostPort(hostPort, defaultPort string) string {
 	return hostPort
 }
 
+func hostKeyCheck(hostname string, remote net.Addr, key ssh.PublicKey) error {
+	return nil // FIXME hostKeyCheck accept anything
+}
+
 func openSSH(logger hasPrintf, modelName, devID, hostPort string, timeout time.Duration, user, pass string) (transp, error) {
 
 	conn, dialErr := net.DialTimeout("tcp", hostPort, timeout)
@@ -275,7 +279,8 @@ func openSSH(logger hasPrintf, modelName, devID, hostPort string, timeout time.D
 		Auth: []ssh.AuthMethod{
 			ssh.Password(pass),
 		},
-		Timeout: timeout,
+		Timeout:         timeout,
+		HostKeyCallback: hostKeyCheck,
 	}
 
 	c, chans, reqs, connErr := ssh.NewClientConn(conn, hostPort, config)
