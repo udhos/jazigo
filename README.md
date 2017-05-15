@@ -75,8 +75,8 @@ If you downloaded the executable binary file, start from step 5.
 
 Example:
 
-    export GOPATH=~/go
-    mkdir $GOPATH
+    #export GOPATH=~/go ;# starting from Go 1.8, GOPATH is no longer required
+    mkdir ~/go
 
 2\. Get dependencies
 
@@ -90,11 +90,11 @@ Example:
 
 3\. Get source code
 
-`go get github.com/udhos/jazigo`
+    go get github.com/udhos/jazigo
 
 4\. Compile and install
 
-`go install github.com/udhos/jazigo/jazigo`
+    go install github.com/udhos/jazigo/jazigo
 
 5\. Decide where to store config, backup, log and static www files
 
