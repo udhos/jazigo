@@ -69,7 +69,7 @@ Quick Start - Short version
 This is how to boot up Jazigo very quickly:
 
     go get github.com/udhos/jazigo
-    cd ~/go/src/github.com/udhos
+    cd ~/go/src/github.com/udhos/jazigo
     ./build.sh
     mkdir etc repo log
     JAZIGO_HOME=$PWD ~/go/bin/jazigo
