@@ -11,7 +11,8 @@ Table of Contents
   * [Supported Platforms](#supported-platforms)
   * [Features](#features)
   * [Requirements](#requirements)
-  * [Quick Start](#quick-start)
+  * [Quick Start \- Short version](#quick-start---short-version)
+  * [Quick Start \- Detailed version](#quick-start---detailed-version)
   * [Global Settings](#global-settings)
   * [Importing Many Devices](#importing-many-devices)
   * [Using AWS S3](#using-aws-s3)
@@ -62,8 +63,19 @@ Requirements
 
 - You need a [system with the Go language](https://golang.org/dl/) in order to build the application. There is no special requirement for running it.
 
-Quick Start
-===========
+Quick Start - Short version
+===========================
+
+This is how to boot up Jazigo very quickly:
+
+    go get github.com/udhos/jazigo
+    cd ~/go/src/github.com/udhos
+    ./build.sh
+    mkdir etc repo log
+    JAZIGO_HOME=$PWD ~/go/bin/jazigo
+
+Quick Start - Detailed version
+==============================
 
 Installation and usage are supposed to be dead simple. If you hit any surprising difficulty, please [report](https://github.com/udhos/jazigo/issues/new).
 
