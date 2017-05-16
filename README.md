@@ -133,9 +133,9 @@ Example:
 
     # Otherwise get static files from https://github.com/udhos/jazigo/tree/master/www
     cd $JAZIGO_HOME/www
-    wget https://github.com/udhos/jazigo/blob/master/www/fail-small.png
-    wget https://github.com/udhos/jazigo/blob/master/www/ok-small.png
-    wget https://github.com/udhos/jazigo/blob/master/www/jazigo.css
+    wget https://raw.githubusercontent.com/udhos/jazigo/master/www/fail-small.png
+    wget https://raw.githubusercontent.com/udhos/jazigo/master/www/ok-small.png
+    wget https://raw.githubusercontent.com/udhos/jazigo/master/www/jazigo.css
 
 7\. Run jazigo once (see -runOnce option)
 
