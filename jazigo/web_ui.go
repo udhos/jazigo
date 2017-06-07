@@ -1095,7 +1095,7 @@ func buildAdminWin(jaz *app, s gwu.Session) {
 
 		showFile, lastErr := store.FindLastConfig(jaz.configPathPrefix, jaz.logger)
 		if lastErr != nil {
-			jaz.logger.Printf("buildAdminWin: could find last config: %v", lastErr)
+			jaz.logger.Printf("buildAdminWin: could not find last config: %v", lastErr)
 			showFile = fmt.Sprintf("Could not find last config file: %v", lastErr)
 		}
 
