@@ -1,0 +1,8 @@
+Escape character is '^]'.
+
+
+
+dmswitch-lab login: lab
+Password:
+dmswitch-lab#
+dmswitch-lab#exit

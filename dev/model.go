@@ -73,17 +73,18 @@ func (d *Device) Holdtime(now time.Time, holdtime time.Duration) time.Duration {
 
 // RegisterModels adds known device models.
 func RegisterModels(logger hasPrintf, t *DeviceTable) {
-	registerModelFortiOS(logger, t)
 	registerModelCiscoNGA(logger, t)
 	registerModelCiscoAPIC(logger, t)
 	registerModelCiscoIOS(logger, t)
 	registerModelCiscoIOSXR(logger, t)
-	registerModelHuaweiVRP(logger, t)
-	registerModelLinux(logger, t)
-	registerModelJunOS(logger, t)
+	registerModelDatacomDmswitch(logger, t)
+	registerModelFortiOS(logger, t)
 	registerModelHTTP(logger, t)
-	registerModelRun(logger, t)
+	registerModelHuaweiVRP(logger, t)
+	registerModelJunOS(logger, t)
+	registerModelLinux(logger, t)
 	registerModelMikrotik(logger, t)
+	registerModelRun(logger, t)
 }
 
 // CreateDevice creates a new device in the device table.
