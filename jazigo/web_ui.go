@@ -556,10 +556,13 @@ func buildDeviceTable(jaz *app, s gwu.Session, t gwu.Table, tabSumm gwu.Panel) {
 	t.Add(gwu.NewLabel(""), row, 8)
 	t.Add(gwu.NewLabel(""), row, 9)
 
+	hostPort := gwu.NewLabel("Host:Port")
+	hostPort.SetAttr("title", "Part ':Port' is optional")
+
 	row = 1 // header
 	t.Add(gwu.NewLabel("Model"), row, 0)
 	t.Add(gwu.NewLabel("Device"), row, 1)
-	t.Add(gwu.NewLabel("Host"), row, 2)
+	t.Add(hostPort, row, 2)
 	t.Add(gwu.NewLabel("Transport"), row, 3)
 	t.Add(gwu.NewLabel("Last Status"), row, 4)
 	t.Add(gwu.NewLabel("Elapsed"), row, 5)
@@ -735,7 +738,8 @@ func buildCreateDevPanel(jaz *app, s gwu.Session, refresh func(gwu.Event), creat
 
 	labelModel := gwu.NewLabel("Model")
 	labelID := gwu.NewLabel("ID")
-	labelHost := gwu.NewLabel("Host")
+	labelHost := gwu.NewLabel("Host:Port")
+	labelHost.SetAttr("title", "Part ':Port' is optional")
 	labelTransport := gwu.NewLabel("Transports")
 	labelUser := gwu.NewLabel("User")
 	labelPass := gwu.NewLabel("Pass")
