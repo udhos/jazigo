@@ -15,7 +15,7 @@ import (
 	"github.com/udhos/jazigo/store"
 )
 
-func newAccPanel(user string) gwu.Panel {
+func newAccPanel(user, staticPath string) gwu.Panel {
 	ap := gwu.NewHorizontalPanel()
 	ap.Style().AddClass("account_panel")
 
@@ -37,6 +37,13 @@ func newAccPanel(user string) gwu.Panel {
 		l := gwu.NewLabel(fmt.Sprintf("username=[%s]", user))
 		ap.Add(l)
 	}
+
+	// link to github repo
+	imageGithub := gwu.NewImage("Forkme", staticPath+"/GitHub-Mark-32px.png")
+	linkGithub := gwu.NewLink("", "https://github.com/udhos/jazigo")
+	linkGithub.SetComp(imageGithub)
+	ap.Add(linkGithub)
+
 	return ap
 }
 
@@ -47,7 +54,7 @@ func accountPanelUpdate(jaz *app, user string) {
 			home := jaz.winHome.ByID(jaz.apHome.ID())
 			jaz.winHome.Remove(home)
 		}
-		jaz.apHome = newAccPanel(user)
+		jaz.apHome = newAccPanel(user, jaz.staticPath)
 		if !jaz.winHome.Insert(jaz.apHome, 0) {
 			jaz.logf("home win insert accPanel failed")
 		}
@@ -58,7 +65,7 @@ func accountPanelUpdate(jaz *app, user string) {
 			admin := jaz.winAdmin.ByID(jaz.apAdmin.ID())
 			jaz.winAdmin.Remove(admin)
 		}
-		jaz.apAdmin = newAccPanel(user)
+		jaz.apAdmin = newAccPanel(user, jaz.staticPath)
 		if !jaz.winAdmin.Insert(jaz.apAdmin, 0) {
 			jaz.logf("admin win insert accPanel failed")
 		}
@@ -69,7 +76,7 @@ func accountPanelUpdate(jaz *app, user string) {
 			logout := jaz.winLogout.ByID(jaz.apLogout.ID())
 			jaz.winLogout.Remove(logout)
 		}
-		jaz.apLogout = newAccPanel(user)
+		jaz.apLogout = newAccPanel(user, jaz.staticPath)
 		if !jaz.winLogout.Insert(jaz.apLogout, 0) {
 			jaz.logf("logout win insert accPanel failed")
 		}
@@ -988,9 +995,9 @@ func buildPublicWins(jaz *app, s gwu.Session) {
 	}
 
 	// create account panel
-	jaz.apHome = newAccPanel("")
-	jaz.apAdmin = newAccPanel("")
-	jaz.apLogout = newAccPanel("")
+	jaz.apHome = newAccPanel("", jaz.staticPath)
+	jaz.apAdmin = newAccPanel("", jaz.staticPath)
+	jaz.apLogout = newAccPanel("", jaz.staticPath)
 	accountPanelUpdate(jaz, "")
 
 	buildLoginWin(jaz, s)

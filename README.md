@@ -137,6 +137,7 @@ Example:
     wget https://raw.githubusercontent.com/udhos/jazigo/master/www/fail-small.png
     wget https://raw.githubusercontent.com/udhos/jazigo/master/www/ok-small.png
     wget https://raw.githubusercontent.com/udhos/jazigo/master/www/jazigo.css
+    wget https://raw.githubusercontent.com/udhos/jazigo/master/www/GitHub-Mark-32px.png
 
 7\. Run jazigo once (see -runOnce option)
 
