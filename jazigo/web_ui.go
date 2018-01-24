@@ -943,14 +943,6 @@ func buildLoginWin(jaz *app, s gwu.Session) {
 			newSession := e.NewSession()
 			newSession.SetAttr("username", user)
 
-			/*
-				remoteAddr := eventRemoteAddress(e)
-					if hrr, ok := e.(gwu.HasRequestResponse); ok {
-						req := hrr.Request()
-						remoteAddr = req.RemoteAddr
-					}
-			*/
-
 			buildPrivateWins(jaz, newSession)
 
 			accountPanelUpdateEvent(jaz, user, e)
@@ -1147,6 +1139,11 @@ func buildAdminWin(jaz *app, s gwu.Session) {
 		opt, parseErr := conf.NewAppConfigFromString(str)
 		if parseErr != nil {
 			settingsMsg.SetText(fmt.Sprintf("Parsing error: %v", parseErr))
+			return
+		}
+		if opt == nil {
+			settingsMsg.SetText("Nil parsing error")
+			return
 		}
 
 		// overwrite change record
