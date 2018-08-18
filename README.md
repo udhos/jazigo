@@ -71,6 +71,16 @@ Quick Start - Short version
 
 This is how to boot up Jazigo very quickly:
 
+## With Go Modules (starting from Go 1.11)
+
+    git clone https://github.com/udhos/jazigo ;# clone outside of GOPATH
+    cd jazigo
+    go install ./jazigo
+    mkdir etc repo log
+    JAZIGO_HOME=$PWD ~/go/bin/jazigo
+
+## Without Go Modules (before Go 1.11)
+
     go get github.com/udhos/jazigo
     cd ~/go/src/github.com/udhos/jazigo
     ./build.sh
