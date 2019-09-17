@@ -4,8 +4,6 @@
 [![gocover dev](http://gocover.io/_badge/github.com/udhos/jazigo/dev)](http://gocover.io/github.com/udhos/jazigo/dev)
 [![gocover store](http://gocover.io/_badge/github.com/udhos/jazigo/store)](http://gocover.io/github.com/udhos/jazigo/store)
 
-[![asciicast](https://asciinema.org/a/al81xo7o8y8zv2oh8jo2paync.png)](https://asciinema.org/a/al81xo7o8y8zv2oh8jo2paync)
-
 Table of Contents
 =================
 
