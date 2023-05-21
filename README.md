@@ -69,21 +69,13 @@ Quick Start - Short version
 
 This is how to boot up Jazigo very quickly:
 
-## With Go Modules (starting from Go 1.11)
-
     git clone https://github.com/udhos/jazigo ;# clone outside of GOPATH
     cd jazigo
     go install ./jazigo
     mkdir etc repo log
     JAZIGO_HOME=$PWD ~/go/bin/jazigo
 
-## Without Go Modules (before Go 1.11)
-
-    go get github.com/udhos/jazigo
-    cd ~/go/src/github.com/udhos/jazigo
-    ./build.sh
-    mkdir etc repo log
-    JAZIGO_HOME=$PWD ~/go/bin/jazigo
+Open jazigo interface - http://localhost:8080/jazigo/
 
 Quick Start - Detailed version
 ==============================
@@ -92,34 +84,15 @@ Installation and usage are supposed to be dead simple. If you hit any surprising
 
 If you want to build from source code, start from step 1.
 
-If you downloaded the executable binary file, start from step 5.
+If you downloaded the executable binary file, start from step 2.
 
-1\. Setup GOPATH as usual
+1\. Build from source
 
-Example:
+    git clone https://github.com/udhos/jazigo
+    cd jazigo
+    go install ./...
 
-    #export GOPATH=~/go ;# starting from Go 1.8, GOPATH is no longer required
-    mkdir ~/go
-
-2\. Get dependencies
-
-    go get github.com/icza/gowut/gwu
-    go get github.com/udhos/lockfile
-    go get github.com/udhos/equalfile
-    go get github.com/udhos/difflib
-    go get gopkg.in/yaml.v2
-    go get golang.org/x/crypto/ssh
-    go get github.com/aws/aws-sdk-go
-
-3\. Get source code
-
-    go get github.com/udhos/jazigo
-
-4\. Compile and install
-
-    go install github.com/udhos/jazigo/jazigo
-
-5\. Decide where to store config, backup, log and static www files
+2\. Decide where to store config, backup, log and static www files
 
 Example:
 
@@ -133,7 +106,7 @@ By default, Jazigo looks for directories 'etc', 'repo', 'log', and 'www' under $
 If left undefined, JAZIGO_HOME defaults to /var/jazigo.
 See command line options to fine tune filesystem locations.
 
-6\. Copy static files (CSS and images) to $JAZIGO_HOME/www
+3\. Copy static files (CSS and images) to $JAZIGO_HOME/www
 
 Example:
 
@@ -147,7 +120,7 @@ Example:
     wget https://raw.githubusercontent.com/udhos/jazigo/master/www/jazigo.css
     wget https://raw.githubusercontent.com/udhos/jazigo/master/www/GitHub-Mark-32px.png
 
-7\. Run jazigo once (see -runOnce option)
+4\. Run jazigo once (see -runOnce option)
 
 `$GOPATH/bin/jazigo -runOnce`
 
@@ -155,11 +128,11 @@ Watch messages logged to standard output for errors.
 
 Hint: Since root privileges are usually not needed, run Jazigo as a regular user.
 
-8\. Run jazigo forever
+5\. Run jazigo forever
 
 `$GOPATH/bin/jazigo -disableStdoutLog`
 
-9\. Open the web interface
+6\. Open the web interface
 
 Point web browser at: [http://localhost:8080/jazigo](http://localhost:8080/jazigo)
       

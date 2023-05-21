@@ -1,3 +1,4 @@
+// Package temp creates temporary repository.
 package temp
 
 import (
@@ -7,7 +8,7 @@ import (
 
 const tempRepoPrefix = "/tmp/tmp-jazigo-repo"
 
-// MakeTempRepo creates the remporary repository path, for testing.
+// MakeTempRepo creates the temporary repository path, for testing.
 func MakeTempRepo() string {
 	path := tempRepoPrefix
 	if err := os.MkdirAll(path, 0700); err != nil {
@@ -16,7 +17,7 @@ func MakeTempRepo() string {
 	return path
 }
 
-// CleanupTempRepo erases the remporary repository path.
+// CleanupTempRepo erases the temporary repository path.
 func CleanupTempRepo() string {
 	path := tempRepoPrefix
 	if err := os.RemoveAll(path); err != nil {

@@ -1,3 +1,4 @@
+// Package dev provides access to multiple devices.
 package dev
 
 import (

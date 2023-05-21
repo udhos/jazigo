@@ -1,3 +1,4 @@
+// Package main implements the jazigo tool.
 package main
 
 import (
@@ -21,7 +22,7 @@ import (
 )
 
 const appName = "jazigo"
-const appVersion = "0.11"
+const appVersion = "0.11.0"
 
 type app struct {
 	configPathPrefix string

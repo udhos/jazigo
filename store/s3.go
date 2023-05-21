@@ -95,7 +95,8 @@ func s3path(path string) bool {
 	return s3match
 }
 
-//  Input: "arn:aws:s3:region::bucket/folder/file.xxx"
+//	Input: "arn:aws:s3:region::bucket/folder/file.xxx"
+//
 // Output: "region", "bucket", "folder/file.xxx"
 func s3parse(path string) (string, string, string) {
 	s := strings.Split(path, ":")

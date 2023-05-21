@@ -1,9 +1,10 @@
+// Package conf handles configuration.
 package conf
 
 import (
 	"time"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/udhos/jazigo/store"
 )

@@ -22,9 +22,9 @@ func registerModelFortiOS(logger hasPrintf, t *DeviceTable) {
 		"config system global",  // enter config: valid only for vdom
 		"config system console", // enter config: valid only for non-vdom
 		"set output standard",   // disable paging
-		"end",               // exit config
-		"get system status", // system information
-		"show",              // get configuration
+		"end",                   // exit config
+		"get system status",     // system information
+		"show",                  // get configuration
 	}
 
 	promptPattern := `\S+\s#\s$` // "hostname # "

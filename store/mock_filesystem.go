@@ -1,3 +1,4 @@
+// Package store abstracts a file system.
 package store
 
 import (
