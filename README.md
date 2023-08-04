@@ -122,7 +122,7 @@ Example:
 
 4\. Run jazigo once (see -runOnce option)
 
-`$GOPATH/bin/jazigo -runOnce`
+`~/go/bin/jazigo -runOnce`
 
 Watch messages logged to standard output for errors.
 
@@ -130,7 +130,7 @@ Hint: Since root privileges are usually not needed, run Jazigo as a regular user
 
 5\. Run jazigo forever
 
-`$GOPATH/bin/jazigo -disableStdoutLog`
+`~/go/bin/jazigo -disableStdoutLog`
 
 6\. Open the web interface
 
@@ -180,7 +180,7 @@ Hint: The device id must be unique. You can generate a meaningful device id manu
 
 2\. Then load the table with the option -deviceImport:
 
-    $ $GOPATH/bin/jazigo -deviceImport < table.txt
+    $ ~/go/bin/jazigo -deviceImport < table.txt
 
 Using AWS S3
 ============
@@ -204,7 +204,7 @@ An usual way is to create an IAM user, add key/secret, and put those credentials
 
     # Example
     ARN=arn:aws:s3:regionname::bucketname/foldername
-    $GOPATH/bin/jazigo -configPathPrefix=$ARN/etc/jazigo.conf. -repositoryPath=$ARN/repo
+    ~/go/bin/jazigo -configPathPrefix=$ARN/etc/jazigo.conf. -repositoryPath=$ARN/repo
 
 Hint: You could point config and repository to distinct buckets.
 
