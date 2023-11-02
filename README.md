@@ -1,5 +1,4 @@
-[![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/udhos/jazigo/blob/main/LICENSE)
-[![GoDoc](https://godoc.org/github.com/udhos/jazigo/jazigo?status.svg)](http://godoc.org/github.com/udhos/jazigo/jazigo)
+[![license](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/udhos/jazigo/blob/master/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/udhos/jazigo)](https://goreportcard.com/report/github.com/udhos/jazigo)
 [![Go Reference](https://pkg.go.dev/badge/github.com/udhos/jazigo.svg)](https://pkg.go.dev/github.com/udhos/jazigo)
 
