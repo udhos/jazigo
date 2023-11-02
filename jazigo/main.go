@@ -22,7 +22,7 @@ import (
 )
 
 const appName = "jazigo"
-const appVersion = "0.12.0"
+const appVersion = "0.13.0"
 
 type app struct {
 	configPathPrefix string

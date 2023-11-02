@@ -191,10 +191,12 @@ func (d *Device) createTransport(logger hasPrintf) (transp, string, bool, error)
 
 	if modelName == "run" {
 		d.debugf("createTransport: %q", d.Attr.RunProg)
-		return openTransportPipe(logger, modelName, d.ID, d.HostPort, d.Transports, d.LoginUser, d.LoginPassword, d.Attr.RunProg, d.Debug, d.Attr.RunTimeout)
+		return openTransportPipe(logger, modelName, d.ID, d.HostPort, d.Transports, d.LoginUser,
+			d.LoginPassword, d.Attr.RunProg, d.Debug, d.Attr.RunTimeout)
 	}
 
-	return openTransport(logger, modelName, d.ID, d.HostPort, d.Transports, d.Username(), d.LoginPassword)
+	return openTransport(logger, modelName, d.ID, d.HostPort, d.Transports, d.Username(),
+		d.LoginPassword, d.DevConfig.SSHClearCiphers, d.DevConfig.SSHAddCiphers)
 }
 
 func (d *Device) fetch(logger hasPrintf, delay time.Duration, repository string, maxFiles int, ft *FilterTable) FetchResult {

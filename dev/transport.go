@@ -209,7 +209,8 @@ func openPipe(logger hasPrintf, modelName, devID, hostPort, transports, user, pa
 	return s, nil
 }
 
-func openTransport(logger hasPrintf, modelName, devID, hostPort, transports, user, pass string) (transp, string, bool, error) {
+func openTransport(logger hasPrintf, modelName, devID, hostPort, transports, user, pass string,
+	sshClearCiphers bool, sshAddCiphers []string) (transp, string, bool, error) {
 	tList := strings.Split(transports, ",")
 	if len(tList) < 1 {
 		return nil, transports, false, fmt.Errorf("openTransport: missing transports: [%s]", transports)
@@ -223,7 +224,8 @@ func openTransport(logger hasPrintf, modelName, devID, hostPort, transports, use
 		switch t {
 		case "ssh":
 			hp := forceHostPort(hostPort, "22")
-			s, err := openSSH(logger, modelName, devID, hp, timeout, user, pass)
+			s, err := openSSH(logger, modelName, devID, hp, timeout, user, pass,
+				sshClearCiphers, sshAddCiphers)
 			if err == nil {
 				return s, t, true, nil
 			}
@@ -262,7 +264,8 @@ func hostKeyCheck(hostname string, remote net.Addr, key ssh.PublicKey) error {
 	return nil // FIXME hostKeyCheck accept anything
 }
 
-func openSSH(logger hasPrintf, modelName, devID, hostPort string, timeout time.Duration, user, pass string) (transp, error) {
+func openSSH(logger hasPrintf, modelName, devID, hostPort string, timeout time.Duration, user, pass string,
+	sshClearCiphers bool, sshAddCiphers []string) (transp, error) {
 
 	conn, dialErr := net.DialTimeout("tcp", hostPort, timeout)
 	if dialErr != nil {
@@ -271,7 +274,10 @@ func openSSH(logger hasPrintf, modelName, devID, hostPort string, timeout time.D
 
 	conf := &ssh.Config{}
 	conf.SetDefaults()
-	conf.Ciphers = append(conf.Ciphers, "3des-cbc") // 3des-cbc is needed for IOS XR
+	if sshClearCiphers {
+		conf.Ciphers = nil
+	}
+	conf.Ciphers = append(conf.Ciphers, sshAddCiphers...)
 
 	config := &ssh.ClientConfig{
 		Config: *conf,

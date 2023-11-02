@@ -7,16 +7,17 @@
 Table of Contents
 =================
 
-  * [About Jazigo](#about-jazigo)
-  * [Supported Platforms](#supported-platforms)
-  * [Features](#features)
-  * [Requirements](#requirements)
-  * [Quick Start \- Short version](#quick-start---short-version)
-  * [Quick Start \- Detailed version](#quick-start---detailed-version)
-  * [Global Settings](#global-settings)
-  * [Importing Many Devices](#importing-many-devices)
-  * [Using AWS S3](#using-aws-s3)
-  * [Calling an external program](#calling-an-external-program)
+* [About Jazigo](#about-jazigo)
+* [Supported Platforms](#supported-platforms)
+* [Features](#features)
+* [Requirements](#requirements)
+* [Quick Start \- Short version](#quick-start---short-version)
+* [Quick Start \- Detailed version](#quick-start---detailed-version)
+* [Global Settings](#global-settings)
+* [Importing Many Devices](#importing-many-devices)
+* [SSH Ciphers](#ssh-ciphers)
+* [Using AWS S3](#using-aws-s3)
+* [Calling an external program](#calling-an-external-program)
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc.go)
 
@@ -181,6 +182,20 @@ Hint: The device id must be unique. You can generate a meaningful device id manu
 2\. Then load the table with the option -deviceImport:
 
     $ ~/go/bin/jazigo -deviceImport < table.txt
+
+SSH Ciphers
+===========
+
+You can control ciphers for the SSH transport by editing these device properties:
+
+* sshclearciphers: if enabled remove all default ciphers.
+* sshaddciphers: list of ciphers to add.
+
+Example:
+
+    sshclearciphers: true # remove all default ciphers
+    sshaddciphers:
+        - aes128-ctr      # add cipher aes128-ctr
 
 Using AWS S3
 ============

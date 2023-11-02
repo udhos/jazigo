@@ -93,18 +93,20 @@ type DevAttributes struct {
 
 // DevConfig is full set of device properties.
 type DevConfig struct {
-	Debug          bool
-	Deleted        bool
-	Model          string
-	ID             string
-	HostPort       string
-	Transports     string
-	LoginUser      string
-	LoginPassword  string
-	EnablePassword string
-	Comment        string // free user-defined field
-	LastChange     Change
-	Attr           DevAttributes
+	Debug           bool
+	Deleted         bool
+	Model           string
+	ID              string
+	HostPort        string
+	Transports      string
+	LoginUser       string
+	LoginPassword   string
+	EnablePassword  string
+	SSHClearCiphers bool
+	SSHAddCiphers   []string
+	Comment         string // free user-defined field
+	LastChange      Change
+	Attr            DevAttributes
 }
 
 // NewDeviceFromString creates device configuration from string.
